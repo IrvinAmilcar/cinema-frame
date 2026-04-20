@@ -8,6 +8,8 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SessaoSteps {
@@ -24,7 +26,7 @@ public class SessaoSteps {
 
     @Dado("existe uma sala de número {int} com capacidade para {int} pessoas")
     public void existeUmaSala(int numero, int capacidade) {
-        sala = new Sala(numero, capacidade);
+        sala = new Sala(numero, capacidade, TipoSala.PADRAO);
     }
 
     @Dado("existe uma grade de exibição para a semana")
