@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.grade;
+package br.com.cinema.frame.domain.backoffice.ingresso;
 
 public enum TipoIngresso {
 

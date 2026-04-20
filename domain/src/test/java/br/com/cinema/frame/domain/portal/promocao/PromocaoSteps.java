@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.promocao;
+package br.com.cinema.frame.domain.portal.promocao;
 
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
@@ -7,6 +7,11 @@ import io.cucumber.java.pt.Então;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
+import br.com.cinema.frame.domain.portal.promocao.AplicacaoDeDesconto;
+import br.com.cinema.frame.domain.portal.promocao.Cupom;
+import br.com.cinema.frame.domain.portal.promocao.MotorDePromocoes;
+import br.com.cinema.frame.domain.portal.promocao.TipoPromocao;
 
 import static org.junit.jupiter.api.Assertions.*;
 

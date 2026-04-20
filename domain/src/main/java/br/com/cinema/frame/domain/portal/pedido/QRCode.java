@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.pedido;
+package br.com.cinema.frame.domain.portal.pedido;
 
 import java.util.UUID;
 

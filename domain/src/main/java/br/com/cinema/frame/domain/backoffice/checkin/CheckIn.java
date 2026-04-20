@@ -1,7 +1,9 @@
-package br.com.cinema.frame.domain.backoffice.grade;
+package br.com.cinema.frame.domain.backoffice.checkin;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 
 public class CheckIn {
 

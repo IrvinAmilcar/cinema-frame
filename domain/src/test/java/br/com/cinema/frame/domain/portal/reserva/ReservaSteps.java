@@ -1,10 +1,13 @@
-package br.com.cinema.frame.domain.backoffice.reserva;
+package br.com.cinema.frame.domain.portal.reserva;
 
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
 import br.com.cinema.frame.domain.backoffice.grade.Sala;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
+import br.com.cinema.frame.domain.portal.reserva.GestaoDeReservas;
+import br.com.cinema.frame.domain.portal.reserva.ReservaDeAssento;
+import br.com.cinema.frame.domain.portal.reserva.StatusReserva;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;

@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.promocao;
+package br.com.cinema.frame.domain.portal.reserva;
 
 import org.junit.platform.suite.api.ConfigurationParameter;
 import org.junit.platform.suite.api.IncludeEngines;
@@ -9,7 +9,7 @@ import static io.cucumber.junit.platform.engine.Constants.GLUE_PROPERTY_NAME;
 
 @Suite
 @IncludeEngines("cucumber")
-@SelectClasspathResource("features/promocao")
-@ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "br.com.cinema.frame.domain.backoffice.promocao")
-public class PromocaoRunner {
+@SelectClasspathResource("features/reserva")
+@ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "br.com.cinema.frame.domain.portal.reserva")
+public class ReservaRunner {
 }

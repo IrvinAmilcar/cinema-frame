@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.pedido;
+package br.com.cinema.frame.domain.backoffice.checkin;
 
 import org.junit.platform.suite.api.ConfigurationParameter;
 import org.junit.platform.suite.api.IncludeEngines;
@@ -9,7 +9,7 @@ import static io.cucumber.junit.platform.engine.Constants.GLUE_PROPERTY_NAME;
 
 @Suite
 @IncludeEngines("cucumber")
-@SelectClasspathResource("features/pedido")
-@ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "br.com.cinema.frame.domain.backoffice.pedido")
-public class PedidoRunner {
+@SelectClasspathResource("features/checkin")
+@ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "br.com.cinema.frame.domain.backoffice.checkin")
+public class CheckInRunner {
 }

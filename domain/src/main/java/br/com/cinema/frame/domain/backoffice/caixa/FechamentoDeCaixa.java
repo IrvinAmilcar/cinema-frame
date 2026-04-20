@@ -1,8 +1,8 @@
 package br.com.cinema.frame.domain.backoffice.caixa;
 
-import br.com.cinema.frame.domain.backoffice.grade.Ingresso;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
-import br.com.cinema.frame.domain.backoffice.grade.TipoIngresso;
+import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
+import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 import br.com.cinema.frame.domain.backoffice.precificacao.Precificacao;
 
 import java.util.List;

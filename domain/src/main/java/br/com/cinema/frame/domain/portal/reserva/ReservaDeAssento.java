@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.reserva;
+package br.com.cinema.frame.domain.portal.reserva;
 
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 

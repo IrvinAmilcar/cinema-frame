@@ -1,6 +1,8 @@
-package br.com.cinema.frame.domain.backoffice.grade;
+package br.com.cinema.frame.domain.backoffice.ingresso;
 
 import java.util.UUID;
+
+import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 
 public class Ingresso {
 

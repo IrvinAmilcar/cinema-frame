@@ -1,11 +1,11 @@
-package br.com.cinema.frame.domain.backoffice.pedido;
+package br.com.cinema.frame.domain.portal.pedido;
 
 import br.com.cinema.frame.domain.backoffice.bomboniere.EstoqueNotificacao;
 import br.com.cinema.frame.domain.backoffice.bomboniere.GestaoDeEstoque;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
-import br.com.cinema.frame.domain.backoffice.grade.Ingresso;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
-import br.com.cinema.frame.domain.backoffice.grade.TipoIngresso;
+import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
+import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 
 import java.util.ArrayList;
 import java.util.Collections;

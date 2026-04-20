@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.promocao;
+package br.com.cinema.frame.domain.portal.promocao;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -9,8 +9,7 @@ public class MotorDePromocoes {
     private static final double PERCENTUAL_PARCERIA_CARTAO = 0.15;
     private static final double PERCENTUAL_ESTUDANTE = 0.20;
 
-    public AplicacaoDeDesconto aplicar(double valorTotal, int quantidadeIngressos,
-                                       List<Cupom> cupons, LocalDate hoje) {
+    public AplicacaoDeDesconto aplicar(double valorTotal, int quantidadeIngressos,List<Cupom> cupons, LocalDate hoje) {
         if (valorTotal < 0)
             throw new IllegalArgumentException("Valor total não pode ser negativo");
         if (cupons == null)

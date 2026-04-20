@@ -2,6 +2,8 @@ package br.com.cinema.frame.domain.backoffice.caixa;
 
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.*;
+import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
+import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;

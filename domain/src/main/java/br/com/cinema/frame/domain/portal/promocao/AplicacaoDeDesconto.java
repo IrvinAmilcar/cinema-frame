@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.promocao;
+package br.com.cinema.frame.domain.portal.promocao;
 
 public class AplicacaoDeDesconto {
 

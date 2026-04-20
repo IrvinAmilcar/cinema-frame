@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.pedido;
+package br.com.cinema.frame.domain.portal.pedido;
 
 import br.com.cinema.frame.domain.backoffice.bomboniere.GestaoDeEstoque;
 import br.com.cinema.frame.domain.backoffice.bomboniere.Insumo;
@@ -7,8 +7,10 @@ import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicati
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
 import br.com.cinema.frame.domain.backoffice.grade.Sala;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
-import br.com.cinema.frame.domain.backoffice.grade.TipoIngresso;
+import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
+import br.com.cinema.frame.domain.portal.pedido.Pedido;
+import br.com.cinema.frame.domain.portal.pedido.ResultadoDoPedido;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
