@@ -25,7 +25,7 @@ public class CheckInSteps {
         Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE);
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
         sessao = new Sessao(filme, sala, LocalDate.now().atTime(hora, minuto));
-        ingresso = new Ingresso(sessao);
+        ingresso = new Ingresso(sessao, TipoIngresso.INTEIRA);
     }
 
     @Dado("o ingresso já foi utilizado")
