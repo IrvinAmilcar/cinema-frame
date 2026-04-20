@@ -3,14 +3,14 @@
 Funcionalidade: Gerenciamento de sessões na grade de exibição
 
   Cenário: Adicionar sessão com sucesso
-    Dado que existe um filme "Oppenheimer" com duração de 180 minutos e classificação "14"
+    Dado que existe um filme "Oppenheimer" com duração de 180 minutos e classificação "QUATORZE"
     E existe uma sala de número 1 com capacidade para 100 pessoas
     E existe uma grade de exibição para a semana
     Quando a gerente adiciona a sessão na sala 1 às 14:00
     Então a sessão deve estar na grade
 
   Cenário: Impedir sessão com conflito de horário
-    Dado que existe um filme "Oppenheimer" com duração de 180 minutos e classificação "14"
+    Dado que existe um filme "Oppenheimer" com duração de 180 minutos e classificação "QUATORZE"
     E existe uma sala de número 1 com capacidade para 100 pessoas
     E existe uma grade de exibição para a semana
     E a gerente já adicionou a sessão na sala 1 às 14:00
@@ -18,7 +18,7 @@ Funcionalidade: Gerenciamento de sessões na grade de exibição
     Então o sistema deve rejeitar informando conflito de horário
 
   Cenário: Impedir sessão sem respeitar intervalo de limpeza e trailers
-    Dado que existe um filme "Oppenheimer" com duração de 180 minutos e classificação "14"
+    Dado que existe um filme "Oppenheimer" com duração de 180 minutos e classificação "QUATORZE"
     E existe uma sala de número 1 com capacidade para 100 pessoas
     E existe uma grade de exibição para a semana
     E a gerente já adicionou a sessão na sala 1 às 14:00

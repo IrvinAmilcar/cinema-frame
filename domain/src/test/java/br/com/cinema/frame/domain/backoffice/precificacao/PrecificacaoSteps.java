@@ -7,6 +7,8 @@ import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
 
+import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
+
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -79,12 +81,12 @@ public class PrecificacaoSteps {
     }
 
     private Sessao criarSessao(TipoSala tipoSala, DayOfWeek dia) {
-        Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120), "14");
-        Sala sala = new Sala(1, 100, tipoSala);
-        LocalDateTime inicio = LocalDateTime.now()
-            .with(TemporalAdjusters.nextOrSame(dia))
-            .withHour(20)
-            .withMinute(0);
-        return new Sessao(filme, sala, inicio);
-    }
+    Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.QUATORZE);
+    Sala sala = new Sala(1, 100, tipoSala);
+    LocalDateTime inicio = LocalDateTime.now()
+        .with(TemporalAdjusters.nextOrSame(dia))
+        .withHour(20)
+        .withMinute(0);
+    return new Sessao(filme, sala, inicio);
+}
 }

@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
+import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +22,8 @@ public class SessaoSteps {
 
     @Dado("que existe um filme {string} com duração de {int} minutos e classificação {string}")
     public void existeUmFilme(String titulo, int minutos, String classificacao) {
-        filme = new Filme(titulo, Duration.ofMinutes(minutos), classificacao);
+        filme = new Filme(titulo, Duration.ofMinutes(minutos), 
+            ClassificacaoIndicativa.valueOf(classificacao.replace(" ", "_").toUpperCase()));
     }
 
     @Dado("existe uma sala de número {int} com capacidade para {int} pessoas")
@@ -54,7 +56,7 @@ public class SessaoSteps {
     @Quando("a gerente tenta adicionar uma sessão de {string} com duração de {int} minutos às {int}:{int} na sala {int}")
     public void gerenteTentaAdicionarSessaoComConflito(String titulo, int minutos, int hora, int minuto, int numeroSala) {
         try {
-            Filme novoFilme = new Filme(titulo, Duration.ofMinutes(minutos), "14");
+            Filme novoFilme = new Filme(titulo, Duration.ofMinutes(minutos), ClassificacaoIndicativa.QUATORZE);
             LocalDateTime inicio = LocalDate.now().atTime(hora, minuto);
             Sessao novaSessao = new Sessao(novoFilme, sala, inicio);
             grade.adicionarSessao(novaSessao);
