@@ -25,6 +25,19 @@ public class Filme {
         this.classificacaoIndicativa = classificacaoIndicativa;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Filme filme = (Filme) o;
+        return titulo.equals(filme.titulo);
+    }
+
+    @Override
+    public int hashCode() {
+        return titulo.hashCode();
+    }
+
     public UUID getId() { return id; }
     public String getTitulo() { return titulo; }
     public Duration getDuracao() { return duracao; }
