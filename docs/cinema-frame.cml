@@ -1,0 +1,234 @@
+Domain CinemaDomain {
+    Subdomain GradeSubdomain {
+        type CORE_DOMAIN
+        domainVisionStatement "Gestão da grade de exibição — coração do negócio"
+    }
+    Subdomain OperacaoSubdomain {
+        type SUPPORTING_DOMAIN
+        domainVisionStatement "Operação do cinema — check-in, caixa, bomboniere"
+    }
+    Subdomain ClienteSubdomain {
+        type CORE_DOMAIN
+        domainVisionStatement "Experiência do cliente — compra, reserva, fidelidade"
+    }
+    Subdomain ComercialSubdomain {
+        type SUPPORTING_DOMAIN
+        domainVisionStatement "Promoções, recomendações e notificações"
+    }
+}
+
+ContextMap CinemaFrame {
+    contains BackofficeContext
+    contains PortalContext
+
+    BackofficeContext [PL] -> [CF] PortalContext {
+        implementationTechnology "Java"
+        exposedAggregates Grade, Ingresso
+    }
+}
+
+BoundedContext BackofficeContext implements GradeSubdomain, OperacaoSubdomain {
+    domainVisionStatement "Núcleo operacional e administrativo do cinema"
+    type FEATURE
+
+    Aggregate Grade {
+        Entity GradeDeExibicao {
+            aggregateRoot
+            - List<Sessao> sessoes
+            LocalDate inicio
+            LocalDate fim
+        }
+        Entity Sessao {
+            - Filme filme
+            - Sala sala
+            LocalDateTime inicio
+        }
+        Entity Filme {
+            String titulo
+            Duration duracao
+            - ClassificacaoIndicativa classificacaoIndicativa
+        }
+        Entity Sala {
+            int numero
+            int capacidade
+            - TipoSala tipo
+        }
+        enum TipoSala {
+            PADRAO, TRES_D, IMAX, VIP
+        }
+        enum ClassificacaoIndicativa {
+            LIVRE, DEZ, DOZE, QUATORZE, DEZESSEIS, DEZOITO
+        }
+    }
+
+    Aggregate Ingresso {
+        Entity Ingresso {
+            aggregateRoot
+            - TipoIngresso tipo
+            boolean utilizado
+        }
+        enum TipoIngresso {
+            INTEIRA, MEIA, CONVITE
+        }
+    }
+
+    Aggregate CheckIn {
+        Service CheckIn {
+            void realizar(@Ingresso ingresso, UUID sessaoId, LocalDateTime agora);
+        }
+    }
+
+    Aggregate Precificacao {
+        Service Precificacao {
+            double calcularPreco(@Sessao sessao);
+        }
+        enum DescontoSemanal {
+            SEGUNDA, TERCA, QUARTA, QUINTA, SEXTA, SABADO, DOMINGO
+        }
+    }
+
+    Aggregate Classificacao {
+        Service ValidacaoClassificacao {
+            boolean validar(LocalDate dataNascimento, @ClassificacaoIndicativa classificacao);
+        }
+    }
+
+    Aggregate Bomboniere {
+        Entity ProdutoDaBomboniere {
+            aggregateRoot
+            String nome
+        }
+        Entity Insumo {
+            String nome
+            double quantidadeEmEstoque
+        }
+        Service GestaoDeEstoque {
+            void vender(@ProdutoDaBomboniere produto, int quantidade);
+        }
+    }
+
+    Aggregate Caixa {
+        Entity FechamentoDeCaixa {
+            aggregateRoot
+            - Sessao sessao
+        }
+        ValueObject Bordero {
+            double totalArrecadado
+        }
+    }
+
+    Aggregate RBAC {
+        Entity Funcionario {
+            aggregateRoot
+            String nome
+            - RoleFuncionario role
+        }
+        Service ControleDeAcesso {
+            boolean temPermissao(@Funcionario funcionario, @Permissao permissao);
+        }
+        enum RoleFuncionario {
+            GERENTE, OPERADOR_DE_CAIXA, OPERADOR_DE_PORTARIA
+        }
+        enum Permissao {
+            VENDER_INGRESSO, ESTORNAR_VENDA, ALTERAR_PRECO, FAZER_CHECKIN
+        }
+    }
+
+    Aggregate Dashboard {
+        Service DashboardDeOcupacao {
+            void calcularOcupacao(@Sessao sessao);
+        }
+        ValueObject OcupacaoDaSessao {
+            int totalAssentos
+            int assentosVendidos
+            double faturamentoProjetado
+            double faturamentoRealizado
+        }
+    }
+}
+
+BoundedContext PortalContext implements ClienteSubdomain, ComercialSubdomain {
+    domainVisionStatement "Portal de autoatendimento do cliente"
+    type FEATURE
+
+    Aggregate Cliente {
+        Entity Cliente {
+            aggregateRoot
+            String nome
+            String emailCliente
+            LocalDate dataNascimento
+        }
+    }
+
+    Aggregate Reserva {
+        Entity ReservaDeAssento {
+            aggregateRoot
+            int numeroAssento
+            - StatusReserva status
+            LocalDateTime expiracao
+        }
+        enum StatusReserva {
+            ATIVA, CONFIRMADA, EXPIRADA
+        }
+    }
+
+    Aggregate Pedido {
+        Entity Pedido {
+            aggregateRoot
+        }
+        ValueObject QRCode {
+            String codigo
+        }
+        ValueObject Voucher {
+            String codigo
+        }
+    }
+
+    Aggregate Promocao {
+        Entity Cupom {
+            aggregateRoot
+            String codigo
+            - TipoPromocao tipo
+            boolean cumulativo
+            LocalDate validade
+        }
+        Service MotorDePromocoes {
+            void aplicar(LocalDate validade);
+        }
+        enum TipoPromocao {
+            LEVE_2_PAGUE_1, PARCERIA_CARTAO, DESCONTO_ESTUDANTE
+        }
+    }
+
+    Aggregate Fidelidade {
+        Entity ContaDeFidelidade {
+            aggregateRoot
+            int saldoDePontos
+        }
+        Service ProgramaDeFidelidade {
+            void adicionarPontos(@ContaDeFidelidade conta, double valorGasto);
+        }
+    }
+
+    Aggregate Recomendacao {
+        Service MotorDeRecomendacao {
+            void recomendar();
+        }
+        ValueObject FilmeSugerido {
+            double score
+        }
+        Entity HistoricoDeCompras {
+            aggregateRoot
+        }
+    }
+
+    Aggregate Notificacao {
+        Entity NotificacaoDePrevenda {
+            aggregateRoot
+            LocalDateTime criadaEm
+        }
+        Service GerenciadorDePrevenda {
+            void notificarClientesInteressados();
+        }
+    }
+}
