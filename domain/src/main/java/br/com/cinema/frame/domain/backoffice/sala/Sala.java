@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.grade;
+package br.com.cinema.frame.domain.backoffice.sala;
 
 import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
 import java.util.UUID;

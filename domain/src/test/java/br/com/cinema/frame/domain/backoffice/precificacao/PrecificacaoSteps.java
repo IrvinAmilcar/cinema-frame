@@ -1,8 +1,8 @@
 package br.com.cinema.frame.domain.backoffice.precificacao;
 
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
-import br.com.cinema.frame.domain.backoffice.grade.Sala;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
+import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;

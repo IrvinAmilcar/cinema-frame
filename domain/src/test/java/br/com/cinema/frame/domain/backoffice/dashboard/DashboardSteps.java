@@ -2,13 +2,13 @@ package br.com.cinema.frame.domain.backoffice.dashboard;
 
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
-import br.com.cinema.frame.domain.backoffice.grade.Sala;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 import br.com.cinema.frame.domain.backoffice.precificacao.Precificacao;
 import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
+import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;

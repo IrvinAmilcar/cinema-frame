@@ -2,9 +2,9 @@ package br.com.cinema.frame.domain.portal.reserva;
 
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
-import br.com.cinema.frame.domain.backoffice.grade.Sala;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
+import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import br.com.cinema.frame.domain.portal.reserva.GestaoDeReservas;
 import br.com.cinema.frame.domain.portal.reserva.ReservaDeAssento;
 import br.com.cinema.frame.domain.portal.reserva.StatusReserva;

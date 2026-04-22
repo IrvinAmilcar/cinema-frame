@@ -3,6 +3,8 @@ package br.com.cinema.frame.domain.backoffice.grade;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import br.com.cinema.frame.domain.backoffice.sala.Sala;
+
 public class Sessao {
 
     private static final int TEMPO_LIMPEZA_MINUTOS = 15;
