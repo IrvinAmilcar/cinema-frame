@@ -2,6 +2,7 @@ package br.com.cinema.frame.domain.backoffice.dashboard;
 
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.GeneroFilme;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
@@ -55,7 +56,7 @@ public class DashboardSteps {
     @Dado("que existe uma sessão na sala padrão com capacidade para {int} pessoas")
     public void existeSessaoNaSala(int capacidade) {
         Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120),
-            ClassificacaoIndicativa.LIVRE);
+            ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         Sala sala = new Sala(1, capacidade, TipoSala.PADRAO);
         sessao = new Sessao(filme, sala, LocalDateTime.now().plusDays(1)
             .with(java.time.DayOfWeek.FRIDAY)
@@ -71,7 +72,7 @@ public class DashboardSteps {
     @Dado("existe outra sessão na sala padrão com capacidade para {int} pessoas")
     public void existeOutraSessao(int capacidade) {
         Filme filme = new Filme("Outro Filme", Duration.ofMinutes(120),
-            ClassificacaoIndicativa.LIVRE);
+            ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         Sala sala = new Sala(2, capacidade, TipoSala.PADRAO);
         outraSessao = new Sessao(filme, sala, LocalDateTime.now().plusDays(2)
             .with(java.time.DayOfWeek.FRIDAY)

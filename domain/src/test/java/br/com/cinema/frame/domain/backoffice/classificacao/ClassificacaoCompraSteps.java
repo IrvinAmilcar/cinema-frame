@@ -1,6 +1,7 @@
 package br.com.cinema.frame.domain.backoffice.classificacao;
 
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.GeneroFilme;
 import br.com.cinema.frame.domain.portal.cliente.Cliente;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
@@ -31,7 +32,7 @@ public class ClassificacaoCompraSteps {
     @Dado("existe um filme com classificação {string}")
     public void filmeComClassificacao(String classificacao) {
         filme = new Filme("Filme Teste", Duration.ofMinutes(120),
-            ClassificacaoIndicativa.valueOf(classificacao));
+            ClassificacaoIndicativa.valueOf(classificacao), GeneroFilme.ACAO);
     }
 
     @Quando("o sistema validar a compra")

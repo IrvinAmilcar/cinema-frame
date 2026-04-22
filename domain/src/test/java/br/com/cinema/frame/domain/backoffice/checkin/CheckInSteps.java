@@ -3,6 +3,7 @@ package br.com.cinema.frame.domain.backoffice.checkin;
 import br.com.cinema.frame.domain.backoffice.checkin.CheckIn;
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.GeneroFilme;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
@@ -28,7 +29,7 @@ public class CheckInSteps {
 
     @Dado("que existe um ingresso válido para a sessão de hoje às {int}:{int}")
     public void existeIngressoValido(int hora, int minuto) {
-        Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE);
+        Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE, GeneroFilme.ACAO);
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
         sessao = new Sessao(filme, sala, LocalDate.now().atTime(hora, minuto));
         ingresso = new Ingresso(sessao, TipoIngresso.INTEIRA);

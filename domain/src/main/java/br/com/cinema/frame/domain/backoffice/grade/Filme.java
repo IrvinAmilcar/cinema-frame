@@ -10,19 +10,23 @@ public class Filme {
     private String titulo;
     private Duration duracao;
     private ClassificacaoIndicativa classificacaoIndicativa;
+    private GeneroFilme genero;
 
-    public Filme(String titulo, Duration duracao, ClassificacaoIndicativa classificacaoIndicativa) {
+    public Filme(String titulo, Duration duracao, ClassificacaoIndicativa classificacaoIndicativa, GeneroFilme genero) {
         if (titulo == null || titulo.isBlank())
             throw new IllegalArgumentException("Título do filme não pode ser vazio");
         if (duracao == null || duracao.isNegative() || duracao.isZero())
             throw new IllegalArgumentException("Duração do filme deve ser positiva");
         if (classificacaoIndicativa == null)
             throw new IllegalArgumentException("Classificação indicativa não pode ser nula");
+        if (genero == null)
+            throw new IllegalArgumentException("Gênero do filme não pode ser nulo");
 
         this.id = UUID.randomUUID();
         this.titulo = titulo;
         this.duracao = duracao;
         this.classificacaoIndicativa = classificacaoIndicativa;
+        this.genero = genero;
     }
 
     @Override
@@ -42,4 +46,5 @@ public class Filme {
     public String getTitulo() { return titulo; }
     public Duration getDuracao() { return duracao; }
     public ClassificacaoIndicativa getClassificacaoIndicativa() { return classificacaoIndicativa; }
+    public GeneroFilme getGenero() { return genero; }
 }

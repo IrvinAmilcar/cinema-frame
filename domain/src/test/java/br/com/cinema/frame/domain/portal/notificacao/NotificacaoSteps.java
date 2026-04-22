@@ -2,6 +2,7 @@ package br.com.cinema.frame.domain.portal.notificacao;
 
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.GeneroFilme;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
@@ -34,8 +35,7 @@ public class NotificacaoSteps {
     public void clienteFavoritouFilme(String nomeCliente, String nomeFilme) {
         Cliente cliente = new Cliente(nomeCliente, nomeCliente.toLowerCase() + "@email.com",
             LocalDate.of(1990, 1, 1));
-        Filme filme = new Filme(nomeFilme, Duration.ofMinutes(120),
-            ClassificacaoIndicativa.QUATORZE);
+        Filme filme = new Filme(nomeFilme, Duration.ofMinutes(120), ClassificacaoIndicativa.QUATORZE, GeneroFilme.ACAO);
         cliente.favoritarFilme(filme);
         clientes.add(cliente);
     }
@@ -60,7 +60,7 @@ public class NotificacaoSteps {
     @Dado("existe uma sessão do filme {string}")
     public void existeSessaoDoFilme(String nomeFilme) {
         Filme filme = new Filme(nomeFilme, Duration.ofMinutes(120),
-            ClassificacaoIndicativa.QUATORZE);
+            ClassificacaoIndicativa.QUATORZE, GeneroFilme.ACAO);
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
         sessao = new Sessao(filme, sala, LocalDateTime.now().plusDays(1));
     }

@@ -2,6 +2,7 @@ package br.com.cinema.frame.domain.portal.reserva;
 
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.GeneroFilme;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
@@ -29,7 +30,7 @@ public class ReservaSteps {
     @Dado("que existe uma sessão disponível")
     public void existeSessaoDisponivel() {
         agora = LocalDate.now().atTime(14, 0);
-        Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE);
+        Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
         sessao = new Sessao(filme, sala, agora.plusHours(2));
     }

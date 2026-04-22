@@ -30,7 +30,7 @@ public class CaixaSteps {
 
     @Dado("que existe uma sessão numa sala padrão numa sexta-feira às {int}:{int}")
     public void existeSessaoSextaFeira(int hora, int minuto) {
-        var filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE);
+        var filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE, GeneroFilme.ACAO);
         var sala = new Sala(1, 100, TipoSala.PADRAO);
         LocalDateTime inicio = LocalDate.now()
             .with(TemporalAdjusters.nextOrSame(DayOfWeek.FRIDAY))

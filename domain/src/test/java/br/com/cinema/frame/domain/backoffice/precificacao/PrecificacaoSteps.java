@@ -1,6 +1,7 @@
 package br.com.cinema.frame.domain.backoffice.precificacao;
 
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.GeneroFilme;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import io.cucumber.java.pt.Dado;
@@ -81,7 +82,7 @@ public class PrecificacaoSteps {
     }
 
     private Sessao criarSessao(TipoSala tipoSala, DayOfWeek dia) {
-    Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.QUATORZE);
+    Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.QUATORZE, GeneroFilme.ACAO);
     Sala sala = new Sala(1, 100, tipoSala);
     LocalDateTime inicio = LocalDateTime.now()
         .with(TemporalAdjusters.nextOrSame(dia))
