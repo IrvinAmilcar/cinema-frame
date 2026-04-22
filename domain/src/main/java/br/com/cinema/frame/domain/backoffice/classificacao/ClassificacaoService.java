@@ -3,7 +3,7 @@ package br.com.cinema.frame.domain.backoffice.classificacao;
 import java.time.LocalDate;
 import java.time.Period;
 
-public class ValidacaoClassificacao {
+public class ClassificacaoService {
 
     public boolean validar(LocalDate dataNascimento, ClassificacaoIndicativa classificacao) {
         if (dataNascimento == null)

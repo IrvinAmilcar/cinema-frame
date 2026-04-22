@@ -13,7 +13,7 @@ public class ClassificacaoSteps {
     private ClassificacaoIndicativa classificacao;
     private LocalDate dataNascimento;
     private boolean resultado;
-    private final ValidacaoClassificacao validacao = new ValidacaoClassificacao();
+    private final ClassificacaoService validacao = new ClassificacaoService();
 
     @Dado("que o filme possui classificação {string}")
     public void filmeComClassificacao(String classificacaoStr) {
