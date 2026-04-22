@@ -7,9 +7,9 @@ import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
-import br.com.cinema.frame.domain.backoffice.precificacao.Precificacao;
-import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
+import br.com.cinema.frame.domain.backoffice.precificacao.PrecificacaoService;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
+import br.com.cinema.frame.domain.backoffice.sala.TipoSala;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
@@ -51,7 +51,7 @@ public class DashboardSteps {
     };
 
     private final DashboardDeOcupacao dashboard =
-        new DashboardDeOcupacao(ingressoRepositoryFake, new Precificacao());
+        new DashboardDeOcupacao(ingressoRepositoryFake, new PrecificacaoService());
 
     @Dado("que existe uma sessão na sala padrão com capacidade para {int} pessoas")
     public void existeSessaoNaSala(int capacidade) {

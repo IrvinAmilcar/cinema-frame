@@ -3,7 +3,7 @@ package br.com.cinema.frame.domain.backoffice.grade;
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import br.com.cinema.frame.domain.backoffice.sala.SalaRepository;
-import br.com.cinema.frame.domain.backoffice.precificacao.TipoSala;
+import br.com.cinema.frame.domain.backoffice.sala.TipoSala;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;

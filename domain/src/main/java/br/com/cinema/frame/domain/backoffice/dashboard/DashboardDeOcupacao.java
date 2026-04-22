@@ -3,7 +3,7 @@ package br.com.cinema.frame.domain.backoffice.dashboard;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
-import br.com.cinema.frame.domain.backoffice.precificacao.Precificacao;
+import br.com.cinema.frame.domain.backoffice.precificacao.PrecificacaoService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,9 +11,9 @@ import java.util.stream.Collectors;
 public class DashboardDeOcupacao {
 
     private final IngressoRepository ingressoRepository;
-    private final Precificacao precificacao;
+    private final PrecificacaoService precificacao;
 
-    public DashboardDeOcupacao(IngressoRepository ingressoRepository, Precificacao precificacao) {
+    public DashboardDeOcupacao(IngressoRepository ingressoRepository, PrecificacaoService precificacao) {
         if (ingressoRepository == null)
             throw new IllegalArgumentException("IngressoRepository não pode ser nulo");
         

@@ -1,9 +1,11 @@
 package br.com.cinema.frame.domain.backoffice.precificacao;
 
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
+import br.com.cinema.frame.domain.backoffice.sala.TipoSala;
+
 import java.time.DayOfWeek;
 
-public class Precificacao {
+public class PrecificacaoService {
 
     private static final double PRECO_BASE = 20.0;
 

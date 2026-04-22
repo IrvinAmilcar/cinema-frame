@@ -3,13 +3,13 @@ package br.com.cinema.frame.domain.backoffice.caixa;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
-import br.com.cinema.frame.domain.backoffice.precificacao.Precificacao;
+import br.com.cinema.frame.domain.backoffice.precificacao.PrecificacaoService;
 
 import java.util.List;
 
 public class FechamentoDeCaixa {
 
-    private final Precificacao precificacao = new Precificacao();
+    private final PrecificacaoService precificacao = new PrecificacaoService();
 
     public Bordero gerarBordero(Sessao sessao, List<Ingresso> ingressos) {
         if (sessao == null)

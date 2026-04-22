@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.backoffice.precificacao;
+package br.com.cinema.frame.domain.backoffice.sala;
 
 public enum TipoSala {
 
