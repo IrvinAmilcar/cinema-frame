@@ -12,8 +12,7 @@ public class Bordero {
     private final int quantidadeConvite;
     private final double totalArrecadado;
 
-    public Bordero(Sessao sessao, int quantidadeInteira, int quantidadeMeia,
-                   int quantidadeConvite, double totalArrecadado) {
+    public Bordero(Sessao sessao, int quantidadeInteira, int quantidadeMeia, int quantidadeConvite, double totalArrecadado) {
         this.sessao = sessao;
         this.quantidadeInteira = quantidadeInteira;
         this.quantidadeMeia = quantidadeMeia;
