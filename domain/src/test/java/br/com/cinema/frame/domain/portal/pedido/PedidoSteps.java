@@ -1,8 +1,10 @@
 package br.com.cinema.frame.domain.portal.pedido;
 
-import br.com.cinema.frame.domain.backoffice.bomboniere.GestaoDeEstoque;
+import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.backoffice.bomboniere.Insumo;
+import br.com.cinema.frame.domain.backoffice.bomboniere.InsumoRepository;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
+import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBombonieresRepository;
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
 import br.com.cinema.frame.domain.backoffice.grade.GeneroFilme;
@@ -10,18 +12,22 @@ import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import br.com.cinema.frame.domain.backoffice.sala.TipoSala;
-import br.com.cinema.frame.domain.portal.pedido.Pedido;
-import br.com.cinema.frame.domain.portal.pedido.ResultadoDoPedido;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.Optional;
 
+import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PedidoSteps {
+
+    private ProdutoDaBombonieresRepository produtoRepository = mock(ProdutoDaBombonieresRepository.class);
+    private InsumoRepository insumoRepository = mock(InsumoRepository.class);
+    private BombonieresService gestaoDeEstoque = new BombonieresService(produtoRepository, insumoRepository);
 
     private Sessao sessao;
     private Pedido pedido;
@@ -29,24 +35,28 @@ public class PedidoSteps {
     private Insumo insumoMilho;
     private ResultadoDoPedido resultado;
     private Exception excecaoCapturada;
-    private final GestaoDeEstoque gestaoDeEstoque = new GestaoDeEstoque();
 
     @Dado("que existe uma sessão para o pedido")
     public void existeSessaoParaOPedido() {
-        Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
+        Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120),
+            ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
         sessao = new Sessao(filme, sala, LocalDate.now().atTime(20, 0));
         pedido = new Pedido(sessao);
     }
 
     @Dado("existe o produto {string} com {double}g de {string} em estoque e {int} {string} em estoque")
-    public void existeProdutoComEstoque(String nomeProduto, double qtdMilho, String nomeInsumo1, int qtdEmbalagem, String nomeInsumo2) {
+    public void existeProdutoComEstoque(String nomeProduto, double qtdMilho,
+                                        String nomeInsumo1, int qtdEmbalagem,
+                                        String nomeInsumo2) {
         insumoMilho = new Insumo(nomeInsumo1, "g", qtdMilho, 50);
         Insumo embalagem = new Insumo(nomeInsumo2, "unidade(s)", qtdEmbalagem, 0);
 
         produto = new ProdutoDaBomboniere(nomeProduto);
         produto.adicionarItemReceita(insumoMilho, 200);
         produto.adicionarItemReceita(embalagem, 1);
+
+        when(produtoRepository.buscarPorId(produto.getId())).thenReturn(Optional.of(produto));
     }
 
     @Quando("o cliente adicionar {int} ingresso inteiro ao pedido")

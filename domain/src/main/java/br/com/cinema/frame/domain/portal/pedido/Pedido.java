@@ -1,7 +1,6 @@
 package br.com.cinema.frame.domain.portal.pedido;
 
-import br.com.cinema.frame.domain.backoffice.bomboniere.EstoqueNotificacao;
-import br.com.cinema.frame.domain.backoffice.bomboniere.GestaoDeEstoque;
+import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
@@ -43,7 +42,7 @@ public class Pedido {
         produtos.add(produto);
     }
 
-    public ResultadoDoPedido finalizar(GestaoDeEstoque gestaoDeEstoque) {
+    public ResultadoDoPedido finalizar(BombonieresService gestaoDeEstoque) {
         if (ingressos.isEmpty())
             throw new IllegalStateException("Pedido deve ter ao menos um ingresso");
 
@@ -51,7 +50,7 @@ public class Pedido {
             throw new IllegalArgumentException("Gestão de estoque não pode ser nula");
 
         for (ProdutoDaBomboniere produto : produtos) {
-            gestaoDeEstoque.vender(produto);
+            gestaoDeEstoque.vender(produto.getId());
         }
 
         QRCode qrCode = new QRCode(ingressos.get(0).getId());
