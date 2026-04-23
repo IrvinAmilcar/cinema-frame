@@ -7,22 +7,22 @@ import io.cucumber.java.pt.Então;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-import br.com.cinema.frame.domain.portal.promocao.AplicacaoDeDesconto;
-import br.com.cinema.frame.domain.portal.promocao.Cupom;
-import br.com.cinema.frame.domain.portal.promocao.MotorDePromocoes;
-import br.com.cinema.frame.domain.portal.promocao.TipoPromocao;
-
+import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PromocaoSteps {
 
+    private CupomRepository cupomRepository = mock(CupomRepository.class);
+    private PromocaoService promocaoService = new PromocaoService(cupomRepository);
+
     private double valorTotal;
     private int quantidadeIngressos;
-    private final List<Cupom> cupons = new ArrayList<>();
+    private final List<UUID> cupomIds = new ArrayList<>();
     private AplicacaoDeDesconto resultado;
     private Exception excecaoCapturada;
-    private final MotorDePromocoes motor = new MotorDePromocoes();
     private final LocalDate hoje = LocalDate.now();
 
     @Dado("que o valor total do pedido é R$ {double} com {int} ingressos")
@@ -31,30 +31,36 @@ public class PromocaoSteps {
         this.quantidadeIngressos = quantidade;
     }
 
-    @Dado("existe um cupom {string} do tipo {string} não cumulativo e válido")
-    public void cupomNaoCumulativoValido(String codigo, String tipo) {
-        cupons.add(new Cupom(codigo, TipoPromocao.valueOf(tipo), false, hoje.plusDays(30)));
+    @Dado("existe um cupom cadastrado {string} do tipo {string} não cumulativo e válido")
+    public void cupomCadastradoNaoCumulativoValido(String codigo, String tipo) {
+        Cupom cupom = new Cupom(codigo, TipoPromocao.valueOf(tipo), false, hoje.plusDays(30));
+        when(cupomRepository.buscarPorId(cupom.getId())).thenReturn(Optional.of(cupom));
+        cupomIds.add(cupom.getId());
     }
 
-    @Dado("existe um cupom {string} do tipo {string} cumulativo e válido")
-    public void cupomCumulativoValido(String codigo, String tipo) {
-        cupons.add(new Cupom(codigo, TipoPromocao.valueOf(tipo), true, hoje.plusDays(30)));
+    @Dado("existe um cupom cadastrado {string} do tipo {string} cumulativo e válido")
+    public void cupomCadastradoCumulativoValido(String codigo, String tipo) {
+        Cupom cupom = new Cupom(codigo, TipoPromocao.valueOf(tipo), true, hoje.plusDays(30));
+        when(cupomRepository.buscarPorId(cupom.getId())).thenReturn(Optional.of(cupom));
+        cupomIds.add(cupom.getId());
     }
 
-    @Dado("existe um cupom {string} do tipo {string} não cumulativo e expirado")
-    public void cupomNaoCumulativoExpirado(String codigo, String tipo) {
-        cupons.add(new Cupom(codigo, TipoPromocao.valueOf(tipo), false, hoje.minusDays(1)));
+    @Dado("existe um cupom cadastrado {string} do tipo {string} não cumulativo e expirado")
+    public void cupomCadastradoNaoCumulativoExpirado(String codigo, String tipo) {
+        Cupom cupom = new Cupom(codigo, TipoPromocao.valueOf(tipo), false, hoje.minusDays(1));
+        when(cupomRepository.buscarPorId(cupom.getId())).thenReturn(Optional.of(cupom));
+        cupomIds.add(cupom.getId());
     }
 
-    @Quando("o motor de promoções aplicar os cupons")
-    public void aplicarCupons() {
-        resultado = motor.aplicar(valorTotal, quantidadeIngressos, cupons, hoje);
+    @Quando("o motor de promoções aplicar os cupons cadastrados")
+    public void aplicarCuponsCadastrados() {
+        resultado = promocaoService.aplicarCupons(valorTotal, quantidadeIngressos, cupomIds, hoje);
     }
 
-    @Quando("o motor de promoções tentar aplicar os cupons")
-    public void tentarAplicarCupons() {
+    @Quando("o motor de promoções tentar aplicar os cupons cadastrados")
+    public void tentarAplicarCuponsCadastrados() {
         try {
-            resultado = motor.aplicar(valorTotal, quantidadeIngressos, cupons, hoje);
+            resultado = promocaoService.aplicarCupons(valorTotal, quantidadeIngressos, cupomIds, hoje);
         } catch (Exception e) {
             excecaoCapturada = e;
         }
