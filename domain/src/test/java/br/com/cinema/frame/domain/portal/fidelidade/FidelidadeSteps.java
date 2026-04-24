@@ -1,43 +1,45 @@
 package br.com.cinema.frame.domain.portal.fidelidade;
 
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Então;
 import io.cucumber.java.pt.Quando;
 
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 public class FidelidadeSteps {
+
+    private ContaDeFidelidadeRepository contaRepository = mock(ContaDeFidelidadeRepository.class);
+    private ProgramaDeFidelidade programa = new ProgramaDeFidelidade(contaRepository);
 
     private ContaDeFidelidade conta;
     private Exception excecaoCapturada;
-    private final ProgramaDeFidelidade programa = new ProgramaDeFidelidade();
 
-    @Dado("que o cliente possui uma conta de fidelidade com {int} pontos")
-    public void clientePossuiContaComPontos(int pontosIniciais) {
+    @Dado("que o cliente possui uma conta de fidelidade cadastrada com {int} pontos")
+    public void clientePossuiContaCadastradaComPontos(int pontosIniciais) {
         conta = new ContaDeFidelidade(UUID.randomUUID());
         if (pontosIniciais > 0)
             conta.adicionarPontos(pontosIniciais);
+        when(contaRepository.buscarPorId(conta.getId())).thenReturn(Optional.of(conta));
     }
 
-    @Quando("o cliente realizar uma compra no valor de R$ {double}")
-    public void clienteRealizarCompra(double valor) {
-        programa.creditar(conta, valor);
+    @Quando("o cliente realizar uma compra no valor de R$ {double} na conta cadastrada")
+    public void clienteRealizarCompraNaContaCadastrada(double valor) {
+        programa.creditar(conta.getId(), valor);
     }
 
-    @Quando("o cliente resgatar {int} pontos")
-    public void clienteResgatarPontos(int pontos) {
-        programa.resgatar(conta, pontos);
+    @Quando("o cliente resgatar {int} pontos da conta cadastrada")
+    public void clienteResgatarPontosDaContaCadastrada(int pontos) {
+        programa.resgatar(conta.getId(), pontos);
     }
 
-    @Quando("o cliente tentar resgatar {int} pontos")
-    public void clienteTentarResgatarPontos(int pontos) {
+    @Quando("o cliente tentar resgatar {int} pontos da conta cadastrada")
+    public void clienteTentarResgatarPontosDaContaCadastrada(int pontos) {
         try {
-            programa.resgatar(conta, pontos);
+            programa.resgatar(conta.getId(), pontos);
         } catch (Exception e) {
             excecaoCapturada = e;
         }
