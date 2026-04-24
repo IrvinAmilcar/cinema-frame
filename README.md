@@ -169,6 +169,7 @@ O módulo `domain` não possui nenhuma dependência de framework — apenas Java
 | Amanda Montarroios | amo@cesar.school |
 | Fabiana Souza Leão | fcsls@cesar.school |
 | Irvin Amilcar | iabs@cesar.school |
+| Julia Maria Teixeira | jmst@cesar.school |
 
 **Professor:** Saulo — Engenharia de Requisitos · CESAR School
 
