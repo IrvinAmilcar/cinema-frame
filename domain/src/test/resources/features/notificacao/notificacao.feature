@@ -2,27 +2,35 @@
 
 Funcionalidade: Notificação automática de pré-venda
 
-  Cenário: Notificar cliente que favoritou o filme quando sessão for criada
-    Dado que existe um cliente "João" que favoritou o filme "Oppenheimer"
-    E existe uma sessão do filme "Oppenheimer"
-    Quando o sistema processar as notificações de pré-venda
-    Então o cliente "João" deve ser notificado
+  Cenário: Notificar usuário que favoritou um filme ao abrir sessão
+    Dado que existe um filme cadastrado "Oppenheimer"
+    E o usuário "usuario-01" favoritou o filme cadastrado "Oppenheimer"
+    E existe uma sessão cadastrada para o filme "Oppenheimer"
+    Quando o sistema processar as notificações para a sessão cadastrada
+    Então 1 usuário deve ser notificado
+    E o favorito deve ser marcado como notificado
 
-  Cenário: Não notificar cliente que não favoritou o filme
-    Dado que existe um cliente "Maria" que não favoritou nenhum filme
-    E existe uma sessão do filme "Oppenheimer"
-    Quando o sistema processar as notificações de pré-venda
-    Então o cliente "Maria" não deve ser notificado
+  Cenário: Notificar múltiplos usuários que favoritaram o mesmo filme
+    Dado que existe um filme cadastrado "Oppenheimer"
+    E o usuário "usuario-01" favoritou o filme cadastrado "Oppenheimer"
+    E o usuário "usuario-02" favoritou o filme cadastrado "Oppenheimer"
+    E existe uma sessão cadastrada para o filme "Oppenheimer"
+    Quando o sistema processar as notificações para a sessão cadastrada
+    Então 2 usuários devem ser notificados
 
-  Cenário: Notificar apenas clientes interessados quando há múltiplos clientes
-    Dado que existe um cliente "João" que favoritou o filme "Oppenheimer"
-    E existe um cliente "Maria" que não favoritou nenhum filme
-    E existe uma sessão do filme "Oppenheimer"
-    Quando o sistema processar as notificações de pré-venda
-    Então apenas 1 cliente deve ser notificado
+  Cenário: Não notificar quando nenhum usuário favoritou o filme
+    Dado que existe um filme cadastrado "Oppenheimer"
+    E nenhum usuário favoritou o filme cadastrado "Oppenheimer"
+    E existe uma sessão cadastrada para o filme "Oppenheimer"
+    Quando o sistema processar as notificações para a sessão cadastrada
+    Então 0 usuários devem ser notificados
 
-  Cenário: Não notificar cliente que favoritou outro filme
-    Dado que existe um cliente "Pedro" que favoritou o filme "Barbie"
-    E existe uma sessão do filme "Oppenheimer"
-    Quando o sistema processar as notificações de pré-venda
-    Então o cliente "Pedro" não deve ser notificado
+  Cenário: Salvar favorito com sucesso
+    Dado que existe um filme cadastrado "Oppenheimer"
+    Quando o usuário "usuario-01" favoritar o filme cadastrado "Oppenheimer"
+    Então o favorito deve ser salvo no sistema
+
+  Cenário: Impedir favoritar com filme inexistente
+    Dado que o filme "Inexistente" não está cadastrado no sistema
+    Quando o usuário "usuario-01" tentar favoritar o filme não cadastrado
+    Então o sistema deve rejeitar informando filme não encontrado

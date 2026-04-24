@@ -2,90 +2,125 @@ package br.com.cinema.frame.domain.portal.notificacao;
 
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
 import br.com.cinema.frame.domain.backoffice.grade.GeneroFilme;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
+import br.com.cinema.frame.domain.backoffice.grade.SessaoRepository;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import br.com.cinema.frame.domain.backoffice.sala.TipoSala;
-import br.com.cinema.frame.domain.portal.cliente.Cliente;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
 
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
+import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class NotificacaoSteps {
 
-    private final List<Cliente> clientes = new ArrayList<>();
-    private final List<NotificacaoDePrevenda> notificacoesEnviadas = new ArrayList<>();
+    private FilmeFavoritadoRepository filmeFavoritadoRepository = mock(FilmeFavoritadoRepository.class);
+    private FilmeRepository filmeRepository = mock(FilmeRepository.class);
+    private SessaoRepository sessaoRepository = mock(SessaoRepository.class);
+
+    private NotificacaoService notificacaoService = new NotificacaoService(
+        filmeFavoritadoRepository, filmeRepository, sessaoRepository
+    );
+
+    private Filme filme;
     private Sessao sessao;
+    private UUID filmeIdNaoCadastrado;
+    private final List<UUID> usuarioIds = new ArrayList<>();
+    private final List<FilmeFavoritado> favoritosNaoNotificados = new ArrayList<>();
+    private List<FilmeFavoritado> resultado;
+    private Exception excecaoCapturada;
 
-    private final ServicoDeNotificacao servicoFake = notificacao ->
-        notificacoesEnviadas.add(notificacao);
-
-    private final GerenciadorDePrevenda gerenciador =
-        new GerenciadorDePrevenda(servicoFake);
-
-    @Dado("que existe um cliente {string} que favoritou o filme {string}")
-    public void clienteFavoritouFilme(String nomeCliente, String nomeFilme) {
-        Cliente cliente = new Cliente(nomeCliente, nomeCliente.toLowerCase() + "@email.com",
-            LocalDate.of(1990, 1, 1));
-        Filme filme = new Filme(nomeFilme, Duration.ofMinutes(120), ClassificacaoIndicativa.QUATORZE, GeneroFilme.ACAO);
-        cliente.favoritarFilme(filme);
-        clientes.add(cliente);
-    }
-
-    @Dado("que existe um cliente {string} que não favoritou nenhum filme")
-    public void clienteSemFavoritos(String nomeCliente) {
-        Cliente cliente = new Cliente(nomeCliente, nomeCliente.toLowerCase() + "@email.com",
-            LocalDate.of(1990, 1, 1));
-        clientes.add(cliente);
-    }
-
-    @Dado("existe um cliente {string} que não favoritou nenhum filme")
-    public void outroClienteSemFavoritos(String nomeCliente) {
-        clienteSemFavoritos(nomeCliente);
-    }
-
-    @Dado("existe um cliente {string} que favoritou o filme {string}")
-    public void outroClienteFavoritouFilme(String nomeCliente, String nomeFilme) {
-        clienteFavoritouFilme(nomeCliente, nomeFilme);
-    }
-
-    @Dado("existe uma sessão do filme {string}")
-    public void existeSessaoDoFilme(String nomeFilme) {
-        Filme filme = new Filme(nomeFilme, Duration.ofMinutes(120),
+    @Dado("que existe um filme cadastrado {string}")
+    public void existeFilmeCadastrado(String titulo) {
+        filme = new Filme(titulo, Duration.ofMinutes(120),
             ClassificacaoIndicativa.QUATORZE, GeneroFilme.ACAO);
+        when(filmeRepository.buscarPorId(filme.getId())).thenReturn(Optional.of(filme));
+    }
+
+    @Dado("que o filme {string} não está cadastrado no sistema")
+    public void filmeNaoCadastrado(String titulo) {
+        filmeIdNaoCadastrado = UUID.randomUUID();
+        when(filmeRepository.buscarPorId(filmeIdNaoCadastrado)).thenReturn(Optional.empty());
+    }
+
+    @Dado("o usuário {string} favoritou o filme cadastrado {string}")
+    public void usuarioFavoritouFilme(String usuarioKey, String titulo) {
+        UUID usuarioId = UUID.randomUUID();
+        usuarioIds.add(usuarioId);
+        FilmeFavoritado favorito = new FilmeFavoritado(usuarioId, filme.getId());
+        favoritosNaoNotificados.add(favorito);
+    }
+
+    @Dado("nenhum usuário favoritou o filme cadastrado {string}")
+    public void nenhumUsuarioFavoritou(String titulo) {
+        // lista permanece vazia
+    }
+
+    @Dado("existe uma sessão cadastrada para o filme {string}")
+    public void existeSessaoCadastrada(String titulo) {
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
-        sessao = new Sessao(filme, sala, LocalDateTime.now().plusDays(1));
+        sessao = new Sessao(filme, sala, LocalDate.now().plusDays(7).atTime(20, 0));
+        when(sessaoRepository.buscarPorId(sessao.getId())).thenReturn(Optional.of(sessao));
+        when(filmeFavoritadoRepository.buscarNaoNotificadosPorFilme(filme.getId()))
+            .thenReturn(new ArrayList<>(favoritosNaoNotificados));
     }
 
-    @Quando("o sistema processar as notificações de pré-venda")
+    @Quando("o sistema processar as notificações para a sessão cadastrada")
     public void processarNotificacoes() {
-        gerenciador.notificarClientesInteressados(sessao, clientes);
+        resultado = notificacaoService.notificarFavoritosParaSessao(sessao.getId());
     }
 
-    @Então("o cliente {string} deve ser notificado")
-    public void clienteDeveSerNotificado(String nomeCliente) {
-        boolean notificado = notificacoesEnviadas.stream()
-            .anyMatch(n -> n.getCliente().getNome().equals(nomeCliente));
-        assertTrue(notificado, "Cliente " + nomeCliente + " deveria ter sido notificado");
+    @Quando("o usuário {string} favoritar o filme cadastrado {string}")
+    public void usuarioFavoritar(String usuarioKey, String titulo) {
+        UUID usuarioId = UUID.randomUUID();
+        notificacaoService.favoritarFilme(usuarioId, filme.getId());
     }
 
-    @Então("o cliente {string} não deve ser notificado")
-    public void clienteNaoDeveSerNotificado(String nomeCliente) {
-        boolean notificado = notificacoesEnviadas.stream()
-            .anyMatch(n -> n.getCliente().getNome().equals(nomeCliente));
-        assertFalse(notificado, "Cliente " + nomeCliente + " não deveria ter sido notificado");
+    @Quando("o usuário {string} tentar favoritar o filme não cadastrado")
+    public void usuarioTentarFavoritarNaoCadastrado(String usuarioKey) {
+        try {
+            notificacaoService.favoritarFilme(UUID.randomUUID(), filmeIdNaoCadastrado);
+        } catch (Exception e) {
+            excecaoCapturada = e;
+        }
     }
 
-    @Então("apenas {int} cliente deve ser notificado")
-    public void apenasNClientesDevemSerNotificados(int quantidade) {
-        assertEquals(quantidade, notificacoesEnviadas.size());
+    @Então("{int} usuário deve ser notificado")
+    public void umUsuarioDeveSerNotificado(int quantidade) {
+        assertEquals(quantidade, resultado.size());
+    }
+
+    @Então("{int} usuários devem ser notificados")
+    public void usuariosDevemSerNotificados(int quantidade) {
+        assertEquals(quantidade, resultado.size());
+    }
+
+    @Então("o favorito deve ser marcado como notificado")
+    public void favoritoMarcadoComoNotificado() {
+        assertTrue(resultado.get(0).isNotificado());
+        verify(filmeFavoritadoRepository, atLeastOnce()).salvar(any(FilmeFavoritado.class));
+    }
+
+    @Então("o favorito deve ser salvo no sistema")
+    public void favoritoSalvoNoSistema() {
+        assertNull(excecaoCapturada);
+        verify(filmeFavoritadoRepository).salvar(any(FilmeFavoritado.class));
+    }
+
+    @Então("o sistema deve rejeitar informando filme não encontrado")
+    public void rejeitarFilmeNaoEncontrado() {
+        assertNotNull(excecaoCapturada);
+        assertInstanceOf(IllegalArgumentException.class, excecaoCapturada);
+        assertTrue(excecaoCapturada.getMessage().contains("Filme não encontrado"));
     }
 }
