@@ -1,44 +1,42 @@
 package br.com.cinema.frame.domain.backoffice.dashboard;
 
+import java.util.List;
+
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
 import br.com.cinema.frame.domain.backoffice.precificacao.PrecificacaoService;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class DashboardDeOcupacao {
 
     private final IngressoRepository ingressoRepository;
-    private final PrecificacaoService precificacao;
+    private final PrecificacaoService precificacaoService;
 
-    public DashboardDeOcupacao(IngressoRepository ingressoRepository, PrecificacaoService precificacao) {
+    public DashboardDeOcupacao(IngressoRepository ingressoRepository,
+                                PrecificacaoService precificacaoService) {
         if (ingressoRepository == null)
             throw new IllegalArgumentException("IngressoRepository não pode ser nulo");
-        
-        if (precificacao == null)
-            throw new IllegalArgumentException("Precificacao não pode ser nula");
+        if (precificacaoService == null)
+            throw new IllegalArgumentException("PrecificacaoService não pode ser nulo");
 
         this.ingressoRepository = ingressoRepository;
-        this.precificacao = precificacao;
+        this.precificacaoService = precificacaoService;
     }
 
     public OcupacaoDaSessao calcularOcupacao(Sessao sessao) {
         if (sessao == null)
             throw new IllegalArgumentException("Sessão não pode ser nula");
 
-        List<Ingresso> ingressosVendidos = ingressoRepository.buscarPorSessao(sessao);
+        List<Ingresso> ingressos = ingressoRepository.buscarPorSessao(sessao);
 
-        int assentosVendidos = ingressosVendidos.size();
-        int totalAssentos = sessao.getSala().getCapacidade();
-        double precoPorIngresso = precificacao.calcularPreco(sessao);
+        double precoUnitario = precificacaoService.calcularPreco(sessao);
+        int capacidade = sessao.getSala().getCapacidade();
 
-        double faturamentoProjetado = totalAssentos * precoPorIngresso;
-        double faturamentoRealizado = assentosVendidos * precoPorIngresso;
+        double faturamentoRealizado = ingressos.size() * precoUnitario;
+        double faturamentoProjetado = capacidade * precoUnitario;
 
-        return new OcupacaoDaSessao(sessao, assentosVendidos,
-            faturamentoProjetado, faturamentoRealizado);
+        return new OcupacaoDaSessao(sessao, ingressos.size(),
+            faturamentoRealizado, faturamentoProjetado);
     }
 
     public List<OcupacaoDaSessao> calcularOcupacaoDaSemana(List<Sessao> sessoes) {
@@ -47,6 +45,6 @@ public class DashboardDeOcupacao {
 
         return sessoes.stream()
             .map(this::calcularOcupacao)
-            .collect(Collectors.toList());
+            .toList();
     }
 }

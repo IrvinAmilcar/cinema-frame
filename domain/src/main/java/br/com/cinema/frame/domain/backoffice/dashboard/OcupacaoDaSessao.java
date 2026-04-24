@@ -5,35 +5,36 @@ import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 public class OcupacaoDaSessao {
 
     private final Sessao sessao;
-    private final int totalAssentos;
-    private final int assentosVendidos;
-    private final double faturamentoProjetado;
+    private final int ingressosVendidos;
     private final double faturamentoRealizado;
+    private final double faturamentoProjetado;
 
-    public OcupacaoDaSessao(Sessao sessao, int assentosVendidos,
-                             double faturamentoProjetado, double faturamentoRealizado) {
+    public OcupacaoDaSessao(Sessao sessao, int ingressosVendidos,
+                             double faturamentoRealizado, double faturamentoProjetado) {
         if (sessao == null)
             throw new IllegalArgumentException("Sessão não pode ser nula");
-        if (assentosVendidos < 0)
-            throw new IllegalArgumentException("Assentos vendidos não pode ser negativo");
-        if (assentosVendidos > sessao.getSala().getCapacidade())
-            throw new IllegalArgumentException("Assentos vendidos não pode ser maior que a capacidade da sala");
+        if (ingressosVendidos < 0)
+            throw new IllegalArgumentException("Ingressos vendidos não pode ser negativo");
+        if (faturamentoRealizado < 0)
+            throw new IllegalArgumentException("Faturamento realizado não pode ser negativo");
+        if (faturamentoProjetado < 0)
+            throw new IllegalArgumentException("Faturamento projetado não pode ser negativo");
 
         this.sessao = sessao;
-        this.totalAssentos = sessao.getSala().getCapacidade();
-        this.assentosVendidos = assentosVendidos;
-        this.faturamentoProjetado = faturamentoProjetado;
+        this.ingressosVendidos = ingressosVendidos;
         this.faturamentoRealizado = faturamentoRealizado;
+        this.faturamentoProjetado = faturamentoProjetado;
     }
 
     public double getTaxaDeOcupacao() {
-        if (totalAssentos == 0) return 0;
-        return (double) assentosVendidos / totalAssentos * 100;
+        int capacidade = sessao.getSala().getCapacidade();
+        if (capacidade == 0)
+            return 0.0;
+        return ((double) ingressosVendidos / capacidade) * 100.0;
     }
 
     public Sessao getSessao() { return sessao; }
-    public int getTotalAssentos() { return totalAssentos; }
-    public int getAssentosVendidos() { return assentosVendidos; }
-    public double getFaturamentoProjetado() { return faturamentoProjetado; }
+    public int getIngressosVendidos() { return ingressosVendidos; }
     public double getFaturamentoRealizado() { return faturamentoRealizado; }
+    public double getFaturamentoProjetado() { return faturamentoProjetado; }
 }

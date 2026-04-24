@@ -1,9 +1,6 @@
 package br.com.cinema.frame.domain.backoffice.precificacao;
 
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
-import br.com.cinema.frame.domain.backoffice.sala.TipoSala;
-
-import java.time.DayOfWeek;
 
 public class PrecificacaoService {
 
@@ -14,18 +11,16 @@ public class PrecificacaoService {
             throw new IllegalArgumentException("Sessão não pode ser nula");
 
         double preco = PRECO_BASE;
-
         preco = aplicarTipoSala(preco, sessao.getSala().getTipo());
         preco = aplicarDescontoSemanal(preco, sessao.getInicio().getDayOfWeek());
-
         return preco;
     }
 
-    private double aplicarTipoSala(double preco, TipoSala tipo) {
+    private double aplicarTipoSala(double preco, br.com.cinema.frame.domain.backoffice.sala.TipoSala tipo) {
         return preco + (preco * tipo.getPercentualAcrescimo());
     }
 
-    private double aplicarDescontoSemanal(double preco, DayOfWeek dia) {
+    private double aplicarDescontoSemanal(double preco, java.time.DayOfWeek dia) {
         DescontoSemanal desconto = DescontoSemanal.buscarPorDia(dia);
         return preco - (preco * desconto.getPercentualDesconto());
     }

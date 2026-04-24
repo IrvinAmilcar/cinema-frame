@@ -1,10 +1,10 @@
 package br.com.cinema.frame.domain.backoffice.ingresso;
 
-import br.com.cinema.frame.domain.backoffice.grade.Sessao;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 
 public interface IngressoRepository {
 
