@@ -1,7 +1,7 @@
 package br.com.cinema.frame.domain.backoffice.dashboard;
 
 import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
-import br.com.cinema.frame.domain.shared.filme.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.Filme;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;

@@ -1,6 +1,5 @@
 package br.com.cinema.frame.domain.backoffice.grade;
 
-import br.com.cinema.frame.domain.shared.filme.Filme;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

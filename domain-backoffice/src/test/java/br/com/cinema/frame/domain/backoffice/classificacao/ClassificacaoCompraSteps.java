@@ -1,11 +1,9 @@
 package br.com.cinema.frame.domain.backoffice.classificacao;
 
 import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
-import br.com.cinema.frame.domain.shared.filme.Filme;
-import br.com.cinema.frame.domain.shared.filme.FilmeRepository;
+import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
-import br.com.cinema.frame.domain.shared.cliente.Cliente;
-import br.com.cinema.frame.domain.shared.cliente.ClienteRepository;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
@@ -19,24 +17,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ClassificacaoCompraSteps {
 
-    private ClienteRepository clienteRepository = mock(ClienteRepository.class);
     private FilmeRepository filmeRepository = mock(FilmeRepository.class);
-    private ClassificacaoDeCompraService validacao = new ClassificacaoDeCompraService(clienteRepository, filmeRepository);
+    private ClassificacaoDeCompraService validacao = new ClassificacaoDeCompraService(filmeRepository);
 
-    private Cliente cliente;
+    private LocalDate dataNascimento;
     private Filme filme;
     private Exception excecaoCapturada;
 
     @Dado("que existe um cliente cadastrado nascido em {string}")
     public void clienteCadastradoNascidoEm(String data) {
-        cliente = new Cliente("Cliente Teste", "teste@email.com", LocalDate.parse(data));
-        when(clienteRepository.buscarPorId(cliente.getId())).thenReturn(Optional.of(cliente));
+        dataNascimento = LocalDate.parse(data);
     }
 
     @Dado("que existe um cliente cadastrado com exatamente {int} anos")
     public void clienteCadastradoComExatamenteAnos(int anos) {
-        cliente = new Cliente("Cliente Teste", "teste@email.com", LocalDate.now().minusYears(anos));
-        when(clienteRepository.buscarPorId(cliente.getId())).thenReturn(Optional.of(cliente));
+        dataNascimento = LocalDate.now().minusYears(anos);
     }
 
     @Dado("existe um filme cadastrado com classificação {string}")
@@ -48,13 +43,13 @@ public class ClassificacaoCompraSteps {
 
     @Quando("o sistema validar a compra do cliente")
     public void sistemaValidarCompraDoCliente() {
-        validacao.validarCompra(cliente.getId(), filme.getId());
+        validacao.validarCompra(dataNascimento, filme.getId());
     }
 
     @Quando("o sistema tentar validar a compra do cliente")
     public void sistemaTentarValidarCompraDoCliente() {
         try {
-            validacao.validarCompra(cliente.getId(), filme.getId());
+            validacao.validarCompra(dataNascimento, filme.getId());
         } catch (Exception e) {
             excecaoCapturada = e;
         }

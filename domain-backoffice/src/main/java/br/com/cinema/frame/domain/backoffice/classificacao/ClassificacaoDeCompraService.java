@@ -1,45 +1,37 @@
 package br.com.cinema.frame.domain.backoffice.classificacao;
 
-import br.com.cinema.frame.domain.shared.filme.Filme;
-import br.com.cinema.frame.domain.shared.filme.FilmeRepository;
-import br.com.cinema.frame.domain.shared.cliente.Cliente;
-import br.com.cinema.frame.domain.shared.cliente.ClienteRepository;
+import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 public class ClassificacaoDeCompraService {
 
     private final ClassificacaoService classificacaoService = new ClassificacaoService();
-    private final ClienteRepository clienteRepository;
     private final FilmeRepository filmeRepository;
 
-    public ClassificacaoDeCompraService(ClienteRepository clienteRepository, FilmeRepository filmeRepository) {
-        if (clienteRepository == null)
-            throw new IllegalArgumentException("ClienteRepository não pode ser nulo");
-
+    public ClassificacaoDeCompraService(FilmeRepository filmeRepository) {
         if (filmeRepository == null)
             throw new IllegalArgumentException("FilmeRepository não pode ser nulo");
-
-        this.clienteRepository = clienteRepository;
         this.filmeRepository = filmeRepository;
     }
 
-    public void validarCompra(UUID clienteId, UUID filmeId) {
-        Cliente cliente = clienteRepository.buscarPorId(clienteId)
-            .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado: " + clienteId));
+    public void validarCompra(LocalDate dataNascimento, UUID filmeId) {
+        if (dataNascimento == null)
+            throw new IllegalArgumentException("Data de nascimento não pode ser nula");
 
         Filme filme = filmeRepository.buscarPorId(filmeId)
             .orElseThrow(() -> new IllegalArgumentException("Filme não encontrado: " + filmeId));
 
         boolean permitido = classificacaoService.validar(
-            cliente.getDataNascimento(),
+            dataNascimento,
             filme.getClassificacaoIndicativa()
         );
 
         if (!permitido)
             throw new IllegalStateException(
-                "Cliente " + cliente.getNome() +
-                " não tem idade permitida para assistir este filme. " +
+                "Cliente não tem idade permitida para assistir este filme. " +
                 "Classificação: " + filme.getClassificacaoIndicativa()
             );
     }

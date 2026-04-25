@@ -1,6 +1,7 @@
-package br.com.cinema.frame.domain.shared.filme;
+package br.com.cinema.frame.domain.backoffice.grade;
 
 import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
+import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 
 import java.time.Duration;
 import java.util.UUID;

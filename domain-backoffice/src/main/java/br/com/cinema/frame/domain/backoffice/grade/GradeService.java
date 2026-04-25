@@ -1,7 +1,5 @@
 package br.com.cinema.frame.domain.backoffice.grade;
 
-import br.com.cinema.frame.domain.shared.filme.Filme;
-import br.com.cinema.frame.domain.shared.filme.FilmeRepository;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import br.com.cinema.frame.domain.backoffice.sala.SalaRepository;
 

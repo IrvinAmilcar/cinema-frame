@@ -1,6 +1,7 @@
-package br.com.cinema.frame.domain.shared.cliente;
+package br.com.cinema.frame.domain.portal.cliente;
 
-import br.com.cinema.frame.domain.shared.filme.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.shared.cliente.ClienteId;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -10,7 +11,7 @@ import java.util.UUID;
 
 public class Cliente {
 
-    private final UUID id;
+    private final ClienteId id;
     private final String nome;
     private final String email;
     private final LocalDate dataNascimento;
@@ -29,7 +30,7 @@ public class Cliente {
         if (dataNascimento.isAfter(LocalDate.now()))
             throw new IllegalArgumentException("Data de nascimento não pode ser no futuro");
 
-        this.id = UUID.randomUUID();
+        this.id = new ClienteId(UUID.randomUUID());
         this.nome = nome;
         this.email = email;
         this.dataNascimento = dataNascimento;
@@ -47,7 +48,7 @@ public class Cliente {
         filmesFavoritos.remove(filme);
     }
 
-    public UUID getId() { return id; }
+    public ClienteId getId() { return id; }
     public String getNome() { return nome; }
     public String getEmail() { return email; }
     public LocalDate getDataNascimento() { return dataNascimento; }

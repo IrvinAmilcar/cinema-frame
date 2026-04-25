@@ -6,7 +6,7 @@ import br.com.cinema.frame.domain.backoffice.bomboniere.InsumoRepository;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBombonieresRepository;
 import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
-import br.com.cinema.frame.domain.shared.filme.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.Filme;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicao;
 import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicaoRepository;

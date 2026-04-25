@@ -1,6 +1,6 @@
 package br.com.cinema.frame.domain.portal.notificacao;
 
-import br.com.cinema.frame.domain.shared.filme.FilmeRepository;
+import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
 import br.com.cinema.frame.domain.backoffice.grade.SessaoRepository;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 

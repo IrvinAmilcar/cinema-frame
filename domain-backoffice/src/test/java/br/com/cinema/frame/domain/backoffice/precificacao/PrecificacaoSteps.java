@@ -1,8 +1,8 @@
 package br.com.cinema.frame.domain.backoffice.precificacao;
 
 import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
-import br.com.cinema.frame.domain.shared.filme.Filme;
-import br.com.cinema.frame.domain.shared.filme.FilmeRepository;
+import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicao;
 import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicaoRepository;

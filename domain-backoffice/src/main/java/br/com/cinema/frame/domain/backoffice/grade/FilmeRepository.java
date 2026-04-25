@@ -1,4 +1,4 @@
-package br.com.cinema.frame.domain.shared.filme;
+package br.com.cinema.frame.domain.backoffice.grade;
 
 import java.util.List;
 import java.util.Optional;
