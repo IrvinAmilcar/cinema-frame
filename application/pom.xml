@@ -16,7 +16,17 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>frame-domain</artifactId>
+            <artifactId>frame-domain-portal</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>frame-domain-backoffice</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>frame-domain-shared</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

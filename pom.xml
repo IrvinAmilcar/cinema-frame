@@ -19,7 +19,9 @@
     <packaging>pom</packaging>
     
     <modules>
-        <module>domain</module>
+        <module>domain-shared</module>
+        <module>domain-backoffice</module>
+        <module>domain-portal</module>
         <module>application</module>
         <module>infrastructure</module>
         <module>presentation-frontend</module>
