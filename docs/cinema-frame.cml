@@ -1,180 +1,264 @@
 Domain CinemaDomain {
-    Subdomain GradeSubdomain {
+    Subdomain BackofficeSubdomain {
         type CORE_DOMAIN
-        domainVisionStatement "Gestão da grade de exibição — coração do negócio"
+        domainVisionStatement "Núcleo operacional do cinema: grade de exibição, ingressos, caixa, bomboniere e controle de acesso"
     }
-    Subdomain OperacaoSubdomain {
+    Subdomain PortalSubdomain {
         type SUPPORTING_DOMAIN
-        domainVisionStatement "Operação do cinema — check-in, caixa, bomboniere"
+        domainVisionStatement "Portal do cliente: compra, reserva, fidelidade, promoções e recomendações"
     }
-    Subdomain ClienteSubdomain {
-        type CORE_DOMAIN
-        domainVisionStatement "Experiência do cliente — compra, reserva, fidelidade"
-    }
-    Subdomain ComercialSubdomain {
-        type SUPPORTING_DOMAIN
-        domainVisionStatement "Promoções, recomendações e notificações"
+    Subdomain SharedSubdomain {
+        type GENERIC_SUBDOMAIN
+        domainVisionStatement "Primitivos de domínio compartilhados entre Backoffice e Portal"
     }
 }
 
-ContextMap CinemaFrame {
-    contains BackofficeContext
-    contains PortalContext
+/* ─────────────────────────────────────────────
+   SHARED KERNEL — ClienteId compartilhado
+   ───────────────────────────────────────────── */
 
-    BackofficeContext [PL] -> [CF] PortalContext {
-        implementationTechnology "Java"
-        exposedAggregates Grade, Ingresso
+BoundedContext SharedKernelContext implements SharedSubdomain {
+    domainVisionStatement "Primitivo de identidade compartilhado entre BackofficeContext e PortalContext"
+
+    Aggregate SharedPrimitives {
+        ValueObject ClienteId {
+            UUID valor
+        }
     }
 }
 
-BoundedContext BackofficeContext implements GradeSubdomain, OperacaoSubdomain {
-    domainVisionStatement "Núcleo operacional e administrativo do cinema"
+/* ─────────────────────────────────────────────
+   BACKOFFICE CONTEXT
+   ───────────────────────────────────────────── */
+
+BoundedContext BackofficeContext implements BackofficeSubdomain {
+    domainVisionStatement "Núcleo operacional e administrativo do cinema: grade de exibição, precificação, caixa, bomboniere e controle de acesso"
     type FEATURE
+
+    Aggregate Filme {
+        enum ClassificacaoIndicativa {
+            LIVRE, DEZ, DOZE, QUATORZE, DEZESSEIS, DEZOITO
+        }
+        enum GeneroFilme {
+            ACAO, COMEDIA, DRAMA, TERROR, ROMANCE, FICCAO_CIENTIFICA,
+            ANIMACAO, DOCUMENTARIO, SUSPENSE, AVENTURA
+        }
+        Entity Filme {
+            aggregateRoot
+            UUID id
+            String titulo
+            Duration duracao
+            - ClassificacaoIndicativa classificacaoIndicativa
+            - GeneroFilme genero
+        }
+        Service FilmeService {
+            void cadastrar(@Filme filme);
+            @Filme buscarPorId(UUID id);
+            void remover(UUID id);
+        }
+    }
+
+    Aggregate Sala {
+        enum TipoSala {
+            PADRAO, TRES_D, IMAX, VIP
+        }
+        Entity Sala {
+            aggregateRoot
+            UUID id
+            int numero
+            int capacidade
+            - TipoSala tipo
+        }
+        Service SalaService {
+            void cadastrar(@Sala sala);
+            @Sala buscarPorId(UUID id);
+        }
+    }
 
     Aggregate Grade {
         Entity GradeDeExibicao {
             aggregateRoot
+            UUID id
             - List<Sessao> sessoes
             LocalDate inicio
             LocalDate fim
         }
         Entity Sessao {
+            UUID id
             - Filme filme
             - Sala sala
             LocalDateTime inicio
         }
-        Entity Filme {
-            String titulo
-            Duration duracao
-            - ClassificacaoIndicativa classificacaoIndicativa
-        }
-        Entity Sala {
-            int numero
-            int capacidade
-            - TipoSala tipo
-        }
-        enum TipoSala {
-            PADRAO, TRES_D, IMAX, VIP
-        }
-        enum ClassificacaoIndicativa {
-            LIVRE, DEZ, DOZE, QUATORZE, DEZESSEIS, DEZOITO
+        Service GradeService {
+            void adicionarSessao(UUID gradeId, @Sessao sessao);
         }
     }
 
     Aggregate Ingresso {
+        enum TipoIngresso {
+            INTEIRA, MEIA, CONVITE
+        }
         Entity Ingresso {
             aggregateRoot
+            UUID id
+            - Sessao sessao
             - TipoIngresso tipo
             boolean utilizado
         }
-        enum TipoIngresso {
-            INTEIRA, MEIA, CONVITE
+        Service IngressoService {
+            @Ingresso emitir(UUID sessaoId, @TipoIngresso tipo);
         }
     }
 
     Aggregate CheckIn {
-        Service CheckIn {
+        Service CheckInService {
             void realizar(@Ingresso ingresso, UUID sessaoId, LocalDateTime agora);
         }
     }
 
-    Aggregate Precificacao {
-        Service Precificacao {
-            double calcularPreco(@Sessao sessao);
-        }
-        enum DescontoSemanal {
-            SEGUNDA, TERCA, QUARTA, QUINTA, SEXTA, SABADO, DOMINGO
-        }
-    }
-
     Aggregate Classificacao {
-        Service ValidacaoClassificacao {
-            boolean validar(LocalDate dataNascimento, @ClassificacaoIndicativa classificacao);
+        Service ClassificacaoService {
+            boolean validar(LocalDate dataNascimento, int idadeMinima);
         }
     }
 
     Aggregate Bomboniere {
         Entity ProdutoDaBomboniere {
             aggregateRoot
+            UUID id
             String nome
+            - List<ItemDeReceita> receita
         }
         Entity Insumo {
+            UUID id
             String nome
+            String unidade
             double quantidadeEmEstoque
+            double nivelCritico
         }
-        Service GestaoDeEstoque {
-            void vender(@ProdutoDaBomboniere produto, int quantidade);
+        ValueObject ItemDeReceita {
+            - Insumo insumo
+            double quantidade
+        }
+        ValueObject EstoqueNotificacao {
+            String nomeProduto
+            String mensagem
+        }
+        Service BombonieresService {
+            void vender(UUID produtoId);
+            void verificarEstoqueCritico();
+        }
+    }
+
+    Aggregate Precificacao {
+        enum DescontoSemanal {
+            SEGUNDA, TERCA, QUARTA, QUINTA, SEXTA, SABADO, DOMINGO
+        }
+        Service PrecificacaoService {
+            double calcularPreco(@Sessao sessao);
         }
     }
 
     Aggregate Caixa {
-        Entity FechamentoDeCaixa {
-            aggregateRoot
-            - Sessao sessao
-        }
         ValueObject Bordero {
+            - Sessao sessao
+            int quantidadeInteira
+            int quantidadeMeia
+            int quantidadeConvite
             double totalArrecadado
+        }
+        Service CaixaService {
+            @Bordero gerarBordero(UUID sessaoId);
         }
     }
 
     Aggregate RBAC {
-        Entity Funcionario {
-            aggregateRoot
-            String nome
-            - RoleFuncionario role
-        }
-        Service ControleDeAcesso {
-            boolean temPermissao(@Funcionario funcionario, @Permissao permissao);
-        }
         enum RoleFuncionario {
-            GERENTE, OPERADOR_DE_CAIXA, OPERADOR_DE_PORTARIA
+            OPERADOR_DE_CAIXA, GERENTE
         }
         enum Permissao {
             VENDER_INGRESSO, ESTORNAR_VENDA, ALTERAR_PRECO, FAZER_CHECKIN
         }
+        Entity Funcionario {
+            aggregateRoot
+            UUID id
+            String nome
+            - RoleFuncionario role
+        }
+        ValueObject ControleDeAcesso {
+            - RoleFuncionario role
+            - Permissao permissao
+        }
+        Service RbacService {
+            boolean temPermissao(UUID funcionarioId, @Permissao permissao);
+        }
     }
 
     Aggregate Dashboard {
-        Service DashboardDeOcupacao {
-            void calcularOcupacao(@Sessao sessao);
-        }
         ValueObject OcupacaoDaSessao {
-            int totalAssentos
-            int assentosVendidos
-            double faturamentoProjetado
+            - Sessao sessao
+            int quantidadeIngressosVendidos
             double faturamentoRealizado
+            double faturamentoProjetado
+        }
+        Service DashboardDeOcupacao {
+            @OcupacaoDaSessao calcularOcupacao(@Sessao sessao);
         }
     }
 }
 
-BoundedContext PortalContext implements ClienteSubdomain, ComercialSubdomain {
-    domainVisionStatement "Portal de autoatendimento do cliente"
+/* ─────────────────────────────────────────────
+   PORTAL CONTEXT
+   ───────────────────────────────────────────── */
+
+BoundedContext PortalContext implements PortalSubdomain {
+    domainVisionStatement "Portal de autoatendimento do cliente: compra de ingressos, reserva de assentos, fidelidade, promoções e recomendações personalizadas"
     type FEATURE
 
     Aggregate Cliente {
         Entity Cliente {
             aggregateRoot
+            - ClienteId id
             String nome
             String emailCliente
             LocalDate dataNascimento
+            String filmesFavoritosIds
+        }
+        Service ClienteService {
+            void favoritarFilme(UUID clienteId, UUID filmeId);
+            void desfavoritarFilme(UUID clienteId, UUID filmeId);
         }
     }
 
     Aggregate Reserva {
+        enum StatusReserva {
+            RESERVADO, CONFIRMADO, EXPIRADO, CANCELADO
+        }
         Entity ReservaDeAssento {
             aggregateRoot
+            UUID id
+            UUID sessaoId
             int numeroAssento
             - StatusReserva status
-            LocalDateTime expiracao
+            LocalDateTime criadaEm
+            LocalDateTime expiracaoEm
         }
-        enum StatusReserva {
-            ATIVA, CONFIRMADA, EXPIRADA
+        Service ReservaService {
+            @ReservaDeAssento reservar(UUID sessaoId, int numeroAssento, LocalDateTime agora);
+            void confirmar(UUID reservaId, LocalDateTime agora);
+            void liberarExpiradas(UUID sessaoId, LocalDateTime agora);
         }
     }
 
     Aggregate Pedido {
+        enum TipoIngressoPedido {
+            INTEIRA, MEIA, CONVITE
+        }
         Entity Pedido {
             aggregateRoot
+            UUID id
+            UUID sessaoId
+            - List<TipoIngressoPedido> ingressos
         }
         ValueObject QRCode {
             String codigo
@@ -182,53 +266,97 @@ BoundedContext PortalContext implements ClienteSubdomain, ComercialSubdomain {
         ValueObject Voucher {
             String codigo
         }
-    }
-
-    Aggregate Promocao {
-        Entity Cupom {
-            aggregateRoot
-            String codigo
-            - TipoPromocao tipo
-            boolean cumulativo
-            LocalDate validade
+        ValueObject ResultadoDoPedido {
+            - QRCode qrCode
+            - Voucher voucher
         }
-        Service MotorDePromocoes {
-            void aplicar(LocalDate validade);
-        }
-        enum TipoPromocao {
-            LEVE_2_PAGUE_1, PARCERIA_CARTAO, DESCONTO_ESTUDANTE
+        Service PedidoService {
+            @Pedido iniciar(UUID sessaoId);
+            void adicionarIngresso(UUID pedidoId, @TipoIngressoPedido tipo);
+            @ResultadoDoPedido finalizar(UUID pedidoId);
         }
     }
 
     Aggregate Fidelidade {
         Entity ContaDeFidelidade {
             aggregateRoot
+            UUID id
+            UUID clienteId
             int saldoDePontos
         }
         Service ProgramaDeFidelidade {
-            void adicionarPontos(@ContaDeFidelidade conta, double valorGasto);
+            void creditar(UUID contaId, double valorGasto);
+            void resgatar(UUID contaId, int pontosParaResgatar);
+        }
+    }
+
+    Aggregate Promocao {
+        enum TipoPromocao {
+            LEVE2_PAGUE1, PARCERIA_CARTAO, DESCONTO_ESTUDANTE
+        }
+        Entity Cupom {
+            aggregateRoot
+            UUID id
+            String codigo
+            - TipoPromocao tipo
+            boolean cumulativo
+            LocalDate validade
+        }
+        ValueObject AplicacaoDeDesconto {
+            double valorOriginal
+            double valorDesconto
+            double valorFinal
+        }
+        Service MotorDePromocoes {
+            @AplicacaoDeDesconto aplicar(double valorTotal, int quantidadeIngressos);
         }
     }
 
     Aggregate Recomendacao {
-        Service MotorDeRecomendacao {
-            void recomendar();
-        }
-        ValueObject FilmeSugerido {
-            double score
-        }
         Entity HistoricoDeCompras {
             aggregateRoot
+            UUID clienteId
+            String generosAssistidos
+        }
+        Entity FilmeSugerido {
+            UUID id
+            String titulo
+            String genero
+        }
+        Service MotorDeRecomendacao {
+            void recomendar(UUID clienteId);
         }
     }
 
     Aggregate Notificacao {
-        Entity NotificacaoDePrevenda {
+        Entity FilmeFavoritado {
             aggregateRoot
-            LocalDateTime criadaEm
+            UUID id
+            UUID usuarioId
+            UUID filmeId
+            boolean notificado
         }
-        Service GerenciadorDePrevenda {
+        Service NotificacaoService {
             void notificarClientesInteressados();
         }
+    }
+}
+
+/* ─────────────────────────────────────────────
+   CONTEXT MAP — declarado após todos os contextos
+   ───────────────────────────────────────────── */
+
+ContextMap CinemaFrame {
+    contains BackofficeContext
+    contains PortalContext
+    contains SharedKernelContext
+
+    SharedKernelContext [SK] <-> [SK] BackofficeContext
+
+    SharedKernelContext [SK] <-> [SK] PortalContext
+
+    BackofficeContext [U, OHS, PL] -> [D, ACL] PortalContext {
+        implementationTechnology "Java"
+        exposedAggregates Grade, Ingresso, Bomboniere, Sala
     }
 }
