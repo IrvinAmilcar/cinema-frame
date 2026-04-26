@@ -265,10 +265,10 @@ mvn spring-boot:run
 
 | Nome | GitHub |
 |---|---|
-| Amanda Montarroios de Oliveira | — |
-| Fabiana Coelho de Souza Leão Silveira | — |
-| Irvin Amilcar de F. B. da Silva | @IrvinAmilcar |
-| Julia Maria Santos Teixeira | — |
+| Amanda Montarroios de Oliveira | Amo@cesar.school |
+| Fabiana Coelho de Souza Leão Silveira | Fcsls@cesar.school |
+| Irvin Amilcar de F. B. da Silva | Ervinhu.silva@gmail.com |
+| Julia Maria Santos Teixeira | Jmst@cesar.school |
 
 **Professor:** Saulo Meira Araujo (`@profsauloaraujo`) — Disciplina de Requisitos, Projeto de Software e Validação · CESAR School
 
