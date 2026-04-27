@@ -13,6 +13,20 @@ O **F.R.A.M.E** (Film Resource & Attendance Management Engine) é uma aplicaçã
 A arquitetura segue os princípios de **DDD (Domain-Driven Design)** em seus quatro níveis — preliminar, estratégico, tático e operacional — com separação clara de responsabilidades entre os três subdomínios e suas camadas.
 
 ---
+## Entregáveis
+
+- **Protótipo do Cliente:**  
+  https://laptop-lid-95728362.figma.site
+
+- **Protótipo do Administrador:**  
+  https://upbeat-fill-92439671.figma.site
+
+- **Mapa de Histórias do Usuário:**  
+  https://cinema-frame-1.avion.io/share/Rr7nL4vuTbJakWGry
+
+- **Descrição do Domínio:**  
+  https://docs.google.com/document/d/13dxD7cTTPYoqs5jBu6f-LrumLTHMguilH8nVoNQUx6s/edit?tab=t.0
+---
 
 ## Estrutura de Módulos
 
