@@ -1,6 +1,7 @@
 package br.com.cinema.frame.domain.backoffice.grade;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +38,24 @@ public class GradeDeExibicao {
         }
 
         sessoes.add(novaSessao);
+    }
+
+    public Sessao removerSessao(UUID sessaoId, LocalDateTime agora) {
+        if (sessaoId == null)
+            throw new IllegalArgumentException("ID da sessão não pode ser nulo");
+        if (agora == null)
+            throw new IllegalArgumentException("Horário atual não pode ser nulo");
+
+        Sessao sessao = sessoes.stream()
+            .filter(s -> s.getId().equals(sessaoId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Sessão não encontrada: " + sessaoId));
+
+        if (!sessao.getInicio().isAfter(agora))
+            throw new IllegalStateException("Não é possível remover sessão que já foi iniciada ou encerrada");
+
+        sessoes.remove(sessao);
+        return sessao;
     }
 
     public UUID getId() { return id; }

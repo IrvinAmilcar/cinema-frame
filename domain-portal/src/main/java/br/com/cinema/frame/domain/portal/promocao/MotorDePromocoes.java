@@ -1,7 +1,6 @@
 package br.com.cinema.frame.domain.portal.promocao;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 public class MotorDePromocoes {
@@ -48,6 +47,7 @@ public class MotorDePromocoes {
             case LEVE2_PAGUE1 -> calcularLeve2Pague1(valorTotal, quantidadeIngressos);
             case PARCERIA_CARTAO -> valorTotal * PERCENTUAL_PARCERIA_CARTAO;
             case DESCONTO_ESTUDANTE -> valorTotal * PERCENTUAL_ESTUDANTE;
+            case REEMBOLSO -> 0.0;
         };
     }
 

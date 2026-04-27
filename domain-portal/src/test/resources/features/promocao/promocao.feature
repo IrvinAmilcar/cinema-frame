@@ -50,3 +50,8 @@ Funcionalidade: Motor de promoções acoplado (cupons e campanhas)
     E existe um cupom cadastrado "VELHO" do tipo "PARCERIA_CARTAO" não cumulativo e expirado
     Quando o motor de promoções tentar aplicar os cupons cadastrados
     Então o sistema deve rejeitar informando que o cupom está expirado
+
+  Cenário: Gerar cupons de reembolso para ingressos de sessão cancelada
+    Dado que existem 3 ingressos com IDs para reembolso
+    Quando o sistema gerar cupons de reembolso com validade de 30 dias
+    Então devem ser gerados 3 cupons do tipo REEMBOLSO

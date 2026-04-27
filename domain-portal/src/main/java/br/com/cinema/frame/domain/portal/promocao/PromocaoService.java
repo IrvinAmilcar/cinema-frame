@@ -1,6 +1,7 @@
 package br.com.cinema.frame.domain.portal.promocao;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,6 +30,22 @@ public class PromocaoService {
         Cupom cupom = new Cupom(codigo, tipo, cumulativo, validade);
         cupomRepository.salvar(cupom);
         return cupom;
+    }
+
+    public List<Cupom> gerarCuponsDeReembolso(List<UUID> ingressoIds, LocalDate validade) {
+        if (ingressoIds == null)
+            throw new IllegalArgumentException("Lista de IDs de ingressos não pode ser nula");
+        if (validade == null)
+            throw new IllegalArgumentException("Validade do cupom não pode ser nula");
+
+        List<Cupom> cupons = new ArrayList<>();
+        for (UUID ingressoId : ingressoIds) {
+            String codigo = "REEMBOLSO-" + ingressoId.toString().substring(0, 8).toUpperCase();
+            Cupom cupom = new Cupom(codigo, TipoPromocao.REEMBOLSO, false, validade);
+            cupomRepository.salvar(cupom);
+            cupons.add(cupom);
+        }
+        return cupons;
     }
 
     public AplicacaoDeDesconto aplicarCupons(double valorTotal, int quantidadeIngressos,

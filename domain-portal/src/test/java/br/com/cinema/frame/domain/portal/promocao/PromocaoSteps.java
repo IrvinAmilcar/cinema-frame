@@ -21,6 +21,8 @@ public class PromocaoSteps {
     private double valorTotal;
     private int quantidadeIngressos;
     private final List<UUID> cupomIds = new ArrayList<>();
+    private List<UUID> ingressoIdsParaReembolso = new ArrayList<>();
+    private List<Cupom> cuponsDeReembolso;
     private AplicacaoDeDesconto resultado;
     private Exception excecaoCapturada;
     private final LocalDate hoje = LocalDate.now();
@@ -88,5 +90,26 @@ public class PromocaoSteps {
         assertNotNull(excecaoCapturada);
         assertInstanceOf(IllegalStateException.class, excecaoCapturada);
         assertTrue(excecaoCapturada.getMessage().contains("expirado"));
+    }
+
+    @Dado("que existem {int} ingressos com IDs para reembolso")
+    public void existemIngressosParaReembolso(int quantidade) {
+        for (int i = 0; i < quantidade; i++) {
+            ingressoIdsParaReembolso.add(UUID.randomUUID());
+        }
+    }
+
+    @Quando("o sistema gerar cupons de reembolso com validade de {int} dias")
+    public void sistemaGerarCuponsDeReembolso(int dias) {
+        cuponsDeReembolso = promocaoService.gerarCuponsDeReembolso(
+            ingressoIdsParaReembolso, hoje.plusDays(dias));
+    }
+
+    @Então("devem ser gerados {int} cupons do tipo REEMBOLSO")
+    public void devemSerGeradosCuponsReembolso(int quantidade) {
+        assertNotNull(cuponsDeReembolso);
+        assertEquals(quantidade, cuponsDeReembolso.size());
+        cuponsDeReembolso.forEach(c -> assertEquals(TipoPromocao.REEMBOLSO, c.getTipo()));
+        verify(cupomRepository, times(quantidade)).salvar(any(Cupom.class));
     }
 }

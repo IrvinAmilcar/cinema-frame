@@ -2,6 +2,7 @@ package br.com.cinema.frame.domain.backoffice.classificacao;
 
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
 import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
+import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoService;
 
 import java.time.LocalDate;
 import java.util.UUID;

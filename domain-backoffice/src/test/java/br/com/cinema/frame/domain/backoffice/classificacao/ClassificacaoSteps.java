@@ -1,6 +1,7 @@
 package br.com.cinema.frame.domain.backoffice.classificacao;
 
 import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
+import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoService;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;

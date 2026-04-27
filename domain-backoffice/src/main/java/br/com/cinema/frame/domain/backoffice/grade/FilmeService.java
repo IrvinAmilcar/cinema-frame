@@ -1,6 +1,10 @@
 package br.com.cinema.frame.domain.backoffice.grade;
 
 
+import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
+import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
+
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,6 +31,15 @@ public class FilmeService {
 
     public List<Filme> listarTodos() {
         return filmeRepository.listarTodos();
+    }
+
+    public Filme atualizar(UUID id, String novoTitulo, Duration novaDuracao,
+                            ClassificacaoIndicativa novaClassificacao, GeneroFilme novoGenero) {
+        Filme filme = filmeRepository.buscarPorId(id)
+            .orElseThrow(() -> new IllegalArgumentException("Filme não encontrado: " + id));
+        filme.atualizar(novoTitulo, novaDuracao, novaClassificacao, novoGenero);
+        filmeRepository.salvar(filme);
+        return filme;
     }
 
     public void remover(UUID id) {

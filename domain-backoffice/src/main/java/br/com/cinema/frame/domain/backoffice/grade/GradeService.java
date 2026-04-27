@@ -55,6 +55,18 @@ public class GradeService {
             .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada para a data: " + data));
     }
 
+    public Sessao removerSessao(UUID gradeId, UUID sessaoId, LocalDateTime agora) {
+        if (agora == null)
+            throw new IllegalArgumentException("Horário atual não pode ser nulo");
+
+        GradeDeExibicao grade = gradeRepository.buscarPorId(gradeId)
+            .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada: " + gradeId));
+
+        Sessao sessao = grade.removerSessao(sessaoId, agora);
+        gradeRepository.salvar(grade);
+        return sessao;
+    }
+
     public List<GradeDeExibicao> listarTodas() {
         return gradeRepository.listarTodas();
     }

@@ -44,6 +44,14 @@ public class Filme {
         return titulo.hashCode();
     }
 
+    public void atualizar(String novoTitulo, Duration novaDuracao,
+                          ClassificacaoIndicativa novaClassificacao, GeneroFilme novoGenero) {
+        if (novoTitulo != null && !novoTitulo.isBlank()) this.titulo = novoTitulo;
+        if (novaDuracao != null && !novaDuracao.isNegative() && !novaDuracao.isZero()) this.duracao = novaDuracao;
+        if (novaClassificacao != null) this.classificacaoIndicativa = novaClassificacao;
+        if (novoGenero != null) this.genero = novoGenero;
+    }
+
     public UUID getId() { return id; }
     public String getTitulo() { return titulo; }
     public Duration getDuracao() { return duracao; }
