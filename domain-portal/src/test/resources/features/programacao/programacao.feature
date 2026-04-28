@@ -27,3 +27,11 @@ Funcionalidade: Explorar programação de filmes
     Quando o cliente filtrar a programação pela classificação máxima "QUATORZE"
     Então o filme "Oppenheimer" deve aparecer na listagem
     E o filme "It" não deve aparecer na listagem
+
+  Cenário: Ordenar sessões por popularidade (mais ingressos vendidos primeiro)
+    Dado que existe uma sessão futura cadastrada para o filme "Avatar" com 80 ingressos vendidos
+    E existe uma sessão futura cadastrada para o filme "Duna" com 200 ingressos vendidos
+    E existe uma sessão futura cadastrada para o filme "Barbie" com 50 ingressos vendidos
+    Quando o cliente ordenar a programação por popularidade
+    Então o primeiro filme da listagem deve ser "Duna"
+    E o último filme da listagem deve ser "Barbie"

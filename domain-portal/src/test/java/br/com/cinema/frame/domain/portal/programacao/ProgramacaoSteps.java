@@ -10,7 +10,10 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,6 +27,9 @@ public class ProgramacaoSteps {
     private final LocalDateTime agora = LocalDate.now().atTime(10, 0);
     private List<Sessao> resultado;
     private int contadorSala = 1;
+
+    // Mapa sessaoId → ingressos vendidos, usado no cenário de popularidade
+    private final Map<UUID, Integer> ingressosPorSessao = new HashMap<>();
 
     private void atualizarMock() {
         when(gradeRepository.listarTodas()).thenReturn(new ArrayList<>(grades));
@@ -80,30 +86,21 @@ public class ProgramacaoSteps {
 
     @Dado("que existe uma sessão passada cadastrada para o filme {string}")
     public void que_existe_uma_sessao_passada_cadastrada_para_o_filme(String nomeFilme) {
-    Filme filme = new Filme(
-        nomeFilme,
-        Duration.ofMinutes(120),
-        ClassificacaoIndicativa.LIVRE,
-        GeneroFilme.COMEDIA
-    );
+        Filme filme = new Filme(nomeFilme, Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
+        Sala sala = new Sala(contadorSala++, 100, TipoSala.PADRAO);
+        Sessao sessaoPassada = new Sessao(filme, sala, LocalDate.now().minusDays(1).atTime(20, 0));
+        GradeDeExibicao grade = new GradeDeExibicao(LocalDate.now().minusDays(7), LocalDate.now());
+        grade.adicionarSessao(sessaoPassada);
+        grades.add(grade);
+        atualizarMock();
+    }
 
-    Sala sala = new Sala(1, 100, TipoSala.PADRAO);
-
-    Sessao sessaoPassada = new Sessao(
-        filme,
-        sala,
-        LocalDate.now().minusDays(1).atTime(20, 0)
-    );
-
-    GradeDeExibicao grade = new GradeDeExibicao(
-        LocalDate.now().minusDays(7),
-        LocalDate.now()
-    );
-
-    grade.adicionarSessao(sessaoPassada);
-
-    when(gradeRepository.listarTodas()).thenReturn(List.of(grade));
-}
+    @Dado("que existe uma sessão futura cadastrada para o filme {string} com {int} ingressos vendidos")
+    public void sessaoFuturaComIngressosVendidos(String titulo, int ingressos) {
+        Sessao sessao = criarSessaoFutura(titulo, GeneroFilme.DRAMA, ClassificacaoIndicativa.LIVRE);
+        adicionarSessaoNaGrade(sessao);
+        ingressosPorSessao.put(sessao.getId(), ingressos);
+    }
 
     @Quando("o cliente consultar a programação disponível")
     public void consultarProgramacao() {
@@ -118,6 +115,11 @@ public class ProgramacaoSteps {
     @Quando("o cliente filtrar a programação pela classificação máxima {string}")
     public void filtrarPorClassificacao(String classificacao) {
         resultado = programacaoService.filtrarPorClassificacao(agora, ClassificacaoIndicativa.valueOf(classificacao));
+    }
+
+    @Quando("o cliente ordenar a programação por popularidade")
+    public void ordenarPorPopularidade() {
+        resultado = programacaoService.ordenarPorPopularidade(agora, ingressosPorSessao);
     }
 
     @Então("o filme {string} deve aparecer na listagem")
@@ -138,5 +140,21 @@ public class ProgramacaoSteps {
     public void listagemDeveEstarVazia() {
         assertNotNull(resultado);
         assertTrue(resultado.isEmpty());
+    }
+
+    @Então("o primeiro filme da listagem deve ser {string}")
+    public void primeiroFilmeDaListagemDeveSer(String titulo) {
+        assertNotNull(resultado);
+        assertFalse(resultado.isEmpty(), "A listagem não deveria estar vazia");
+        assertEquals(titulo, resultado.get(0).getFilme().getTitulo(),
+            "Esperava que o primeiro filme fosse: " + titulo);
+    }
+
+    @Então("o último filme da listagem deve ser {string}")
+    public void ultimoFilmeDaListagemDeveSer(String titulo) {
+        assertNotNull(resultado);
+        assertFalse(resultado.isEmpty(), "A listagem não deveria estar vazia");
+        assertEquals(titulo, resultado.get(resultado.size() - 1).getFilme().getTitulo(),
+            "Esperava que o último filme fosse: " + titulo);
     }
 }
