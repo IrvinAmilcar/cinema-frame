@@ -1,33 +1,39 @@
 # language: pt
 
-Funcionalidade: Fechamento de caixa e borderô por sessão
+Funcionalidade: Fechamento de Caixa e Relatórios
+  Como gerente do cinema
+  Quero fechar o caixa ao final do dia
+  Para obter relatório consolidado de vendas e ocupação
 
-  Cenário: Gerar borderô com apenas ingressos inteiros
-    Dado que existe uma sessão cadastrada numa sala padrão numa sexta-feira às 20:00
-    E foram vendidos 3 ingressos inteiros cadastrados para essa sessão
-    Quando o sistema gerar o borderô da sessão
-    Então o total arrecadado deve ser R$ 60,00
-    E o repasse para a distribuidora deve ser R$ 30,00
-    E a receita do cinema deve ser R$ 30,00
+  Cenário: Fechar caixa com vendas do dia
+    Dado que existem as seguintes vendas para o dia "2025-06-01":
+      | sessaoId    | capacidade | ingressos | valor  |
+      | sessao-001  | 100        | 80        | 1600.0 |
+      | sessao-002  | 100        | 60        | 1200.0 |
+    Quando o caixa é fechado para o dia "2025-06-01" às "2025-06-01T23:00:00"
+    Então o total de vendas do fechamento deve ser 2800
+    E o total de ingressos do fechamento deve ser 140
+    E o número de sessões do fechamento deve ser 2
+    E a taxa de ocupação média do fechamento deve ser 70
 
-  Cenário: Gerar borderô com meia-entrada
-    Dado que existe uma sessão cadastrada numa sala padrão numa sexta-feira às 20:00
-    E foram vendidos 2 ingressos inteiros cadastrados para essa sessão
-    E foram vendidos 2 ingressos meia cadastrados para essa sessão
-    Quando o sistema gerar o borderô da sessão
-    Então o total arrecadado deve ser R$ 60,00
-    E o repasse para a distribuidora deve ser R$ 30,00
-    E a receita do cinema deve ser R$ 30,00
+  Cenário: Impedir fechamento duplicado para o mesmo dia
+    Dado que já existe um fechamento para o dia "2025-06-01"
+    Quando o caixa tenta ser fechado novamente para o dia "2025-06-01" às "2025-06-01T23:59:00"
+    Então deve ocorrer o erro "Já existe um fechamento de caixa para a data"
 
-  Cenário: Gerar borderô com convites não afeta total arrecadado
-    Dado que existe uma sessão cadastrada numa sala padrão numa sexta-feira às 20:00
-    E foram vendidos 2 ingressos inteiros cadastrados para essa sessão
-    E foram vendidos 1 ingressos convite cadastrados para essa sessão
-    Quando o sistema gerar o borderô da sessão
-    Então o total arrecadado deve ser R$ 40,00
-    E o repasse para a distribuidora deve ser R$ 20,00
+  Cenário: Consultar relatório de fechamento
+    Dado que já existe um fechamento para o dia "2025-06-01" com total de vendas 3000
+    Quando o relatório do dia "2025-06-01" é consultado
+    Então o total de vendas do relatório deve ser 3000
 
-  Cenário: Impedir borderô com lista vazia de ingressos
-    Dado que existe uma sessão cadastrada numa sala padrão numa sexta-feira às 20:00
-    Quando o sistema tentar gerar o borderô sem ingressos cadastrados
-    Então o sistema deve rejeitar informando lista de ingressos inválida
+  Cenário: Consultar relatório de dia sem fechamento
+    Quando o relatório do dia "2025-06-15" é consultado sem fechamento registrado
+    Então deve ocorrer o erro "Não há fechamento registrado para a data"
+
+  Cenário: Calcular ocupação corretamente
+    Dado que existem as seguintes vendas para o dia "2025-06-02":
+      | sessaoId   | capacidade | ingressos | valor |
+      | sessao-003 | 200        | 200       | 4000.0|
+      | sessao-004 | 200        | 100       | 2000.0|
+    Quando o caixa é fechado para o dia "2025-06-02" às "2025-06-02T22:00:00"
+    Então a taxa de ocupação média do fechamento deve ser 75

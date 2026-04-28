@@ -1,67 +1,56 @@
 package br.com.cinema.frame.domain.backoffice.caixa;
 
-import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicaoRepository;
-import br.com.cinema.frame.domain.backoffice.grade.Sessao;
-import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
-import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
-import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
-import br.com.cinema.frame.domain.backoffice.precificacao.PrecificacaoService;
-
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 public class CaixaService {
 
-    private final IngressoRepository ingressoRepository;
-    private final GradeDeExibicaoRepository gradeRepository;
-    private final PrecificacaoService precificacaoService;
+    private final FechamentoCaixaRepository fechamentoRepository;
 
-    public CaixaService(IngressoRepository ingressoRepository,
-                        GradeDeExibicaoRepository gradeRepository) {
-        if (ingressoRepository == null)
-            throw new IllegalArgumentException("IngressoRepository não pode ser nulo");
-        if (gradeRepository == null)
-            throw new IllegalArgumentException("GradeRepository não pode ser nulo");
-
-        this.ingressoRepository = ingressoRepository;
-        this.gradeRepository = gradeRepository;
-        this.precificacaoService = new PrecificacaoService();
+    public CaixaService(FechamentoCaixaRepository fechamentoRepository) {
+        if (fechamentoRepository == null) throw new IllegalArgumentException("FechamentoCaixaRepository é obrigatório");
+        this.fechamentoRepository = fechamentoRepository;
     }
 
-    public Bordero gerarBordero(UUID sessaoId) {
-        if (sessaoId == null)
-            throw new IllegalArgumentException("ID da sessão não pode ser nulo");
+    public FechamentoCaixa fecharCaixa(LocalDate data, List<VendaDia> vendas, LocalDateTime momentoFechamento) {
+        if (data == null) throw new IllegalArgumentException("Data é obrigatória");
+        if (vendas == null || vendas.isEmpty()) throw new IllegalArgumentException("Vendas não podem ser vazias");
+        if (momentoFechamento == null) throw new IllegalArgumentException("Momento do fechamento é obrigatório");
 
-        Sessao sessao = gradeRepository.buscarPorData(LocalDate.now())
-            .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada"))
-            .getSessoes()
-            .stream()
-            .filter(s -> s.getId().equals(sessaoId))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Sessão não encontrada: " + sessaoId));
-
-        List<Ingresso> ingressos = ingressoRepository.buscarPorSessao(sessao);
-
-        if (ingressos.isEmpty())
-            throw new IllegalArgumentException("Nenhum ingresso encontrado para esta sessão");
-
-        double precoBase = precificacaoService.calcularPreco(sessao);
-
-        int inteiras = 0, meias = 0, convites = 0;
-        double total = 0.0;
-
-        for (Ingresso ingresso : ingressos) {
-            TipoIngresso tipo = ingresso.getTipo();
-            total += precoBase * tipo.getFatorPreco();
-
-            switch (tipo) {
-                case INTEIRA -> inteiras++;
-                case MEIA -> meias++;
-                case CONVITE -> convites++;
-            }
+        if (fechamentoRepository.existeFechamentoParaData(data)) {
+            throw new IllegalStateException("Já existe um fechamento de caixa para a data " + data);
         }
 
-        return new Bordero(sessao, inteiras, meias, convites, total);
+        double totalVendas = vendas.stream()
+                .mapToDouble(VendaDia::getValorArrecadado)
+                .sum();
+
+        int totalIngressos = vendas.stream()
+                .mapToInt(VendaDia::getIngressosVendidos)
+                .sum();
+
+        int totalSessoes = vendas.size();
+
+        double taxaOcupacaoMedia = vendas.stream()
+                .mapToDouble(VendaDia::getOcupacaoPercentual)
+                .average()
+                .orElse(0.0);
+
+        FechamentoCaixa fechamento = new FechamentoCaixa(
+                UUID.randomUUID(), data, totalVendas,
+                totalIngressos, totalSessoes,
+                taxaOcupacaoMedia, momentoFechamento
+        );
+
+        fechamentoRepository.salvar(fechamento);
+        return fechamento;
+    }
+
+    public FechamentoCaixa consultarRelatorio(LocalDate data) {
+        if (data == null) throw new IllegalArgumentException("Data é obrigatória");
+        return fechamentoRepository.buscarPorData(data)
+                .orElseThrow(() -> new IllegalStateException("Não há fechamento registrado para a data " + data));
     }
 }
