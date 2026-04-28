@@ -21,7 +21,7 @@ A arquitetura segue os princípios de **DDD (Domain-Driven Design)** em seus qua
   https://upbeat-fill-92439671.figma.site
 
 - **Mapa de Histórias do Usuário:**  
-  https://cinema-frame-1.avion.io/share/Rr7nL4vuTbJakWGry
+  https://cinema-frame-1.avion.io/share/TThewBZaSiEavTsHx
 
 - **Descrição do Domínio:**  
   https://docs.google.com/document/d/13dxD7cTTPYoqs5jBu6f-LrumLTHMguilH8nVoNQUx6s/edit?tab=t.0
