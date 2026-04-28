@@ -8,6 +8,11 @@ Funcionalidade: Controle de Permissões Baseado em Roles (RBAC)
     Quando o sistema verificar a permissão "VENDER_INGRESSO" para o funcionário cadastrado
     Então o acesso deve ser permitido
 
+  Cenário: Operador de caixa pode realizar check-in
+    Dado que existe um funcionário cadastrado "João" com o role "OPERADOR_DE_CAIXA"
+    Quando o sistema verificar a permissão "REALIZAR_CHECKIN" para o funcionário cadastrado
+    Então o acesso deve ser permitido
+
   Cenário: Operador de caixa não pode estornar venda
     Dado que existe um funcionário cadastrado "João" com o role "OPERADOR_DE_CAIXA"
     Quando o sistema tentar verificar a permissão "ESTORNAR_VENDA" para o funcionário cadastrado
@@ -22,6 +27,11 @@ Funcionalidade: Controle de Permissões Baseado em Roles (RBAC)
   Cenário: Gerente pode vender ingresso
     Dado que existe um funcionário cadastrado "Maria" com o role "GERENTE"
     Quando o sistema verificar a permissão "VENDER_INGRESSO" para o funcionário cadastrado
+    Então o acesso deve ser permitido
+
+  Cenário: Gerente pode realizar check-in
+    Dado que existe um funcionário cadastrado "Maria" com o role "GERENTE"
+    Quando o sistema verificar a permissão "REALIZAR_CHECKIN" para o funcionário cadastrado
     Então o acesso deve ser permitido
 
   Cenário: Gerente pode estornar venda

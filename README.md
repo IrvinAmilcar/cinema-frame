@@ -2,8 +2,6 @@
 
 > Sistema de gestão cinematográfica completo — do backoffice ao portal do cliente — construído com Domain-Driven Design, arquitetura limpa e testes BDD com Cucumber.
 
-Projeto acadêmico desenvolvido na disciplina de **Requisitos, Projeto de Software e Validação 2026.1** — CESAR School.
-
 ---
 
 ## Visão Geral
@@ -13,6 +11,7 @@ O **F.R.A.M.E** (Film Resource & Attendance Management Engine) é uma aplicaçã
 A arquitetura segue os princípios de **DDD (Domain-Driven Design)** em seus quatro níveis — preliminar, estratégico, tático e operacional — com separação clara de responsabilidades entre os três subdomínios e suas camadas.
 
 ---
+
 ## Entregáveis
 
 - **Protótipo do Cliente:**  
@@ -26,6 +25,7 @@ A arquitetura segue os princípios de **DDD (Domain-Driven Design)** em seus qua
 
 - **Descrição do Domínio:**  
   https://docs.google.com/document/d/13dxD7cTTPYoqs5jBu6f-LrumLTHMguilH8nVoNQUx6s/edit?tab=t.0
+
 ---
 
 ## Estrutura de Módulos
@@ -53,14 +53,14 @@ Núcleo operacional e administrativo do cinema.
 | Agregado | Responsabilidade |
 |---|---|
 | **Grade** | Filmes, salas, sessões e controle de conflitos de horário |
-| **Filme** | Catálogo com classificação indicativa e gênero |
+| **Filme** | Catálogo com classificação indicativa, gênero, trailer e estado ativo/inativo |
 | **Sala** | Tipos de sala (Padrão, 3D, IMAX, VIP) |
 | **Ingresso** | Emissão por tipo: Inteira, Meia, Convite |
 | **Check-in** | Validação de QR Code na entrada da sala |
 | **Precificação** | Preço base por tipo de sala + desconto por dia da semana |
 | **Classificação** | Validação de idade mínima indicativa |
 | **Bomboniere** | Controle de insumos, receitas e notificação de estoque crítico |
-| **Caixa** | Geração de borderô com repasse para distribuidora |
+| **Caixa** | Fechamento de caixa com consolidação de vendas e relatórios |
 | **RBAC** | Controle de permissões por role (Gerente / Operador de Caixa) |
 | **Dashboard** | Taxa de ocupação e faturamento projetado vs. realizado |
 
@@ -71,6 +71,7 @@ Portal de autoatendimento do cliente.
 | Agregado | Responsabilidade |
 |---|---|
 | **Cliente** | Cadastro, filmes favoritos e data de nascimento |
+| **Programação** | Consulta de filmes e sessões disponíveis com filtros por gênero e classificação |
 | **Reserva** | Reserva temporária de assento com expiração automática (10 min) |
 | **Pedido** | Venda casada ingresso + bomboniere, geração de QR Code e Voucher |
 | **Promoção** | Motor de cupons: Leve 2 Pague 1, Parceria Cartão, Desconto Estudante |
@@ -84,140 +85,203 @@ Primitivos de domínio compartilhados entre os dois contextos: `ClienteId`, `Cla
 
 ---
 
-## Funcionalidades Não Triviais
+## Funcionalidades
 
-Uma funcionalidade é considerada **não trivial** quando não se resume a uma operação de leitura e quando possui regras de negócio de complexidade média ou alta. O projeto implementa **14 funcionalidades** distribuídas entre os dois subsistemas.
-
-### F.R.A.M.E — Backoffice
-
-#### 1. Grade de Programação com Validação de Conflito
-Ao cadastrar uma sessão, o sistema impede a sobreposição de horários na mesma sala. O cálculo considera **duração do filme + tempo de limpeza (15 min) + tempo de trailers (10 min)**, detectando conflitos antes que a sessão seja persistida.
-
-**Por que não é trivial:** envolve cálculo de intervalos de tempo, validação de disponibilidade de recurso (sala) e lógica de conflito que vai além de um simples cadastro.
+O projeto implementa **8 funcionalidades** consideradas fortes — cada uma envolve múltiplas regras de negócio, coordenação entre domínios e vai além de operações triviais de leitura ou CRUD simples.
 
 ---
 
-#### 2. Gestão Dinâmica de Preços por Atributos
-O preço de cada sessão é calculado automaticamente com base em duas regras sobrepostas: o **multiplicador do tipo de sala** (Padrão ×1,0 → VIP ×3,0) e o **desconto por dia da semana** (ex.: terça-feira com até 50% de desconto).
+### F1 — Comprar Ingresso
+**Responsável:** Julia
 
-**Por que não é trivial:** combina lógica de herança de valores com sobreposição de regras no cálculo final, sem permitir que nenhuma delas seja ignorada.
+**Fluxo:** Visualizar filmes → Selecionar filme → Escolher sessão → Selecionar assentos → Definir tipo de ingresso → Adicionar produtos → Aplicar cupons (opcional) → Realizar pagamento → Gerar ingresso (QR Code)
 
----
+**Regras de negócio:**
+- Assentos só podem ser selecionados se estiverem disponíveis — reserva com expiração automática de 10 minutos impede dupla ocupação
+- Tipos de ingresso (meia/inteira) seguem regras de elegibilidade — meia-entrada exige comprovação; sem ela, o pedido é bloqueado
+- Cupons possuem validação de validade e regras de cumulatividade — combinações inválidas são rejeitadas antes do desconto ser aplicado
+- O pagamento precisa ser aprovado para gerar o ingresso — pagamento recusado encerra o fluxo sem emissão
+- O ingresso gerado é único e não pode ser reutilizado — idempotência garantida no check-in
 
-#### 3. Controle de Classificação Indicativa Restrita
-O sistema possui um serviço de domínio que valida se uma pessoa com determinada data de nascimento tem idade mínima permitida para um filme com determinada classificação indicativa. A integração ao fluxo de compra barra o checkout quando a idade do cliente é inferior à classificação.
+**Por que não é trivial:** É a principal jornada do cliente e envolve múltiplos domínios ao mesmo tempo — sessões, assentos, pagamento, promoções e estoque. Exige coordenação de várias regras simultâneas e garante o principal valor de negócio: a venda.
 
-**Por que não é trivial:** combina validação de regra etária com bloqueio transacional em duas etapas (domínio e portal), exigindo lógica de cálculo de idade e integração entre contextos.
-
----
-
-#### 4. Check-in Digital via QR Code
-O funcionário escaneia o ingresso na entrada. O sistema valida se o QR Code pertence àquela sessão específica, se **já foi utilizado** (idempotência) e se a sessão ainda está dentro do horário permitido de entrada.
-
-**Por que não é trivial:** exige validação de integridade referencial, controle de estado (utilizado/não utilizado) e verificação temporal, impedindo o duplo uso do mesmo ingresso.
+**Features BDD relacionadas:** `reserva` · `pedido` · `promocao` · `checkin` · `classificacao_compra`
 
 ---
 
-#### 5. Gestão de Inventário de Insumos da Bomboniere
-Cada combo vendido dispara uma **baixa automática no estoque de insumos** com base em uma receita (ex.: 1 pipoca grande = −200 g de milho + −1 embalagem). O sistema notifica quando o estoque de qualquer insumo atinge o nível crítico.
+### F2 — Explorar Programação de Filmes
+**Responsável:** Julia
 
-**Por que não é trivial:** requer o relacionamento entre produto final e matérias-primas (receita), baixa proporcional com validação de estoque mínimo e geração de notificação de alerta.
+**Fluxo:** Acessar lista de filmes → Aplicar filtros → Ordenar resultados → Selecionar filme → Visualizar detalhes → Consultar sessões disponíveis
 
----
+**Regras de negócio:**
+- Apenas filmes ativos e com sessões futuras são exibidos — sessões já iniciadas ou encerradas são automaticamente ocultadas
+- Filtros por gênero e classificação indicativa retornam apenas resultados válidos
+- A disponibilidade de sessões considera o tempo atual — nenhuma sessão passada é apresentada ao cliente
+- Informações exibidas são consistentes com o catálogo, incluindo trailer quando disponível
+- Sugestões de filmes são ordenadas por afinidade com o histórico de gêneros assistidos pelo cliente
+- Clientes que favoritaram um filme são notificados automaticamente quando a primeira sessão é aberta
 
-#### 6. Fechamento de Caixa e Borderô por Sessão
-Ao fechar o caixa de uma sessão, o sistema consolida todas as vendas (inteira, meia, convite) e gera o **Borderô**, que calcula o repasse de 50% do arrecadado para a distribuidora do filme e os 50% retidos pelo cinema.
+**Por que não é trivial:** Não se trata de uma consulta simples, mas de um processo que envolve regras de disponibilidade temporal, consistência com a grade de exibição, filtragem ativa de conteúdo inativo e critérios de ordenação relevantes para o negócio. Impacta diretamente a decisão do cliente, influenciando a conversão em vendas.
 
-**Por que não é trivial:** envolve agregação de dados financeiros heterogêneos, cálculo percentual preciso e geração de relatório contábil estruturado por sessão.
-
----
-
-### Portal do Cliente
-
-#### 7. Reserva Temporária de Assentos (Seat Locking)
-Ao selecionar um assento, ele é bloqueado por **10 minutos**. Se o pagamento não for concluído nesse período, o sistema libera o assento automaticamente para outros usuários. O estado da reserva percorre o ciclo: `RESERVADO → CONFIRMADO / EXPIRADO / CANCELADO`.
-
-**Por que não é trivial:** exige gestão de estados com transições válidas, controle de concorrência para evitar dupla reserva e lógica de expiração automática baseada em tempo.
+**Features BDD relacionadas:** `programacao` · `recomendacao` · `notificacao`
 
 ---
 
-#### 8. Venda Casada de Combos (Ingresso + Bomboniere)
-O cliente adiciona ingressos e produtos de bomboniere no mesmo pedido. O sistema gera um **QR Code** único para validação na entrada da sala e um **Voucher** separado para retirada dos produtos no balcão — dois documentos com finalidades distintas a partir de um único fluxo de compra.
+### F3 — Sistema de Fidelidade e Benefícios
+**Responsável:** Amanda
 
-**Por que não é trivial:** gerencia múltiplas entidades com tipos de entrega diferentes dentro de uma mesma transação, exigindo lógica de composição de pedido e geração de dois artefatos distintos.
+**Fluxo:** Cadastrar/Acessar conta → Acumular pontos em compras → Consultar saldo → Verificar benefícios disponíveis → Resgatar benefício → Aplicar benefício na compra
 
----
+**Regras de negócio:**
+- Pontos são acumulados com base no valor gasto (1 ponto por real)
+- Pontos possuem validade de 12 meses — pontos expirados são descartados automaticamente na consulta de saldo
+- Benefícios exigem quantidade mínima de pontos — resgate bloqueado se saldo for insuficiente
+- Benefícios podem ter restrições por dia da semana — benefícios fora do dia permitido não são listados nem resgatáveis
+- Ao resgatar, os pontos são debitados corretamente do saldo ativo
 
-#### 9. Motor de Promoções Acoplado (Cupons e Campanhas)
-O sistema aplica descontos com base em regras de negócio: **"Leve 2 Pague 1"**, **"Parceria com Cartão"** e **"Desconto Estudante"**. Valida a validade do cupom, verifica se é cumulativo e impede que descontos não cumulativos sejam combinados.
+**Por que não é trivial:** Não se trata apenas de gerenciar dados do usuário, mas de um sistema de regras que controla acúmulo, expiração e uso de benefícios ao longo do tempo. Envolve estado, validações e impacto direto na retenção de clientes, sendo estratégico para o negócio.
 
-**Por que não é trivial:** implementa um motor de regras de negócio com validação de expiração, controle de cumulatividade e cálculo de subtotais com múltiplos descontos simultâneos.
-
----
-
-### Funcionalidades Integradas (Núcleo de Domínio)
-
-#### 10. Programa de Fidelidade — Pontuação e Resgate
-Cada real gasto gera pontos na conta do cliente (1 ponto/R$). O cliente pode resgatar pontos por ingressos ou produtos, e o sistema valida o **saldo disponível no momento da transação**, impedindo resgates sem cobertura.
-
-**Por que não é trivial:** simula transações de moeda virtual com validação de saldo, operações de crédito/débito e histórico de pontos — equivalente a uma mini-conta corrente dentro do domínio.
+**Features BDD relacionadas:** `fidelidade`
 
 ---
 
-#### 11. Controle de Permissões Baseado em Roles (RBAC)
-O sistema diferencia o que um **Operador de Caixa** pode fazer (vender ingressos) do que um **Gerente** pode fazer (estornar venda, alterar preços, fazer check-in). O acesso é verificado por uma política de domínio antes de qualquer operação sensível.
+### F4 — Gerenciar Grade de Exibição
+**Responsável:** Irvin
 
-**Por que não é trivial:** implementa um modelo de segurança baseado em roles com mapeamento estático de permissões, verificação antes de execução e auditoria de ações por perfil.
+**Fluxo:** Selecionar filme → Selecionar sala → Definir horários → Configurar período → Validar restrições → Salvar/atualizar grade
 
----
+**Regras de negócio:**
+- Uma sessão não é criada se houver conflito de horário com outra sessão na mesma sala
+- A criação de sessões respeita a duração do filme + tempo mínimo de limpeza (15 min) + tempo de trailers (10 min)
+- Apenas filmes ativos podem ser adicionados à grade — filmes desativados são rejeitados na tentativa de agendamento
+- Remoção de sessões já iniciadas é bloqueada pelo sistema
+- Ao cancelar uma sessão futura, o sistema identifica automaticamente todos os ingressos vendidos que precisam de reembolso
 
-#### 12. Sistema de Recomendação por Perfil
-Com base no histórico de gêneros assistidos pelo cliente, o portal exibe **filmes sugeridos** ordenados por afinidade. O motor cruza o histórico de compras com o catálogo de filmes disponíveis, priorizando os gêneros mais frequentes.
+**Por que não é trivial:** Envolve gestão de recursos limitados (salas e horários), restrições temporais complexas e impacto direto na venda de ingressos. Exige validações consistentes, tratamento de conflitos e controle de integridade da operação, caracterizando alta complexidade no domínio.
 
-**Por que não é trivial:** exige consulta cruzada entre histórico de comportamento e catálogo atual, cálculo de frequência por gênero e ordenação por relevância — sem ser uma simples listagem.
-
----
-
-#### 13. Notificação Automática de Pré-Venda
-Quando a primeira sessão de um filme é aberta no F.R.A.M.E, todos os clientes que **favoritaram** aquele filme recebem uma notificação automática. O sistema registra quais clientes já foram notificados para evitar reenvios.
-
-**Por que não é trivial:** implementa um sistema de eventos com rastreamento de estado (notificado/não notificado), gatilho baseado em ação de outro contexto e controle de idempotência da notificação.
+**Features BDD relacionadas:** `sessao` · `precificacao` · `dashboard`
 
 ---
 
-#### 14. Dashboard de Taxa de Ocupação em Tempo Real
-Painel administrativo que exibe, por sessão, a **porcentagem de ocupação** (ingressos vendidos / capacidade da sala) e o **faturamento projetado vs. realizado**, permitindo ao gerente visualizar a performance comercial do cinema.
+### F5 — Gerenciar Bomboniere
+**Responsável:** Fabiana
 
-**Por que não é trivial:** realiza cálculos matemáticos sobre dados de vendas em tempo real, cruza informações de capacidade de sala, ingressos emitidos e valores arrecadados, gerando métricas compostas por sessão.
+**Fluxo:** Cadastrar produto → Definir preço e categoria → Registrar entrada de estoque → Atualizar quantidades → Realizar venda integrada → Validar disponibilidade → Baixar estoque automaticamente → Monitorar níveis → Disparar alertas → Registrar movimentações
+
+**Regras de negócio:**
+- Um produto só pode ser vendido quando estiver ativo e com estoque maior que zero
+- A venda exige que a quantidade solicitada seja menor ou igual ao estoque disponível no momento da transação
+- Toda venda confirmada gera uma movimentação de saída, reduzindo o estoque de forma consistente — baseada na receita do produto (ex.: 1 pipoca = −200 g de milho + −1 embalagem)
+- O sistema aciona um alerta de reposição ao atingir ou ficar abaixo do nível mínimo definido
+
+**Por que não é trivial:** Não se trata apenas de cadastro de produtos, mas de um controle integrado entre estoque e vendas, com regras de validação, atualização automática e consistência em tempo real. Envolve controle de estado, rastreabilidade de movimentações e impacto direto financeiro.
+
+**Features BDD relacionadas:** `bomboniere`
+
+---
+
+### F6 — Controle de Acesso de Clientes com Validação
+**Responsável:** Fabiana
+
+**Fluxo:** Ler QR Code → Validar autenticidade → Verificar uso → Registrar entrada → Atualizar status
+
+**Regras de negócio:**
+- O acesso é autorizado somente se o QR Code for válido e corresponder a um ingresso existente no sistema
+- O ingresso deve estar associado à sessão correta — ingressos de outras sessões são rejeitados
+- A sessão deve estar dentro do período permitido de entrada (janela de 30 minutos ao redor do início)
+- O ingresso deve estar marcado como não utilizado — ingressos já usados bloqueiam a entrada por tentativa de reutilização
+- Se todas as condições forem atendidas, o sistema autoriza a entrada, registra o check-in e marca o ingresso como utilizado
+
+**Por que não é trivial:** Garante segurança e controle de acesso, evitando fraudes e inconsistências. Exige validação de integridade referencial, controle de estado, verificação temporal e idempotência — impedindo o duplo uso do mesmo ingresso.
+
+**Features BDD relacionadas:** `checkin` · `classificacao`
+
+---
+
+### F7 — Gerenciar Catálogo de Filmes
+**Responsável:** Irvin
+
+**Fluxo:** Cadastrar/importar filme → Inserir informações obrigatórias → Adicionar mídia → Definir idiomas e formatos → Ativar/desativar filme → Atualizar dados → Remover filme (quando permitido)
+
+**Regras de negócio:**
+- Filmes devem possuir informações obrigatórias (título, duração, classificação, gênero) para serem válidos — cadastro com título vazio é rejeitado
+- Apenas filmes ativos podem ser utilizados na grade de exibição
+- Um filme não pode ser removido se possuir sessões futuras cadastradas — deve ser desativado em vez de removido, preservando o histórico
+- Filmes suportam URL de trailer para exibição ao cliente no portal
+- Um filme pode ser desativado em vez de removido, mantendo rastreabilidade histórica de sessões passadas
+
+**Por que não é trivial:** Apesar de envolver cadastro, essa funcionalidade possui regras que garantem consistência com outras partes do sistema — grade de exibição e venda de ingressos. Alterações no catálogo impactam diretamente o funcionamento do sistema, exigindo validações e restrições que vão além de um simples CRUD.
+
+**Features BDD relacionadas:** `catalogo`
+
+---
+
+### F8 — Realizar Fechamento de Caixa e Relatórios
+**Responsável:** Amanda
+
+**Fluxo:** Consolidar vendas → Separar valores → Calcular faturamento → Gerar relatórios → Analisar ocupação → Exportar
+
+**Regras de negócio:**
+- Vendas são consolidadas por sessão — o sistema impede fechamento duplicado para o mesmo dia
+- O faturamento é calculado com base nos ingressos vendidos por tipo (inteira, meia, convite) e no preço de cada sessão
+- A taxa de ocupação é calculada como ingressos vendidos sobre a capacidade total da sala
+- Relatórios de dias sem fechamento são rejeitados com mensagem clara
+- O dashboard exibe faturamento projetado vs. realizado por sessão, permitindo análise de performance
+
+**Por que não é trivial:** Essencial para análise e tomada de decisão, envolve agregação de dados financeiros heterogêneos, cálculo percentual preciso e geração de relatório contábil estruturado — cruzando informações de capacidade de sala, ingressos emitidos e valores arrecadados.
+
+**Features BDD relacionadas:** `caixa` · `dashboard` · `precificacao`
 
 ---
 
 ## Testes BDD
 
-Todo o domínio é coberto por testes comportamentais escritos em **português** com Cucumber + JUnit 5, um arquivo `.feature` por funcionalidade.
+Todo o domínio é coberto por testes comportamentais escritos em **português** com Cucumber + JUnit 5. São **17 arquivos `.feature`** distribuídos entre os dois módulos de domínio, cobrindo **112 cenários** no total.
 
 ```bash
-# Executar todos os testes de domínio
-mvn test -pl domain-backoffice
-mvn test -pl domain-portal
+# Executar todos os testes
+mvn test
 ```
 
+### Mapeamento: Funcionalidade → Features
+
+| Funcionalidade | Features BDD | Cenários |
+|---|---|---|
+| F1 — Comprar ingresso | `reserva` · `pedido` · `promocao` · `checkin` · `classificacao_compra` | 30 |
+| F2 — Explorar programação | `programacao` · `recomendacao` · `notificacao` | 15 |
+| F3 — Fidelidade e benefícios | `fidelidade` | 7 |
+| F4 — Grade de exibição | `sessao` · `precificacao` · `dashboard` | 27 |
+| F5 — Bomboniere | `bomboniere` | 3 |
+| F6 — Controle de acesso | `checkin` · `classificacao` | 15 |
+| F7 — Catálogo de filmes | `catalogo` | 7 |
+| F8 — Fechamento de caixa | `caixa` · `dashboard` · `precificacao` | 26 |
+| **Transversal** | `rbac` | 10 |
+
+> `checkin`, `classificacao`, `dashboard`, `precificacao` e `rbac` são compartilhados entre mais de uma funcionalidade por natureza transversal.
+
+### Estrutura completa de features
+
 ```
-features/
-├── grade/            ← Sessões e validação de conflito de horário
-├── precificacao/     ← Preços por tipo de sala e dia da semana
-├── classificacao/    ← Classificação indicativa (domínio e compra)
-├── checkin/          ← Check-in digital via QR Code
-├── bomboniere/       ← Gestão de estoque de insumos
-├── caixa/            ← Fechamento de caixa e borderô
-├── reserva/          ← Reserva temporária de assentos
-├── pedido/           ← Venda casada ingresso + bomboniere
-├── promocao/         ← Motor de cupons e descontos
-├── fidelidade/       ← Pontuação e resgate de pontos
-├── rbac/             ← Controle de acesso por role
-├── recomendacao/     ← Sugestões por perfil de gênero
-├── notificacao/      ← Pré-venda automática
-└── dashboard/        ← Taxa de ocupação por sessão
+domain-backoffice/features/
+├── grade/            → F4 — sessões, conflito de horário, filme inativo
+├── catalogo/         → F7 — cadastro, ativação, trailer, remoção protegida
+├── checkin/          → F1 + F6 — QR Code, idempotência, janela de acesso
+├── classificacao/    → F1 + F6 — validação de idade indicativa
+├── bomboniere/       → F5 — estoque, baixa automática, alertas
+├── caixa/            → F8 — fechamento, relatório, impedimento de duplicata
+├── precificacao/     → F4 + F8 — preço por tipo de sala e dia da semana
+├── dashboard/        → F4 + F8 — ocupação e faturamento por sessão
+└── rbac/             → transversal — permissões por role (Gerente / Operador)
+
+domain-portal/features/
+├── programacao/      → F2 — sessões futuras, filtros por gênero e classificação
+├── reserva/          → F1 — seat locking com expiração automática
+├── pedido/           → F1 — venda casada, QR Code, Voucher, pagamento
+├── promocao/         → F1 — cupons, cumulatividade, reembolso
+├── fidelidade/       → F3 — pontos, expiração, benefícios por dia
+├── recomendacao/     → F2 — sugestões por histórico de gêneros
+└── notificacao/      → F2 — alertas automáticos de pré-venda
 ```
 
 ---

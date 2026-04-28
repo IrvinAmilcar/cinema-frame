@@ -13,14 +13,15 @@ public class ControleDeAcesso {
     static {
         PERMISSOES_POR_ROLE.put(
             RoleFuncionario.OPERADOR_DE_CAIXA,
-            EnumSet.of(Permissao.VENDER_INGRESSO)
+            EnumSet.of(Permissao.VENDER_INGRESSO, Permissao.REALIZAR_CHECKIN)
         );
         PERMISSOES_POR_ROLE.put(
             RoleFuncionario.GERENTE,
             EnumSet.of(
                 Permissao.VENDER_INGRESSO,
                 Permissao.ESTORNAR_VENDA,
-                Permissao.ALTERAR_PRECO
+                Permissao.ALTERAR_PRECO,
+                Permissao.REALIZAR_CHECKIN
             )
         );
     }
