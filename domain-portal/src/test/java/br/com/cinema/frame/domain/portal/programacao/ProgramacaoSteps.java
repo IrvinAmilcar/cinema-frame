@@ -59,6 +59,10 @@ public class ProgramacaoSteps {
         adicionarSessaoNaGrade(criarSessaoFutura(titulo, GeneroFilme.DRAMA, ClassificacaoIndicativa.LIVRE));
     }
 
+    @Dado("existe uma sessão futura cadastrada para o filme {string} com {int} ingressos vendidos")
+    public void sessaoFuturaComIngressosVendidosSemQue(String titulo, int ingressos) {
+        sessaoFuturaComIngressosVendidos(titulo, ingressos);
+    }
     @Dado("existe uma sessão passada cadastrada para o filme {string}")
     public void sessaoPassadaCadastrada(String titulo) {
         adicionarSessaoNaGrade(criarSessaoPassada(titulo, GeneroFilme.COMEDIA, ClassificacaoIndicativa.LIVRE));
