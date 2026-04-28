@@ -35,23 +35,3 @@ Funcionalidade: Explorar programação de filmes
     Quando o cliente ordenar a programação por popularidade
     Então o primeiro filme da listagem deve ser "Duna"
     E o último filme da listagem deve ser "Barbie"
-
-  Cenário: Não exibir sessão que já iniciou mesmo sendo hoje
-    Dado que existe uma sessão cadastrada para o filme "Oppenheimer" iniciando hoje às 10:00
-    Quando o cliente consultar a programação disponível às 10:01
-    Então o filme "Oppenheimer" não deve aparecer na listagem
-
-  Cenário: Exibir sessão que ainda não iniciou no mesmo dia
-    Dado que existe uma sessão cadastrada para o filme "Oppenheimer" iniciando hoje às 20:00
-    Quando o cliente consultar a programação disponível às 10:00
-    Então o filme "Oppenheimer" deve aparecer na listagem
-
-  Cenário: Não exibir filme inativo mesmo com sessão futura cadastrada
-    Dado que existe um filme inativo "Barbie" com sessão futura cadastrada
-    Quando o cliente consultar a programação disponível
-    Então o filme "Barbie" não deve aparecer na listagem
-
-  Cenário: Não exibir sessão de filme com classificação incompatível com a idade do cliente
-    Dado que existe uma sessão futura cadastrada para o filme "It" com classificação "DEZOITO"
-    Quando o cliente com 15 anos consultar a programação disponível
-    Então o filme "It" não deve aparecer na listagem

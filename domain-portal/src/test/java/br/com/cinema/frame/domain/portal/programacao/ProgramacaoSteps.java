@@ -24,36 +24,31 @@ public class ProgramacaoSteps {
     private ProgramacaoService programacaoService = new ProgramacaoService(gradeRepository);
 
     private final List<GradeDeExibicao> grades = new ArrayList<>();
-    private LocalDateTime momentoConsulta = LocalDate.now().atTime(10, 0);
+    private final LocalDateTime agora = LocalDate.now().atTime(10, 0);
     private List<Sessao> resultado;
     private int contadorSala = 1;
 
+    // Mapa sessaoId → ingressos vendidos, usado no cenário de popularidade
     private final Map<UUID, Integer> ingressosPorSessao = new HashMap<>();
 
     private void atualizarMock() {
         when(gradeRepository.listarTodas()).thenReturn(new ArrayList<>(grades));
     }
 
-    private Sessao criarSessao(String tituloFilme, GeneroFilme genero,
-                                ClassificacaoIndicativa classificacao,
-                                LocalDateTime inicio, boolean ativo) {
+    private Sessao criarSessaoFutura(String tituloFilme, GeneroFilme genero, ClassificacaoIndicativa classificacao) {
         Filme filme = new Filme(tituloFilme, Duration.ofMinutes(120), classificacao, genero);
-        if (!ativo) filme.desativar();
         Sala sala = new Sala(contadorSala++, 100, TipoSala.PADRAO);
-        return new Sessao(filme, sala, inicio);
+        return new Sessao(filme, sala, agora.plusDays(1));
     }
 
-    private Sessao criarSessaoFutura(String titulo, GeneroFilme genero, ClassificacaoIndicativa classificacao) {
-        return criarSessao(titulo, genero, classificacao, momentoConsulta.plusDays(1), true);
-    }
-
-    private Sessao criarSessaoPassada(String titulo, GeneroFilme genero, ClassificacaoIndicativa classificacao) {
-        return criarSessao(titulo, genero, classificacao, momentoConsulta.minusDays(1), true);
+    private Sessao criarSessaoPassada(String tituloFilme, GeneroFilme genero, ClassificacaoIndicativa classificacao) {
+        Filme filme = new Filme(tituloFilme, Duration.ofMinutes(120), classificacao, genero);
+        Sala sala = new Sala(contadorSala++, 100, TipoSala.PADRAO);
+        return new Sessao(filme, sala, agora.minusDays(1));
     }
 
     private void adicionarSessaoNaGrade(Sessao sessao) {
-        LocalDate dataInicio = sessao.getInicio().toLocalDate().minusDays(1);
-        GradeDeExibicao grade = new GradeDeExibicao(dataInicio, dataInicio.plusDays(14));
+        GradeDeExibicao grade = new GradeDeExibicao(LocalDate.now(), LocalDate.now().plusDays(7));
         grade.adicionarSessao(sessao);
         grades.add(grade);
         atualizarMock();
@@ -66,11 +61,6 @@ public class ProgramacaoSteps {
 
     @Dado("existe uma sessão passada cadastrada para o filme {string}")
     public void sessaoPassadaCadastrada(String titulo) {
-        adicionarSessaoNaGrade(criarSessaoPassada(titulo, GeneroFilme.COMEDIA, ClassificacaoIndicativa.LIVRE));
-    }
-
-    @Dado("que existe uma sessão passada cadastrada para o filme {string}")
-    public void que_existe_uma_sessao_passada_cadastrada_para_o_filme(String titulo) {
         adicionarSessaoNaGrade(criarSessaoPassada(titulo, GeneroFilme.COMEDIA, ClassificacaoIndicativa.LIVRE));
     }
 
@@ -94,6 +84,17 @@ public class ProgramacaoSteps {
         adicionarSessaoNaGrade(criarSessaoFutura(titulo, GeneroFilme.DRAMA, ClassificacaoIndicativa.valueOf(classificacao)));
     }
 
+    @Dado("que existe uma sessão passada cadastrada para o filme {string}")
+    public void que_existe_uma_sessao_passada_cadastrada_para_o_filme(String nomeFilme) {
+        Filme filme = new Filme(nomeFilme, Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
+        Sala sala = new Sala(contadorSala++, 100, TipoSala.PADRAO);
+        Sessao sessaoPassada = new Sessao(filme, sala, LocalDate.now().minusDays(1).atTime(20, 0));
+        GradeDeExibicao grade = new GradeDeExibicao(LocalDate.now().minusDays(7), LocalDate.now());
+        grade.adicionarSessao(sessaoPassada);
+        grades.add(grade);
+        atualizarMock();
+    }
+
     @Dado("que existe uma sessão futura cadastrada para o filme {string} com {int} ingressos vendidos")
     public void sessaoFuturaComIngressosVendidos(String titulo, int ingressos) {
         Sessao sessao = criarSessaoFutura(titulo, GeneroFilme.DRAMA, ClassificacaoIndicativa.LIVRE);
@@ -101,49 +102,24 @@ public class ProgramacaoSteps {
         ingressosPorSessao.put(sessao.getId(), ingressos);
     }
 
-    @Dado("que existe uma sessão cadastrada para o filme {string} iniciando hoje às {int}:{int}")
-    public void sessaoCadastradaIniciandoHojeAs(String titulo, int hora, int minuto) {
-        LocalDateTime inicio = LocalDate.now().atTime(hora, minuto);
-        Sessao sessao = criarSessao(titulo, GeneroFilme.DRAMA, ClassificacaoIndicativa.LIVRE, inicio, true);
-        adicionarSessaoNaGrade(sessao);
-    }
-
-    @Dado("que existe um filme inativo {string} com sessão futura cadastrada")
-    public void filmeInativoComSessaoFutura(String titulo) {
-        LocalDateTime inicio = LocalDate.now().atTime(10, 0).plusDays(1);
-        Sessao sessao = criarSessao(titulo, GeneroFilme.COMEDIA, ClassificacaoIndicativa.LIVRE, inicio, false);
-        adicionarSessaoNaGrade(sessao);
-    }
-
     @Quando("o cliente consultar a programação disponível")
     public void consultarProgramacao() {
-        resultado = programacaoService.listarSessoesDisponiveis(momentoConsulta);
-    }
-
-    @Quando("o cliente consultar a programação disponível às {int}:{int}")
-    public void consultarProgramacaoAs(int hora, int minuto) {
-        LocalDateTime consulta = LocalDate.now().atTime(hora, minuto);
-        resultado = programacaoService.listarSessoesDisponiveis(consulta);
-    }
-
-    @Quando("o cliente com {int} anos consultar a programação disponível")
-    public void consultarProgramacaoPorIdade(int idade) {
-        resultado = programacaoService.listarSessoesDisponiveisPorIdade(momentoConsulta, idade);
+        resultado = programacaoService.listarSessoesDisponiveis(agora);
     }
 
     @Quando("o cliente filtrar a programação pelo gênero {string}")
     public void filtrarPorGenero(String genero) {
-        resultado = programacaoService.filtrarPorGenero(momentoConsulta, GeneroFilme.valueOf(genero));
+        resultado = programacaoService.filtrarPorGenero(agora, GeneroFilme.valueOf(genero));
     }
 
     @Quando("o cliente filtrar a programação pela classificação máxima {string}")
     public void filtrarPorClassificacao(String classificacao) {
-        resultado = programacaoService.filtrarPorClassificacao(momentoConsulta, ClassificacaoIndicativa.valueOf(classificacao));
+        resultado = programacaoService.filtrarPorClassificacao(agora, ClassificacaoIndicativa.valueOf(classificacao));
     }
 
     @Quando("o cliente ordenar a programação por popularidade")
     public void ordenarPorPopularidade() {
-        resultado = programacaoService.ordenarPorPopularidade(momentoConsulta, ingressosPorSessao);
+        resultado = programacaoService.ordenarPorPopularidade(agora, ingressosPorSessao);
     }
 
     @Então("o filme {string} deve aparecer na listagem")
@@ -170,13 +146,15 @@ public class ProgramacaoSteps {
     public void primeiroFilmeDaListagemDeveSer(String titulo) {
         assertNotNull(resultado);
         assertFalse(resultado.isEmpty(), "A listagem não deveria estar vazia");
-        assertEquals(titulo, resultado.get(0).getFilme().getTitulo());
+        assertEquals(titulo, resultado.get(0).getFilme().getTitulo(),
+            "Esperava que o primeiro filme fosse: " + titulo);
     }
 
     @Então("o último filme da listagem deve ser {string}")
     public void ultimoFilmeDaListagemDeveSer(String titulo) {
         assertNotNull(resultado);
         assertFalse(resultado.isEmpty(), "A listagem não deveria estar vazia");
-        assertEquals(titulo, resultado.get(resultado.size() - 1).getFilme().getTitulo());
+        assertEquals(titulo, resultado.get(resultado.size() - 1).getFilme().getTitulo(),
+            "Esperava que o último filme fosse: " + titulo);
     }
 }

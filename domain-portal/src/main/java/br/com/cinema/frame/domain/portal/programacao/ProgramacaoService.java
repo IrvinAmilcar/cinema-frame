@@ -2,6 +2,7 @@ package br.com.cinema.frame.domain.portal.programacao;
 
 import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicaoRepository;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
+import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
 import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 
@@ -15,11 +16,18 @@ import java.util.stream.Collectors;
 public class ProgramacaoService {
 
     private final GradeDeExibicaoRepository gradeRepository;
+    private final IngressoRepository ingressoRepository;
 
     public ProgramacaoService(GradeDeExibicaoRepository gradeRepository) {
+        this(gradeRepository, null);
+    }
+
+    public ProgramacaoService(GradeDeExibicaoRepository gradeRepository,
+                               IngressoRepository ingressoRepository) {
         if (gradeRepository == null)
             throw new IllegalArgumentException("GradeDeExibicaoRepository não pode ser nulo");
         this.gradeRepository = gradeRepository;
+        this.ingressoRepository = ingressoRepository;
     }
 
     public List<Sessao> listarSessoesDisponiveis(LocalDateTime agora) {
@@ -29,18 +37,6 @@ public class ProgramacaoService {
         return gradeRepository.listarTodas().stream()
             .flatMap(g -> g.getSessoes().stream())
             .filter(s -> s.getInicio().isAfter(agora))
-            .filter(s -> s.getFilme().isAtivo())
-            .collect(Collectors.toList());
-    }
-
-    public List<Sessao> listarSessoesDisponiveisPorIdade(LocalDateTime agora, int idadeCliente) {
-        if (agora == null)
-            throw new IllegalArgumentException("Horário atual não pode ser nulo");
-        if (idadeCliente < 0)
-            throw new IllegalArgumentException("Idade do cliente não pode ser negativa");
-
-        return listarSessoesDisponiveis(agora).stream()
-            .filter(s -> idadeCliente >= s.getFilme().getClassificacaoIndicativa().getIdadeMinima())
             .collect(Collectors.toList());
     }
 
