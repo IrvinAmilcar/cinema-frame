@@ -14,6 +14,7 @@ import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import br.com.cinema.frame.domain.backoffice.sala.TipoSala;
+import br.com.cinema.frame.domain.portal.pedido.StatusPagamento;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
@@ -44,7 +45,6 @@ public class PedidoSteps {
     private ResultadoDoPedido resultado;
     private Exception excecaoCapturada;
 
-    // Lista mutável para simular o repositório de pedidos
     private final List<Pedido> pedidosEmMemoria = new ArrayList<>();
 
     @Dado("que existe uma sessão cadastrada para o pedido")
@@ -59,17 +59,16 @@ public class PedidoSteps {
 
         when(gradeRepository.listarTodas()).thenReturn(List.of(grade));
 
-        // Configura repositório de pedidos para operar em memória
         doAnswer(inv -> {
             Pedido p = inv.getArgument(0);
             pedidosEmMemoria.removeIf(existing -> existing.getId().equals(p.getId()));
             pedidosEmMemoria.add(p);
             return null;
         }).when(pedidoRepository).salvar(any(Pedido.class));
+
         when(pedidoRepository.buscarPorId(any())).thenAnswer(inv ->
             pedidosEmMemoria.stream().filter(p -> p.getId().equals(inv.getArgument(0))).findFirst());
 
-        // Inicia o pedido já no step de sessão (será reutilizado pelos steps seguintes)
         pedido = pedidoService.iniciar(sessao.getId());
     }
 
@@ -164,5 +163,38 @@ public class PedidoSteps {
         assertNotNull(excecaoCapturada);
         assertInstanceOf(IllegalStateException.class, excecaoCapturada);
         assertTrue(excecaoCapturada.getMessage().contains("Estoque insuficiente"));
+    }
+
+
+    @Quando("o cliente tentar finalizar o pedido cadastrado com pagamento recusado")
+    public void tentarFinalizarComPagamentoRecusado() {
+        try {
+            pedidoService.finalizar(pedido.getId(), StatusPagamento.RECUSADO);
+        } catch (Exception e) {
+            excecaoCapturada = e;
+        }
+    }
+
+    @Quando("o cliente tentar adicionar ingresso meia sem elegibilidade ao pedido cadastrado")
+    public void tentarAdicionarMeiaSemElegibilidade() {
+        try {
+            pedidoService.adicionarIngresso(pedido.getId(), TipoIngresso.MEIA, false);
+        } catch (Exception e) {
+            excecaoCapturada = e;
+        }
+    }
+
+    @Então("o sistema deve rejeitar informando pagamento não aprovado")
+    public void rejeitarPagamentoNaoAprovado() {
+        assertNotNull(excecaoCapturada);
+        assertInstanceOf(IllegalStateException.class, excecaoCapturada);
+        assertTrue(excecaoCapturada.getMessage().contains("Pagamento não aprovado"));
+    }
+
+    @Então("o sistema deve rejeitar informando elegibilidade não comprovada")
+    public void rejeitarElegibilidadeNaoComprovada() {
+        assertNotNull(excecaoCapturada);
+        assertInstanceOf(IllegalStateException.class, excecaoCapturada);
+        assertTrue(excecaoCapturada.getMessage().contains("Elegibilidade não comprovada"));
     }
 }

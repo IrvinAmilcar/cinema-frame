@@ -38,3 +38,14 @@ Funcionalidade: Venda casada de combos (ingresso + bomboniere)
     E o cliente adicionar o produto cadastrado "Pipoca Grande" ao pedido cadastrado
     E o cliente tentar finalizar o pedido cadastrado com estoque insuficiente
     Então o sistema deve rejeitar informando estoque insuficiente
+
+  Cenário: Impedir finalização de pedido com pagamento recusado
+    Dado que existe uma sessão cadastrada para o pedido
+    Quando o cliente adicionar 1 ingresso inteiro ao pedido cadastrado
+    E o cliente tentar finalizar o pedido cadastrado com pagamento recusado
+    Então o sistema deve rejeitar informando pagamento não aprovado
+
+  Cenário: Impedir meia-entrada sem elegibilidade comprovada
+    Dado que existe uma sessão cadastrada para o pedido
+    Quando o cliente tentar adicionar ingresso meia sem elegibilidade ao pedido cadastrado
+    Então o sistema deve rejeitar informando elegibilidade não comprovada
