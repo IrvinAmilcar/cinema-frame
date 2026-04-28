@@ -1,11 +1,16 @@
 # language: pt
 
-Funcionalidade: Check-in digital via QR Code
+Funcionalidade: Controle de acesso de clientes com validação
 
   Cenário: Check-in realizado com sucesso
     Dado que existe um ingresso cadastrado válido para a sessão de hoje às 20:00
     Quando o funcionário escaneia o ingresso cadastrado às 19:45
     Então o check-in deve ser realizado com sucesso
+    E um registro de entrada deve ser salvo
+
+  Cenário: Impedir check-in com QR Code inválido
+    Quando o funcionário escaneia um QR Code inexistente às 19:45
+    Então o sistema deve rejeitar informando QR Code inválido
 
   Cenário: Impedir check-in com ingresso já utilizado
     Dado que existe um ingresso cadastrado válido para a sessão de hoje às 20:00
@@ -22,3 +27,8 @@ Funcionalidade: Check-in digital via QR Code
     Dado que existe um ingresso cadastrado válido para a sessão de hoje às 20:00
     Quando o funcionário escaneia o ingresso cadastrado às 17:00
     Então o sistema deve rejeitar informando fora do horário de entrada
+
+  Cenário: Impedir check-in por funcionário sem permissão
+    Dado que existe um ingresso cadastrado válido para a sessão de hoje às 20:00
+    Quando um funcionário sem permissão tenta fazer check-in às 19:45
+    Então o sistema deve rejeitar informando acesso negado
