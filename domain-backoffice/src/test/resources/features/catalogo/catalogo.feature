@@ -20,3 +20,20 @@ Funcionalidade: Gerenciamento do catálogo de filmes
   Cenário: Impedir cadastro de filme com título vazio
     Quando a gerente tenta cadastrar um filme com título vazio
     Então o sistema deve rejeitar o cadastro informando título inválido
+
+  Cenário: Cadastrar filme com URL de trailer
+    Dado que a gerente tem um novo filme "Avatar: O Caminho da Água" com duração de 192 minutos classificação "DOZE" e gênero "FICCAO_CIENTIFICA"
+    Quando a gerente define o trailer do filme com a URL "https://youtube.com/trailer"
+    E a gerente cadastra o filme no catálogo
+    Então o filme deve ser salvo no repositório com a URL do trailer
+
+  Cenário: Desativar filme em vez de remover preservando histórico
+    Dado que existe um filme "Matrix" com duração de 136 minutos e classificação "QUATORZE" e gênero "ACAO" no catálogo
+    Quando a gerente desativa o filme
+    Então o filme deve ser salvo como inativo no repositório
+
+  Cenário: Impedir remoção de filme com sessões futuras cadastradas
+    Dado que existe um filme "Oppenheimer" com duração de 180 minutos e classificação "QUATORZE" e gênero "DRAMA" no catálogo
+    E o filme possui sessões futuras cadastradas
+    Quando a gerente tenta remover o filme do catálogo
+    Então o sistema deve rejeitar informando que o filme possui sessões futuras

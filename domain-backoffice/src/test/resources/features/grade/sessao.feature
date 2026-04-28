@@ -42,3 +42,10 @@ Funcionalidade: Gerenciamento de sessões na grade de exibição
     E a gerente já cadastrou uma sessão que já foi iniciada
     Quando a gerente tenta remover a sessão já iniciada
     Então o sistema deve impedir informando que a sessão já foi iniciada
+
+  Cenário: Impedir adição de filme inativo na grade de exibição
+    Dado que existe um filme inativo "Interestelar" com duração de 169 minutos e classificação "LIVRE" e gênero "FICCAO_CIENTIFICA"
+    E existe uma sala cadastrada de número 2 com capacidade para 80 pessoas
+    E existe uma grade de exibição cadastrada para a semana
+    Quando a gerente tenta adicionar o filme inativo na grade às 19:00
+    Então o sistema deve rejeitar informando que o filme não está ativo
