@@ -27,6 +27,7 @@
 	</build>     
 
     <dependencies>
+    
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>frame-domain-shared</artifactId>
@@ -68,5 +69,11 @@
 			<artifactId>mockito-core</artifactId>
 			<scope>test</scope>
 		</dependency> 
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

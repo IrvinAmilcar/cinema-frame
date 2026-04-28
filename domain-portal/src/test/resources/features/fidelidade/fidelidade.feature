@@ -1,38 +1,45 @@
 # language: pt
 
-Funcionalidade: Programa de Fidelidade (Pontuação e Resgate)
+Funcionalidade: Sistema de Fidelidade e Benefícios
+  Como cliente do cinema
+  Quero acumular e resgatar pontos de fidelidade
+  Para obter benefícios nas minhas compras
 
-  Cenário: Pontuar cliente ao realizar uma compra
-    Dado que o cliente possui uma conta de fidelidade cadastrada com 0 pontos
-    Quando o cliente realizar uma compra no valor de R$ 40,00 na conta cadastrada
-    Então o saldo de pontos deve ser 40
+  Contexto:
+    Dado que existe um cliente com id "cliente-001"
+    E que existe um benefício "Ingresso Grátis" do tipo INGRESSO_GRATIS exigindo 100 pontos disponível todos os dias
+    E que existe um benefício "Desconto Segunda" do tipo DESCONTO_PERCENTUAL exigindo 50 pontos disponível apenas às segundas-feiras
 
-  Cenário: Acumular pontos em compras sucessivas
-    Dado que o cliente possui uma conta de fidelidade cadastrada com 100 pontos
-    Quando o cliente realizar uma compra no valor de R$ 60,00 na conta cadastrada
-    Então o saldo de pontos deve ser 160
+  Cenário: Acumular pontos após uma compra
+    Quando o cliente "cliente-001" realiza uma compra de R$ 50,00 em "2025-06-01"
+    Então o saldo de pontos do cliente "cliente-001" em "2025-06-01" deve ser 50
 
-  Cenário: Resgatar pontos por ingresso com saldo suficiente
-    Dado que o cliente possui uma conta de fidelidade cadastrada com 200 pontos
-    Quando o cliente resgatar 100 pontos da conta cadastrada
-    Então o saldo de pontos deve ser 100
+  Cenário: Pontos acumulados em múltiplas compras
+    Quando o cliente "cliente-001" realiza uma compra de R$ 30,00 em "2025-06-01"
+    E o cliente "cliente-001" realiza uma compra de R$ 20,00 em "2025-06-01"
+    Então o saldo de pontos do cliente "cliente-001" em "2025-06-01" deve ser 50
 
-  Cenário: Impedir resgate com saldo insuficiente
-    Dado que o cliente possui uma conta de fidelidade cadastrada com 50 pontos
-    Quando o cliente tentar resgatar 100 pontos da conta cadastrada
-    Então o sistema deve rejeitar informando saldo insuficiente
+  Cenário: Consultar benefícios disponíveis com saldo suficiente
+    Dado que o cliente "cliente-001" possui 100 pontos acumulados em "2025-06-01" com validade "2026-06-01"
+    Quando o cliente "cliente-001" consulta os benefícios disponíveis em "2025-06-01"
+    Então o benefício "Ingresso Grátis" deve estar na lista de disponíveis
 
-  Cenário: Impedir resgate de valor zero ou negativo
-    Dado que o cliente possui uma conta de fidelidade cadastrada com 200 pontos
-    Quando o cliente tentar resgatar 0 pontos da conta cadastrada
-    Então o sistema deve rejeitar informando quantidade inválida de pontos
+  Cenário: Benefício com restrição de dia não aparece no dia errado
+    Dado que o cliente "cliente-001" possui 100 pontos acumulados em "2025-06-03" com validade "2026-06-03"
+    Quando o cliente "cliente-001" consulta os benefícios disponíveis em "2025-06-03"
+    Então o benefício "Desconto Segunda" não deve estar na lista de disponíveis
 
-  Cenário: Compra com valor zero não gera pontos
-    Dado que o cliente possui uma conta de fidelidade cadastrada com 50 pontos
-    Quando o cliente realizar uma compra no valor de R$ 0,00 na conta cadastrada
-    Então o saldo de pontos deve ser 50
+  Cenário: Resgatar benefício com saldo suficiente
+    Dado que o cliente "cliente-001" possui 100 pontos acumulados em "2025-06-01" com validade "2026-06-01"
+    Quando o cliente "cliente-001" resgata o benefício "Ingresso Grátis" em "2025-06-01"
+    Então o saldo de pontos do cliente "cliente-001" em "2025-06-01" deve ser 0
 
-  Cenário: Resgatar exatamente o saldo disponível
-    Dado que o cliente possui uma conta de fidelidade cadastrada com 300 pontos
-    Quando o cliente resgatar 300 pontos da conta cadastrada
-    Então o saldo de pontos deve ser 0
+  Cenário: Impedir resgate com pontos insuficientes
+    Dado que o cliente "cliente-001" possui 30 pontos acumulados em "2025-06-01" com validade "2026-06-01"
+    Quando o cliente "cliente-001" tenta resgatar o benefício "Ingresso Grátis" em "2025-06-01"
+    Então deve ocorrer o erro "Pontos insuficientes para resgatar o benefício"
+
+  Cenário: Impedir uso de pontos expirados
+    Dado que o cliente "cliente-001" possui 100 pontos acumulados em "2024-01-01" com validade "2024-12-31"
+    Quando o cliente "cliente-001" tenta resgatar o benefício "Ingresso Grátis" em "2025-06-01"
+    Então deve ocorrer o erro "Pontos insuficientes para resgatar o benefício"
