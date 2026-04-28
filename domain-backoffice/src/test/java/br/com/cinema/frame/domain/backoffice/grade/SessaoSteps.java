@@ -48,6 +48,15 @@ public class SessaoSteps {
         when(filmeRepository.buscarPorId(filme.getId())).thenReturn(Optional.of(filme));
     }
 
+    @Dado("que existe um filme inativo {string} com duração de {int} minutos e classificação {string} e gênero {string}")
+    public void existeUmFilmeInativo(String titulo, int minutos, String classificacao, String genero) {
+        filme = new Filme(titulo, Duration.ofMinutes(minutos),
+            ClassificacaoIndicativa.valueOf(classificacao),
+            GeneroFilme.valueOf(genero));
+        filme.desativar();
+        when(filmeRepository.buscarPorId(filme.getId())).thenReturn(Optional.of(filme));
+    }
+
     @Dado("existe uma sala cadastrada de número {int} com capacidade para {int} pessoas")
     public void existeUmaSalaCadastrada(int numero, int capacidade) {
         sala = new Sala(numero, capacidade, TipoSala.PADRAO);
@@ -125,6 +134,16 @@ public class SessaoSteps {
         }
     }
 
+    @Quando("a gerente tenta adicionar o filme inativo na grade às {int}:{int}")
+    public void gerenteTentaAdicionarFilmeInativoNaGrade(int hora, int minuto) {
+        try {
+            LocalDateTime inicio = LocalDate.now().atTime(hora, minuto);
+            gradeService.adicionarSessao(grade.getId(), filme.getId(), sala.getId(), inicio);
+        } catch (Exception e) {
+            excecaoCapturada = e;
+        }
+    }
+
     @Então("a sessão deve ser salva na grade")
     public void sessaoDeveSerSalvaNaGrade() {
         verify(gradeRepository, atLeastOnce()).salvar(any(GradeDeExibicao.class));
@@ -155,5 +174,12 @@ public class SessaoSteps {
         assertNotNull(excecaoCapturada);
         assertInstanceOf(IllegalStateException.class, excecaoCapturada);
         assertTrue(excecaoCapturada.getMessage().contains("já foi iniciada"));
+    }
+
+    @Então("o sistema deve rejeitar informando que o filme não está ativo")
+    public void sistemaDeveRejeitarFilmeInativo() {
+        assertNotNull(excecaoCapturada);
+        assertInstanceOf(IllegalStateException.class, excecaoCapturada);
+        assertTrue(excecaoCapturada.getMessage().contains("não está ativo"));
     }
 }

@@ -13,6 +13,8 @@ public class Filme {
     private Duration duracao;
     private ClassificacaoIndicativa classificacaoIndicativa;
     private GeneroFilme genero;
+    private String trailerURL;
+    private boolean ativo;
 
     public Filme(String titulo, Duration duracao, ClassificacaoIndicativa classificacaoIndicativa, GeneroFilme genero) {
         if (titulo == null || titulo.isBlank())
@@ -29,6 +31,7 @@ public class Filme {
         this.duracao = duracao;
         this.classificacaoIndicativa = classificacaoIndicativa;
         this.genero = genero;
+        this.ativo = true;
     }
 
     @Override
@@ -45,11 +48,20 @@ public class Filme {
     }
 
     public void atualizar(String novoTitulo, Duration novaDuracao,
-                          ClassificacaoIndicativa novaClassificacao, GeneroFilme novoGenero) {
+                          ClassificacaoIndicativa novaClassificacao, GeneroFilme novoGenero, String novoTrailerURL) {
         if (novoTitulo != null && !novoTitulo.isBlank()) this.titulo = novoTitulo;
         if (novaDuracao != null && !novaDuracao.isNegative() && !novaDuracao.isZero()) this.duracao = novaDuracao;
         if (novaClassificacao != null) this.classificacaoIndicativa = novaClassificacao;
         if (novoGenero != null) this.genero = novoGenero;
+        if (novoTrailerURL != null && !novoTrailerURL.isBlank()) this.trailerURL = novoTrailerURL;
+    }
+
+    public void desativar() {
+        this.ativo = false;
+    }
+
+    public void ativar() {
+        this.ativo = true;
     }
 
     public UUID getId() { return id; }
@@ -57,4 +69,6 @@ public class Filme {
     public Duration getDuracao() { return duracao; }
     public ClassificacaoIndicativa getClassificacaoIndicativa() { return classificacaoIndicativa; }
     public GeneroFilme getGenero() { return genero; }
+    public String getTrailerURL() { return trailerURL; }
+    public boolean isAtivo() { return ativo; }
 }

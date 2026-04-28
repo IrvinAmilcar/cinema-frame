@@ -42,6 +42,9 @@ public class GradeService {
         Filme filme = filmeRepository.buscarPorId(filmeId)
             .orElseThrow(() -> new IllegalArgumentException("Filme não encontrado: " + filmeId));
 
+        if (!filme.isAtivo())
+            throw new IllegalStateException("Filme não está ativo e não pode ser adicionado à grade de exibição");
+
         Sala sala = salaRepository.buscarPorId(salaId)
             .orElseThrow(() -> new IllegalArgumentException("Sala não encontrada: " + salaId));
 
