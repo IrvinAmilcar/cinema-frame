@@ -38,6 +38,12 @@ public class Insumo {
         return quantidadeEmEstoque <= nivelCritico;
     }
 
+    public void repor(double quantidade) {
+    if (quantidade <= 0)
+        throw new IllegalArgumentException("Quantidade para reposição deve ser positiva");
+    this.quantidadeEmEstoque += quantidade;
+}
+
     public UUID getId() { return id; }
     public String getNome() { return nome; }
     public String getUnidade() { return unidade; }

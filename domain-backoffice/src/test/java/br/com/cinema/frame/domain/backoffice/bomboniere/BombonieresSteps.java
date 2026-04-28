@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,44 +18,75 @@ public class BombonieresSteps {
 
     private ProdutoDaBombonieresRepository produtoRepository = mock(ProdutoDaBombonieresRepository.class);
     private InsumoRepository insumoRepository = mock(InsumoRepository.class);
-    private BombonieresService gestao = new BombonieresService(produtoRepository, insumoRepository);
+    private MovimentacaoEstoqueRepository movimentacaoRepository = mock(MovimentacaoEstoqueRepository.class);
+    private BombonieresService gestao = new BombonieresService(produtoRepository, insumoRepository, movimentacaoRepository);
 
     private final Map<String, Insumo> insumos = new HashMap<>();
     private ProdutoDaBomboniere produto;
     private List<EstoqueNotificacao> notificacoes;
     private Exception excecaoCapturada;
 
-    @Dado("que existe o insumo cadastrado {string} com {double}g em estoque e nível crítico de {double}g")
-    public void insumoEmGramasCadastrado(String nome, double estoque, double critico) {
-        Insumo insumo = new Insumo(nome, "g", estoque, critico);
-        insumos.put(nome, insumo);
-        when(insumoRepository.buscarPorId(insumo.getId())).thenReturn(Optional.of(insumo));
-    }
+    // ── DADO ──────────────────────────────────────────────
 
-    @Dado("existe o insumo cadastrado {string} com {double} unidades em estoque e nível crítico de {double} unidades")
-    public void insumoEmUnidadesCadastrado(String nome, double estoque, double critico) {
+    @Dado("^(?:que )?existe o insumo cadastrado \"([^\"]+)\" com (\\d+) unidades em estoque e nível crítico de (\\d+) unidades$")
+    public void insumoEmUnidades(String nome, int estoque, int critico) {
         Insumo insumo = new Insumo(nome, "unidade(s)", estoque, critico);
         insumos.put(nome, insumo);
         when(insumoRepository.buscarPorId(insumo.getId())).thenReturn(Optional.of(insumo));
     }
 
-    @Dado("existe o produto cadastrado {string} com receita de {double}g de {string} e {double} {string}")
-    public void existeProdutoCadastradoComReceita(String nomeProduto, double qtdGramas,
-                                                   String nomeInsumo1, double qtdUnidades,
-                                                   String nomeInsumo2) {
-        produto = new ProdutoDaBomboniere(nomeProduto);
+    @Dado("^(?:que )?existe o insumo cadastrado \"([^\"]+)\" com (\\d+)g em estoque e nível crítico de (\\d+)g$")
+    public void insumoEmGramas(String nome, int estoque, int critico) {
+        Insumo insumo = new Insumo(nome, "g", estoque, critico);
+        insumos.put(nome, insumo);
+        when(insumoRepository.buscarPorId(insumo.getId())).thenReturn(Optional.of(insumo));
+    }
+
+    @Dado("^(?:que )?existe o produto ativo cadastrado \"([^\"]+)\" com receita de (\\d+(?:\\.\\d+)?)g de \"([^\"]+)\" e (\\d+(?:\\.\\d+)?) \"([^\"]+)\"$")
+    public void produtoAtivoCadastrado(String nomeProduto, double qtdGramas,
+                                       String nomeInsumo1, double qtdUnidades,
+                                       String nomeInsumo2) {
+        produto = new ProdutoDaBomboniere(nomeProduto, 20.0, CategoriaProduto.COMBO);
         produto.adicionarItemReceita(insumos.get(nomeInsumo1), qtdGramas);
         produto.adicionarItemReceita(insumos.get(nomeInsumo2), qtdUnidades);
         when(produtoRepository.buscarPorId(produto.getId())).thenReturn(Optional.of(produto));
     }
 
-    @Quando("o sistema registrar a venda do produto cadastrado {string}")
-    public void registrarVendaCadastrado(String nomeProduto) {
+    @Dado("^(?:que )?existe o produto inativo cadastrado \"([^\"]+)\" com receita de (\\d+(?:\\.\\d+)?)g de \"([^\"]+)\" e (\\d+(?:\\.\\d+)?) \"([^\"]+)\"$")
+    public void produtoInativoCadastrado(String nomeProduto, double qtdGramas,
+                                         String nomeInsumo1, double qtdUnidades,
+                                         String nomeInsumo2) {
+        produto = new ProdutoDaBomboniere(nomeProduto, 20.0, CategoriaProduto.COMBO);
+        produto.desativar();
+        produto.adicionarItemReceita(insumos.get(nomeInsumo1), qtdGramas);
+        produto.adicionarItemReceita(insumos.get(nomeInsumo2), qtdUnidades);
+        when(produtoRepository.buscarPorId(produto.getId())).thenReturn(Optional.of(produto));
+    }
+
+    // ── QUANDO ────────────────────────────────────────────
+
+    @Quando("o sistema cadastrar o produto {string} com preço {double} e categoria {string}")
+    public void cadastrarProduto(String nome, double preco, String categoria) {
+        produto = gestao.cadastrarProduto(nome, preco, CategoriaProduto.valueOf(categoria));
+        when(produtoRepository.buscarPorId(produto.getId())).thenReturn(Optional.of(produto));
+    }
+
+    @Quando("o sistema tentar cadastrar um produto com nome vazio")
+    public void tentarCadastrarNomeVazio() {
+        try {
+            gestao.cadastrarProduto("", 10.0, CategoriaProduto.BEBIDA);
+        } catch (Exception e) {
+            excecaoCapturada = e;
+        }
+    }
+
+    @Quando("o sistema registrar a venda do produto {string}")
+    public void registrarVenda(String nomeProduto) {
         notificacoes = gestao.vender(produto.getId());
     }
 
-    @Quando("o sistema tentar registrar a venda do produto cadastrado {string}")
-    public void tentarRegistrarVendaCadastrado(String nomeProduto) {
+    @Quando("o sistema tentar registrar a venda do produto {string}")
+    public void tentarRegistrarVenda(String nomeProduto) {
         try {
             notificacoes = gestao.vender(produto.getId());
         } catch (Exception e) {
@@ -61,22 +94,56 @@ public class BombonieresSteps {
         }
     }
 
-    @Então("o estoque de {string} deve ser {double}g")
+    @Quando("o sistema estornar a venda do produto {string}")
+    public void estornarVenda(String nomeProduto) {
+        gestao.estornarVenda(produto.getId());
+    }
+
+    // ── ENTÃO ─────────────────────────────────────────────
+
+    @Então("o produto deve ser salvo no repositório")
+    public void produtoSalvoNoRepositorio() {
+        verify(produtoRepository).salvar(any(ProdutoDaBomboniere.class));
+    }
+
+    @Então("o sistema deve rejeitar informando nome inválido")
+    public void rejeitarNomeInvalido() {
+        assertNotNull(excecaoCapturada);
+        assertInstanceOf(IllegalArgumentException.class, excecaoCapturada);
+        assertTrue(excecaoCapturada.getMessage().contains("Nome"));
+    }
+
+    @Então("^o estoque de \"([^\"]+)\" deve ser (\\d+(?:\\.\\d+)?)g$")
     public void verificarEstoqueGramas(String nome, double esperado) {
         assertEquals(esperado, insumos.get(nome).getQuantidadeEmEstoque(), 0.01);
     }
 
-    @Então("o estoque de {string} deve ser {double} unidades")
+    @Então("^o estoque de \"([^\"]+)\" deve ser (\\d+(?:\\.\\d+)?) unidades$")
     public void verificarEstoqueUnidades(String nome, double esperado) {
         assertEquals(esperado, insumos.get(nome).getQuantidadeEmEstoque(), 0.01);
     }
 
-    @Então("o sistema deve emitir notificação de estoque crítico para {string}")
-    public void verificarNotificacao(String nomeInsumo) {
-        assertNotNull(notificacoes);
-        boolean encontrou = notificacoes.stream()
-            .anyMatch(n -> n.getInsumo().getNome().equals(nomeInsumo));
-        assertTrue(encontrou, "Notificação esperada para: " + nomeInsumo);
+    @Então("deve ter sido registrada uma movimentação de saída para {string}")
+    public void verificarMovimentacaoSaida(String nomeInsumo) {
+        verify(movimentacaoRepository, atLeastOnce()).salvar(argThat(m ->
+            m.getTipo() == TipoMovimentacao.SAIDA &&
+            m.getInsumoId().equals(insumos.get(nomeInsumo).getId())
+        ));
+    }
+
+    @Então("deve ter sido registrada uma movimentação de entrada para {string}")
+    public void verificarMovimentacaoEntrada(String nomeInsumo) {
+        verify(movimentacaoRepository, atLeastOnce()).salvar(argThat(m ->
+            m.getTipo() == TipoMovimentacao.ENTRADA &&
+            m.getInsumoId().equals(insumos.get(nomeInsumo).getId())
+        ));
+    }
+
+    @Então("o sistema deve rejeitar informando produto indisponível")
+    public void rejeitarProdutoIndisponivel() {
+        assertNotNull(excecaoCapturada);
+        assertInstanceOf(IllegalStateException.class, excecaoCapturada);
+        assertTrue(excecaoCapturada.getMessage().contains("indisponível"));
     }
 
     @Então("o sistema deve rejeitar informando estoque insuficiente")
@@ -84,5 +151,12 @@ public class BombonieresSteps {
         assertNotNull(excecaoCapturada);
         assertInstanceOf(IllegalStateException.class, excecaoCapturada);
         assertTrue(excecaoCapturada.getMessage().contains("Estoque insuficiente"));
+    }
+
+    @Então("o sistema deve emitir notificação de estoque crítico para {string}")
+    public void verificarNotificacao(String nomeInsumo) {
+        assertNotNull(notificacoes);
+        assertTrue(notificacoes.stream()
+            .anyMatch(n -> n.getInsumo().getNome().equals(nomeInsumo)));
     }
 }

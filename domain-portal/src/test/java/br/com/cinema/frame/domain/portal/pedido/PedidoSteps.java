@@ -1,8 +1,10 @@
 package br.com.cinema.frame.domain.portal.pedido;
 
 import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
+import br.com.cinema.frame.domain.backoffice.bomboniere.CategoriaProduto;
 import br.com.cinema.frame.domain.backoffice.bomboniere.Insumo;
 import br.com.cinema.frame.domain.backoffice.bomboniere.InsumoRepository;
+import br.com.cinema.frame.domain.backoffice.bomboniere.MovimentacaoEstoqueRepository;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBombonieresRepository;
 import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
@@ -14,7 +16,6 @@ import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import br.com.cinema.frame.domain.backoffice.sala.TipoSala;
-import br.com.cinema.frame.domain.portal.pedido.StatusPagamento;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
@@ -34,7 +35,8 @@ public class PedidoSteps {
     private GradeDeExibicaoRepository gradeRepository = mock(GradeDeExibicaoRepository.class);
     private ProdutoDaBombonieresRepository produtoRepository = mock(ProdutoDaBombonieresRepository.class);
     private InsumoRepository insumoRepository = mock(InsumoRepository.class);
-    private BombonieresService bombonieresService = new BombonieresService(produtoRepository, insumoRepository);
+    private MovimentacaoEstoqueRepository movimentacaoRepository = mock(MovimentacaoEstoqueRepository.class);
+    private BombonieresService bombonieresService = new BombonieresService(produtoRepository, insumoRepository, movimentacaoRepository);
     private PedidoService pedidoService = new PedidoService(pedidoRepository, gradeRepository, bombonieresService);
 
     private Sessao sessao;
@@ -79,7 +81,7 @@ public class PedidoSteps {
         insumoMilho = new Insumo(nomeInsumo1, "g", qtdMilho, 50);
         Insumo embalagem = new Insumo(nomeInsumo2, "unidade(s)", qtdEmbalagem, 0);
 
-        produto = new ProdutoDaBomboniere(nomeProduto);
+        produto = new ProdutoDaBomboniere(nomeProduto, 20.0, CategoriaProduto.COMBO);
         produto.adicionarItemReceita(insumoMilho, 200);
         produto.adicionarItemReceita(embalagem, 1);
 
@@ -127,6 +129,24 @@ public class PedidoSteps {
         }
     }
 
+    @Quando("o cliente tentar finalizar o pedido cadastrado com pagamento recusado")
+    public void tentarFinalizarComPagamentoRecusado() {
+        try {
+            pedidoService.finalizar(pedido.getId(), StatusPagamento.RECUSADO);
+        } catch (Exception e) {
+            excecaoCapturada = e;
+        }
+    }
+
+    @Quando("o cliente tentar adicionar ingresso meia sem elegibilidade ao pedido cadastrado")
+    public void tentarAdicionarMeiaSemElegibilidade() {
+        try {
+            pedidoService.adicionarIngresso(pedido.getId(), TipoIngresso.MEIA, false);
+        } catch (Exception e) {
+            excecaoCapturada = e;
+        }
+    }
+
     @Então("o resultado deve conter um QRCode")
     public void resultadoDeveConterQRCode() {
         assertNotNull(resultado);
@@ -163,25 +183,6 @@ public class PedidoSteps {
         assertNotNull(excecaoCapturada);
         assertInstanceOf(IllegalStateException.class, excecaoCapturada);
         assertTrue(excecaoCapturada.getMessage().contains("Estoque insuficiente"));
-    }
-
-
-    @Quando("o cliente tentar finalizar o pedido cadastrado com pagamento recusado")
-    public void tentarFinalizarComPagamentoRecusado() {
-        try {
-            pedidoService.finalizar(pedido.getId(), StatusPagamento.RECUSADO);
-        } catch (Exception e) {
-            excecaoCapturada = e;
-        }
-    }
-
-    @Quando("o cliente tentar adicionar ingresso meia sem elegibilidade ao pedido cadastrado")
-    public void tentarAdicionarMeiaSemElegibilidade() {
-        try {
-            pedidoService.adicionarIngresso(pedido.getId(), TipoIngresso.MEIA, false);
-        } catch (Exception e) {
-            excecaoCapturada = e;
-        }
     }
 
     @Então("o sistema deve rejeitar informando pagamento não aprovado")
