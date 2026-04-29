@@ -32,12 +32,13 @@ A arquitetura segue os princípios de **DDD (Domain-Driven Design)** em seus qua
 
 ```
 frame-parent
+├── domain-shared        ← Shared Kernel — primitivos compartilhados (ClienteId, enums)
 ├── domain-backoffice    ← Core Domain  — regras de negócio do backoffice
 ├── domain-portal        ← Supporting Domain — regras do portal do cliente
-├── domain-shared        ← Shared Kernel — primitivos compartilhados (ClienteId, enums)
+├── application          ← Camada de aplicação (casos de uso) — módulo scaffold, sem implementação ainda
 ├── infrastructure       ← Persistência com Spring Data JPA
-├── presentation-backend ← API REST com Spring Boot
-└── presentation-frontend← Camada de apresentação web
+├── presentation-frontend← Camada de apresentação web
+└── presentation-backend ← API REST com Spring Boot
 ```
 
 > O módulo `domain-*` não possui nenhuma dependência de framework — apenas Java puro, garantindo que as regras de negócio sejam testáveis de forma isolada e portáveis.
@@ -112,7 +113,7 @@ O projeto implementa **8 funcionalidades** consideradas fortes — cada uma envo
 ### F2 — Explorar Programação de Filmes
 **Responsável:** Julia
 
-**Fluxo:** Acessar lista de filmes → Aplicar filtros → Ordenar resultados → Selecionar filme → Visualizar detalhes → Consultar sessões disponíveis
+**Fluxo:** Acessar sessões disponíveis → Aplicar filtros (gênero / classificação indicativa) → Ordenar por popularidade → Selecionar sessão → Visualizar detalhes do filme e horário
 
 **Regras de negócio:**
 - Apenas filmes ativos e com sessões futuras são exibidos — sessões já iniciadas ou encerradas são automaticamente ocultadas
@@ -131,7 +132,7 @@ O projeto implementa **8 funcionalidades** consideradas fortes — cada uma envo
 ### F3 — Sistema de Fidelidade e Benefícios
 **Responsável:** Amanda
 
-**Fluxo:** Cadastrar/Acessar conta → Acumular pontos em compras → Consultar saldo → Verificar benefícios disponíveis → Resgatar benefício → Aplicar benefício na compra
+**Fluxo:** Acumular pontos em compras → Consultar saldo (pontos expirados descartados automaticamente) → Verificar benefícios disponíveis → Resgatar benefício (pontos debitados)
 
 **Regras de negócio:**
 - Pontos são acumulados com base no valor gasto (1 ponto por real)
@@ -167,7 +168,7 @@ O projeto implementa **8 funcionalidades** consideradas fortes — cada uma envo
 ### F5 — Gerenciar Bomboniere
 **Responsável:** Fabiana
 
-**Fluxo:** Cadastrar produto → Definir preço e categoria → Registrar entrada de estoque → Atualizar quantidades → Realizar venda integrada → Validar disponibilidade → Baixar estoque automaticamente → Monitorar níveis → Disparar alertas → Registrar movimentações
+**Fluxo:** Cadastrar insumo (nome, unidade, quantidade inicial, nível crítico) → Cadastrar produto (nome, preço, categoria) → Definir receita do produto (insumos e quantidades) → Realizar venda → Baixar estoque automaticamente por receita → Registrar movimentação de saída → Verificar nível crítico → Disparar alerta de reposição
 
 **Regras de negócio:**
 - Um produto só pode ser vendido quando estiver ativo e com estoque maior que zero
@@ -202,7 +203,7 @@ O projeto implementa **8 funcionalidades** consideradas fortes — cada uma envo
 ### F7 — Gerenciar Catálogo de Filmes
 **Responsável:** Irvin
 
-**Fluxo:** Cadastrar/importar filme → Inserir informações obrigatórias → Adicionar mídia → Definir idiomas e formatos → Ativar/desativar filme → Atualizar dados → Remover filme (quando permitido)
+**Fluxo:** Cadastrar filme (título, duração, classificação indicativa, gênero) → Adicionar URL de trailer (opcional) → Ativar/desativar filme → Atualizar dados → Remover filme (quando permitido)
 
 **Regras de negócio:**
 - Filmes devem possuir informações obrigatórias (título, duração, classificação, gênero) para serem válidos — cadastro com título vazio é rejeitado
@@ -220,7 +221,7 @@ O projeto implementa **8 funcionalidades** consideradas fortes — cada uma envo
 ### F8 — Realizar Fechamento de Caixa e Relatórios
 **Responsável:** Amanda
 
-**Fluxo:** Consolidar vendas → Separar valores → Calcular faturamento → Gerar relatórios → Analisar ocupação → Exportar
+**Fluxo:** Consolidar vendas do dia por sessão → Calcular total arrecadado e total de ingressos → Calcular taxa de ocupação média → Registrar fechamento (impedindo duplicatas) → Consultar relatório por data
 
 **Regras de negócio:**
 - Vendas são consolidadas por sessão — o sistema impede fechamento duplicado para o mesmo dia
@@ -237,7 +238,7 @@ O projeto implementa **8 funcionalidades** consideradas fortes — cada uma envo
 
 ## Testes BDD
 
-Todo o domínio é coberto por testes comportamentais escritos em **português** com Cucumber + JUnit 5. São **17 arquivos `.feature`** distribuídos entre os dois módulos de domínio, cobrindo **112 cenários** no total.
+Todo o domínio é coberto por testes comportamentais escritos em **português** com Cucumber + JUnit 5. São **17 arquivos `.feature`** distribuídos entre os dois módulos de domínio, cobrindo **131 cenários** no total.
 
 ```bash
 # Executar todos os testes
@@ -248,12 +249,12 @@ mvn test
 
 | Funcionalidade | Features BDD | Cenários |
 |---|---|---|
-| F1 — Comprar ingresso | `reserva` · `pedido` · `promocao` · `checkin` · `classificacao_compra` | 30 |
-| F2 — Explorar programação | `programacao` · `recomendacao` · `notificacao` | 15 |
+| F1 — Comprar ingresso | `reserva` · `pedido` · `promocao` · `checkin` · `classificacao_compra` | 31 |
+| F2 — Explorar programação | `programacao` · `recomendacao` · `notificacao` | 16 |
 | F3 — Fidelidade e benefícios | `fidelidade` | 7 |
 | F4 — Grade de exibição | `sessao` · `precificacao` · `dashboard` | 27 |
-| F5 — Bomboniere | `bomboniere` | 3 |
-| F6 — Controle de acesso | `checkin` · `classificacao` | 15 |
+| F5 — Bomboniere | `bomboniere` | 12 |
+| F6 — Controle de acesso | `checkin` · `classificacao` | 17 |
 | F7 — Catálogo de filmes | `catalogo` | 7 |
 | F8 — Fechamento de caixa | `caixa` · `dashboard` · `precificacao` | 26 |
 | **Transversal** | `rbac` | 10 |
@@ -264,24 +265,25 @@ mvn test
 
 ```
 domain-backoffice/features/
-├── grade/            → F4 — sessões, conflito de horário, filme inativo
-├── catalogo/         → F7 — cadastro, ativação, trailer, remoção protegida
-├── checkin/          → F1 + F6 — QR Code, idempotência, janela de acesso
-├── classificacao/    → F1 + F6 — validação de idade indicativa
-├── bomboniere/       → F5 — estoque, baixa automática, alertas
-├── caixa/            → F8 — fechamento, relatório, impedimento de duplicata
-├── precificacao/     → F4 + F8 — preço por tipo de sala e dia da semana
-├── dashboard/        → F4 + F8 — ocupação e faturamento por sessão
-└── rbac/             → transversal — permissões por role (Gerente / Operador)
+├── grade/            → F4sessao.feature            — sessões, conflito de horário, filme inativo
+├── catalogo/         → F7catalogo.feature          — cadastro, ativação, trailer, remoção protegida
+├── checkin/          → F1F6checkin.feature         — QR Code, idempotência, janela de acesso
+├── classificacao/    → F6classificacao.feature     — validação de idade indicativa
+│                     → F1classificacao_compra.feature — validação de idade na compra
+├── bomboniere/       → F5bomboniere.feature        — estoque, baixa automática, alertas
+├── caixa/            → F8caixa.feature             — fechamento, relatório, impedimento de duplicata
+├── precificacao/     → F4F8precificacao.feature    — preço por tipo de sala e dia da semana
+├── dashboard/        → F4F8dashboard.feature       — ocupação e faturamento por sessão
+└── rbac/             → rbac.feature                — transversal — permissões por role (Gerente / Operador)
 
 domain-portal/features/
-├── programacao/      → F2 — sessões futuras, filtros por gênero e classificação
-├── reserva/          → F1 — seat locking com expiração automática
-├── pedido/           → F1 — venda casada, QR Code, Voucher, pagamento
-├── promocao/         → F1 — cupons, cumulatividade, reembolso
-├── fidelidade/       → F3 — pontos, expiração, benefícios por dia
-├── recomendacao/     → F2 — sugestões por histórico de gêneros
-└── notificacao/      → F2 — alertas automáticos de pré-venda
+├── programacao/      → F2programacao.feature       — sessões futuras, filtros por gênero e classificação
+├── reserva/          → F1reserva.feature           — seat locking com expiração automática
+├── pedido/           → F1pedido.feature            — venda casada, QR Code, Voucher, pagamento
+├── promocao/         → F1promocao.feature          — cupons, cumulatividade, reembolso
+├── fidelidade/       → F3fidelidade.feature        — pontos, expiração, benefícios por dia
+├── recomendacao/     → F2recomendacao.feature      — sugestões por histórico de gêneros
+└── notificacao/      → F2notificacao.feature       — alertas automáticos de pré-venda
 ```
 
 ---
