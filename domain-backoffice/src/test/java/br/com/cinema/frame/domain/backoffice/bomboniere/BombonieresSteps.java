@@ -65,6 +65,31 @@ public class BombonieresSteps {
 
     // ── QUANDO ────────────────────────────────────────────
 
+    @Quando("o sistema cadastrar o insumo {string} com unidade {string} quantidade {double} e nível crítico {double}")
+    public void cadastrarInsumo(String nome, String unidade, double quantidade, double nivelCritico) {
+        Insumo insumo = gestao.cadastrarInsumo(nome, unidade, quantidade, nivelCritico);
+        insumos.put(nome, insumo);
+        when(insumoRepository.buscarPorId(insumo.getId())).thenReturn(Optional.of(insumo));
+    }
+
+    @Quando("o sistema tentar cadastrar um insumo com nome vazio")
+    public void tentarCadastrarInsumoNomeVazio() {
+        try {
+            gestao.cadastrarInsumo("", "g", 100, 10);
+        } catch (Exception e) {
+            excecaoCapturada = e;
+        }
+    }
+
+    @Quando("o sistema tentar cadastrar um insumo com quantidade negativa")
+    public void tentarCadastrarInsumoQuantidadeNegativa() {
+        try {
+            gestao.cadastrarInsumo("Milho", "g", -1, 10);
+        } catch (Exception e) {
+            excecaoCapturada = e;
+        }
+    }
+
     @Quando("o sistema cadastrar o produto {string} com preço {double} e categoria {string}")
     public void cadastrarProduto(String nome, double preco, String categoria) {
         produto = gestao.cadastrarProduto(nome, preco, CategoriaProduto.valueOf(categoria));
@@ -100,6 +125,25 @@ public class BombonieresSteps {
     }
 
     // ── ENTÃO ─────────────────────────────────────────────
+
+    @Então("o insumo deve ser salvo no repositório")
+    public void insumoSalvoNoRepositorio() {
+        verify(insumoRepository, atLeastOnce()).salvar(any(Insumo.class));
+    }
+
+    @Então("o sistema deve rejeitar informando nome do insumo inválido")
+    public void rejeitarNomeInsumoInvalido() {
+        assertNotNull(excecaoCapturada);
+        assertInstanceOf(IllegalArgumentException.class, excecaoCapturada);
+        assertTrue(excecaoCapturada.getMessage().contains("Nome"));
+    }
+
+    @Então("o sistema deve rejeitar informando quantidade inválida")
+    public void rejeitarQuantidadeInvalida() {
+        assertNotNull(excecaoCapturada);
+        assertInstanceOf(IllegalArgumentException.class, excecaoCapturada);
+        assertTrue(excecaoCapturada.getMessage().contains("negativa"));
+    }
 
     @Então("o produto deve ser salvo no repositório")
     public void produtoSalvoNoRepositorio() {

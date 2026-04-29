@@ -26,6 +26,12 @@ public class BombonieresService {
         this.movimentacaoRepository = movimentacaoRepository;
     }
 
+    public Insumo cadastrarInsumo(String nome, String unidade, double quantidade, double nivelCritico) {
+        Insumo insumo = new Insumo(nome, unidade, quantidade, nivelCritico);
+        insumoRepository.salvar(insumo);
+        return insumo;
+    }
+
     public ProdutoDaBomboniere cadastrarProduto(String nome, double preco, CategoriaProduto categoria) {
         ProdutoDaBomboniere produto = new ProdutoDaBomboniere(nome, preco, categoria);
         produtoRepository.salvar(produto);

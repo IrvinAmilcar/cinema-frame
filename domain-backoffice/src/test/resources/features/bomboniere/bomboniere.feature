@@ -2,6 +2,20 @@
 
 Funcionalidade: Gerenciar Bomboniere
 
+  # ── Cadastro de Insumo ───────────────────────────────────
+
+  Cenário: Cadastrar insumo com atributos válidos
+    Quando o sistema cadastrar o insumo "Milho" com unidade "g" quantidade 1000 e nível crítico 200
+    Então o insumo deve ser salvo no repositório
+
+  Cenário: Impedir cadastro de insumo com nome vazio
+    Quando o sistema tentar cadastrar um insumo com nome vazio
+    Então o sistema deve rejeitar informando nome do insumo inválido
+
+  Cenário: Impedir cadastro de insumo com quantidade negativa
+    Quando o sistema tentar cadastrar um insumo com quantidade negativa
+    Então o sistema deve rejeitar informando quantidade inválida
+
   # ── Cadastro de Produto ──────────────────────────────────
 
   Cenário: Cadastrar produto com atributos obrigatórios
