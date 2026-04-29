@@ -85,6 +85,14 @@ public class DashboardSteps {
             outrosIngressos.add(new Ingresso(outraSessao, TipoIngresso.INTEIRA));
     }
 
+    @Dado("foram vendidos {int} ingresso inteiro e {int} ingresso meia para essa sessão")
+    public void foramVendidosIngressosMistos(int qtdInteira, int qtdMeia) {
+        for (int i = 0; i < qtdInteira; i++)
+            ingressos.add(new Ingresso(sessao, TipoIngresso.INTEIRA));
+        for (int i = 0; i < qtdMeia; i++)
+            ingressos.add(new Ingresso(sessao, TipoIngresso.MEIA));
+    }
+
     @Quando("o dashboard calcular a ocupação da sessão")
     public void calcularOcupacao() {
         ocupacao = dashboard.calcularOcupacao(sessao);

@@ -1,5 +1,7 @@
 package br.com.cinema.frame.domain.backoffice.grade;
 
+import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
+import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import br.com.cinema.frame.domain.backoffice.sala.SalaRepository;
 
@@ -13,20 +15,30 @@ public class GradeService {
     private final GradeDeExibicaoRepository gradeRepository;
     private final FilmeRepository filmeRepository;
     private final SalaRepository salaRepository;
+    private final IngressoRepository ingressoRepository;
 
-    public GradeService(GradeDeExibicaoRepository gradeRepository, FilmeRepository filmeRepository, SalaRepository salaRepository) {
+    // Construtor retrocompatível
+    public GradeService(GradeDeExibicaoRepository gradeRepository,
+                        FilmeRepository filmeRepository,
+                        SalaRepository salaRepository) {
+        this(gradeRepository, filmeRepository, salaRepository, null);
+    }
+
+    public GradeService(GradeDeExibicaoRepository gradeRepository,
+                        FilmeRepository filmeRepository,
+                        SalaRepository salaRepository,
+                        IngressoRepository ingressoRepository) {
         if (gradeRepository == null)
             throw new IllegalArgumentException("GradeRepository não pode ser nulo");
-
         if (filmeRepository == null)
             throw new IllegalArgumentException("FilmeRepository não pode ser nulo");
-        
         if (salaRepository == null)
             throw new IllegalArgumentException("SalaRepository não pode ser nulo");
 
         this.gradeRepository = gradeRepository;
         this.filmeRepository = filmeRepository;
         this.salaRepository = salaRepository;
+        this.ingressoRepository = ingressoRepository;
     }
 
     public GradeDeExibicao criarGrade(LocalDate inicio, LocalDate fim) {
@@ -58,7 +70,8 @@ public class GradeService {
             .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada para a data: " + data));
     }
 
-    public Sessao removerSessao(UUID gradeId, UUID sessaoId, LocalDateTime agora) {
+    // L2: retorna a sessão removida e os ingressos que precisam de reembolso
+    public ResultadoRemocaoSessao removerSessao(UUID gradeId, UUID sessaoId, LocalDateTime agora) {
         if (agora == null)
             throw new IllegalArgumentException("Horário atual não pode ser nulo");
 
@@ -67,7 +80,12 @@ public class GradeService {
 
         Sessao sessao = grade.removerSessao(sessaoId, agora);
         gradeRepository.salvar(grade);
-        return sessao;
+
+        List<Ingresso> ingressosParaReembolso = ingressoRepository != null
+            ? ingressoRepository.buscarPorSessao(sessao)
+            : List.of();
+
+        return new ResultadoRemocaoSessao(sessao, ingressosParaReembolso);
     }
 
     public List<GradeDeExibicao> listarTodas() {

@@ -35,3 +35,9 @@ Funcionalidade: Dashboard de taxa de ocupação por sessão
     E foram vendidos 80 ingressos para essa outra sessão
     Quando o dashboard calcular a ocupação da semana
     Então o resultado deve conter 2 sessões
+
+  Cenário: Faturamento considera tipo do ingresso no cálculo
+    Dado que existe uma sessão na sala padrão com capacidade para 100 pessoas
+    E foram vendidos 1 ingresso inteiro e 1 ingresso meia para essa sessão
+    Quando o dashboard calcular a ocupação da sessão
+    Então o faturamento realizado deve ser 30,0

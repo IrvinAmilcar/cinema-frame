@@ -32,7 +32,10 @@ public class DashboardDeOcupacao {
         double precoUnitario = precificacaoService.calcularPreco(sessao);
         int capacidade = sessao.getSala().getCapacidade();
 
-        double faturamentoRealizado = ingressos.size() * precoUnitario;
+        // L7: multiplica pelo fator do tipo (INTEIRA=1.0, MEIA=0.5, CONVITE=0.0)
+        double faturamentoRealizado = ingressos.stream()
+            .mapToDouble(i -> precoUnitario * i.getTipo().getFatorPreco())
+            .sum();
         double faturamentoProjetado = capacidade * precoUnitario;
 
         return new OcupacaoDaSessao(sessao, ingressos.size(),

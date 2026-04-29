@@ -15,17 +15,28 @@ public class Pedido {
 
     private final UUID id;
     private final Sessao sessao;
+    private final UUID clienteId;
+    private UUID reservaId;
     private final List<Ingresso> ingressos;
     private final List<ProdutoDaBomboniere> produtos;
 
     public Pedido(Sessao sessao) {
+        this(sessao, null);
+    }
+
+    public Pedido(Sessao sessao, UUID clienteId) {
         if (sessao == null)
             throw new IllegalArgumentException("Sessão não pode ser nula");
 
         this.id = UUID.randomUUID();
         this.sessao = sessao;
+        this.clienteId = clienteId;
         this.ingressos = new ArrayList<>();
         this.produtos = new ArrayList<>();
+    }
+
+    public void vincularReserva(UUID reservaId) {
+        this.reservaId = reservaId;
     }
 
     public void adicionarIngresso(TipoIngresso tipo) {
@@ -65,6 +76,8 @@ public class Pedido {
 
     public UUID getId() { return id; }
     public Sessao getSessao() { return sessao; }
+    public UUID getClienteId() { return clienteId; }
+    public UUID getReservaId() { return reservaId; }
     public List<Ingresso> getIngressos() { return Collections.unmodifiableList(ingressos); }
     public List<ProdutoDaBomboniere> getProdutos() { return Collections.unmodifiableList(produtos); }
 }

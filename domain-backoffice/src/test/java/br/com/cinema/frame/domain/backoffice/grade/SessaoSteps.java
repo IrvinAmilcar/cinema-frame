@@ -4,7 +4,6 @@ import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
-import br.com.cinema.frame.domain.backoffice.ingresso.IngressoService;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import br.com.cinema.frame.domain.backoffice.sala.SalaRepository;
@@ -29,8 +28,7 @@ public class SessaoSteps {
     private FilmeRepository filmeRepository = mock(FilmeRepository.class);
     private SalaRepository salaRepository = mock(SalaRepository.class);
     private IngressoRepository ingressoRepository = mock(IngressoRepository.class);
-    private GradeService gradeService = new GradeService(gradeRepository, filmeRepository, salaRepository);
-    private IngressoService ingressoService = new IngressoService(ingressoRepository);
+    private GradeService gradeService = new GradeService(gradeRepository, filmeRepository, salaRepository, ingressoRepository);
 
     private Filme filme;
     private Sala sala;
@@ -121,8 +119,10 @@ public class SessaoSteps {
 
     @Quando("a gerente remove a sessão")
     public void gerenteRemoveSessao() {
-        sessaoRemovida = gradeService.removerSessao(grade.getId(), sessaoAdicionada.getId(), LocalDateTime.now());
-        ingressosAfetados = ingressoService.buscarPorSessao(sessaoRemovida);
+        ResultadoRemocaoSessao resultado = gradeService.removerSessao(
+            grade.getId(), sessaoAdicionada.getId(), LocalDateTime.now());
+        sessaoRemovida = resultado.getSessao();
+        ingressosAfetados = resultado.getIngressosParaReembolso();
     }
 
     @Quando("a gerente tenta remover a sessão já iniciada")

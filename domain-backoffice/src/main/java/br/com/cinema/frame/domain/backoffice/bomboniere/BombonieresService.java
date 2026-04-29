@@ -1,5 +1,8 @@
 package br.com.cinema.frame.domain.backoffice.bomboniere;
 
+import br.com.cinema.frame.domain.backoffice.rbac.Permissao;
+import br.com.cinema.frame.domain.backoffice.rbac.RbacService;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,10 +13,19 @@ public class BombonieresService {
     private final ProdutoDaBombonieresRepository produtoRepository;
     private final InsumoRepository insumoRepository;
     private final MovimentacaoEstoqueRepository movimentacaoRepository;
+    private final RbacService rbacService;
 
+    // Construtor retrocompatível (sem RBAC)
     public BombonieresService(ProdutoDaBombonieresRepository produtoRepository,
                                InsumoRepository insumoRepository,
                                MovimentacaoEstoqueRepository movimentacaoRepository) {
+        this(produtoRepository, insumoRepository, movimentacaoRepository, null);
+    }
+
+    public BombonieresService(ProdutoDaBombonieresRepository produtoRepository,
+                               InsumoRepository insumoRepository,
+                               MovimentacaoEstoqueRepository movimentacaoRepository,
+                               RbacService rbacService) {
         if (produtoRepository == null)
             throw new IllegalArgumentException("ProdutoRepository não pode ser nulo");
         if (insumoRepository == null)
@@ -24,6 +36,7 @@ public class BombonieresService {
         this.produtoRepository = produtoRepository;
         this.insumoRepository = insumoRepository;
         this.movimentacaoRepository = movimentacaoRepository;
+        this.rbacService = rbacService;
     }
 
     public Insumo cadastrarInsumo(String nome, String unidade, double quantidade, double nivelCritico) {
@@ -38,7 +51,23 @@ public class BombonieresService {
         return produto;
     }
 
+    // Venda sem verificação de RBAC (uso interno / portal do cliente)
     public List<EstoqueNotificacao> vender(UUID produtoId) {
+        return venderInterno(produtoId);
+    }
+
+    // L10: Venda com verificação de RBAC (uso pelo operador de caixa no backoffice)
+    public List<EstoqueNotificacao> vender(UUID funcionarioId, UUID produtoId) {
+        if (funcionarioId == null)
+            throw new IllegalArgumentException("ID do funcionário não pode ser nulo");
+        if (rbacService == null)
+            throw new IllegalStateException("RbacService não configurado");
+
+        rbacService.verificar(funcionarioId, Permissao.VENDER_INGRESSO);
+        return venderInterno(produtoId);
+    }
+
+    private List<EstoqueNotificacao> venderInterno(UUID produtoId) {
         if (produtoId == null)
             throw new IllegalArgumentException("ID do produto não pode ser nulo");
 
