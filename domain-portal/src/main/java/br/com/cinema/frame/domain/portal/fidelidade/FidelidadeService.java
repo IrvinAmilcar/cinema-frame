@@ -2,8 +2,12 @@ package br.com.cinema.frame.domain.portal.fidelidade;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.MonthDay;
 import java.util.List;
 import java.util.UUID;
+
+import br.com.cinema.frame.domain.portal.cliente.ClienteRepository;
+import br.com.cinema.frame.domain.shared.cliente.ClienteId;
 
 public class FidelidadeService {
 
@@ -11,13 +15,21 @@ public class FidelidadeService {
 
     private final FidelidadeRepository fidelidadeRepository;
     private final BeneficioRepository beneficioRepository;
+    private final ClienteRepository clienteRepository;           
+    private final RegistroResgateRepository resgateRepository;  
 
     public FidelidadeService(FidelidadeRepository fidelidadeRepository,
-                             BeneficioRepository beneficioRepository) {
+                             BeneficioRepository beneficioRepository,
+                             ClienteRepository clienteRepository,
+                             RegistroResgateRepository resgateRepository) {
         if (fidelidadeRepository == null) throw new IllegalArgumentException("FidelidadeRepository é obrigatório");
         if (beneficioRepository == null) throw new IllegalArgumentException("BeneficioRepository é obrigatório");
+        if (clienteRepository == null) throw new IllegalArgumentException("ClienteRepository é obrigatório");
+        if (resgateRepository == null) throw new IllegalArgumentException("RegistroResgateRepository é obrigatório");
         this.fidelidadeRepository = fidelidadeRepository;
         this.beneficioRepository = beneficioRepository;
+        this.clienteRepository = clienteRepository;
+        this.resgateRepository = resgateRepository;
     }
 
     public void acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje) {
@@ -28,9 +40,19 @@ public class FidelidadeService {
         PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
                 .orElse(new PontosCliente(clienteId));
 
-        int pontosGanhos = (int) Math.floor(valorGasto * PONTOS_POR_REAL);
+        int pontosBase = (int) Math.floor(valorGasto * PONTOS_POR_REAL);
+
+        int pontosComBonus = PontosCliente.calcularPontosComBonus(valorGasto, pontosBase);
+
+        boolean ehAniversario = clienteRepository.buscarAniversarioPorCliente(new ClienteId(clienteId))
+                .map(aniversario -> aniversario.equals(MonthDay.from(hoje)))
+                .orElse(false);
+        if (ehAniversario) {
+            pontosComBonus = pontosComBonus * 2;
+        }
+
         LocalDate validade = hoje.plusMonths(12);
-        pontos.acumularPontos(pontosGanhos, validade);
+        pontos.acumularPontos(pontosComBonus, validade, hoje);
 
         fidelidadeRepository.salvar(pontos);
     }
@@ -85,7 +107,30 @@ public class FidelidadeService {
             throw new IllegalStateException("Pontos insuficientes para resgatar o benefício");
         }
 
-        pontos.debitarPontos(beneficio.getPontosNecessarios());
+        List<RegistroResgate> resgatesHoje = resgateRepository.buscarPorClienteEMes(
+                clienteId, hoje.getMonthValue(), hoje.getYear()
+        ).stream()
+                .filter(r -> r.getData().equals(hoje))
+                .toList();
+
+        for (RegistroResgate registro : resgatesHoje) {
+            Beneficio jaResgatado = beneficioRepository.buscarPorId(registro.getBeneficioId())
+                    .orElse(null);
+            if (jaResgatado != null && beneficio.incompativelCom(jaResgatado)) {
+                throw new IllegalStateException(
+                    "Benefício incompatível com '" + jaResgatado.getNome() + "' já resgatado hoje"
+                );
+            }
+        }
+
+        pontos.debitarPontos(beneficio.getPontosNecessarios(), beneficioId, hoje);
         fidelidadeRepository.salvar(pontos);
+
+        resgateRepository.salvar(clienteId, new RegistroResgate(beneficioId, beneficio.getPontosNecessarios(), hoje));
+    }
+
+    public List<RegistroResgate> consultarHistoricoResgates(UUID clienteId) {
+        if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
+        return resgateRepository.buscarPorCliente(clienteId);
     }
 }

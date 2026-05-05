@@ -1,9 +1,10 @@
 package br.com.cinema.frame.domain.portal.cliente;
 
-import br.com.cinema.frame.domain.shared.cliente.ClienteId;
-
+import java.time.MonthDay;
 import java.util.List;
 import java.util.Optional;
+
+import br.com.cinema.frame.domain.shared.cliente.ClienteId;
 
 public interface ClienteRepository {
 
@@ -12,4 +13,6 @@ public interface ClienteRepository {
     Optional<Cliente> buscarPorEmail(String email);
     List<Cliente> listarTodos();
     void remover(ClienteId id);
+
+    Optional<MonthDay> buscarAniversarioPorCliente(ClienteId id);
 }

@@ -1,38 +1,5 @@
 package br.com.cinema.frame.domain.portal.pedido;
 
-import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
-import br.com.cinema.frame.domain.backoffice.bomboniere.CategoriaProduto;
-import br.com.cinema.frame.domain.backoffice.bomboniere.Insumo;
-import br.com.cinema.frame.domain.backoffice.bomboniere.InsumoRepository;
-import br.com.cinema.frame.domain.backoffice.bomboniere.MovimentacaoEstoqueRepository;
-import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
-import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBombonieresRepository;
-import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoDeCompraService;
-import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
-import br.com.cinema.frame.domain.backoffice.grade.Filme;
-import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
-import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
-import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicao;
-import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicaoRepository;
-import br.com.cinema.frame.domain.backoffice.grade.Sessao;
-import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
-import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
-import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
-import br.com.cinema.frame.domain.backoffice.sala.Sala;
-import br.com.cinema.frame.domain.backoffice.sala.TipoSala;
-import br.com.cinema.frame.domain.portal.fidelidade.BeneficioRepository;
-import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeRepository;
-import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeService;
-import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeCompras;
-import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeComprasRepository;
-import br.com.cinema.frame.domain.portal.reserva.ReservaDeAssento;
-import br.com.cinema.frame.domain.portal.reserva.ReservaRepository;
-import br.com.cinema.frame.domain.portal.reserva.ReservaService;
-import br.com.cinema.frame.domain.portal.reserva.StatusReserva;
-import io.cucumber.java.pt.Dado;
-import io.cucumber.java.pt.Quando;
-import io.cucumber.java.pt.Então;
-
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,8 +8,52 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
+import br.com.cinema.frame.domain.backoffice.bomboniere.CategoriaProduto;
+import br.com.cinema.frame.domain.backoffice.bomboniere.Insumo;
+import br.com.cinema.frame.domain.backoffice.bomboniere.InsumoRepository;
+import br.com.cinema.frame.domain.backoffice.bomboniere.MovimentacaoEstoqueRepository;
+import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
+import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBombonieresRepository;
+import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoDeCompraService;
+import br.com.cinema.frame.domain.backoffice.grade.Filme;
+import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
+import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicao;
+import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicaoRepository;
+import br.com.cinema.frame.domain.backoffice.grade.Sessao;
+import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
+import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
+import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
+import br.com.cinema.frame.domain.backoffice.sala.Sala;
+import br.com.cinema.frame.domain.backoffice.sala.TipoSala;
+import br.com.cinema.frame.domain.portal.cliente.ClienteRepository;
+import br.com.cinema.frame.domain.portal.fidelidade.BeneficioRepository;
+import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeRepository;
+import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeService;
+import br.com.cinema.frame.domain.portal.fidelidade.RegistroResgateRepository;
+import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeCompras;
+import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeComprasRepository;
+import br.com.cinema.frame.domain.portal.reserva.ReservaDeAssento;
+import br.com.cinema.frame.domain.portal.reserva.ReservaRepository;
+import br.com.cinema.frame.domain.portal.reserva.ReservaService;
+import br.com.cinema.frame.domain.portal.reserva.StatusReserva;
+import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
+import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
+import io.cucumber.java.pt.Dado;
+import io.cucumber.java.pt.Então;
+import io.cucumber.java.pt.Quando;
 
 public class PedidoSteps {
 
@@ -54,6 +65,8 @@ public class PedidoSteps {
     private final IngressoRepository ingressoRepository = mock(IngressoRepository.class);
     private final FidelidadeRepository fidelidadeRepository = mock(FidelidadeRepository.class);
     private final BeneficioRepository beneficioRepository = mock(BeneficioRepository.class);
+    private final ClienteRepository clienteRepository = mock(ClienteRepository.class);           // RN11
+    private final RegistroResgateRepository resgateRepository = mock(RegistroResgateRepository.class); // RN13
     private final HistoricoDeComprasRepository historicoRepository = mock(HistoricoDeComprasRepository.class);
     private final FilmeRepository filmeRepository = mock(FilmeRepository.class);
     private final ReservaRepository reservaRepository = mock(ReservaRepository.class);
@@ -61,7 +74,7 @@ public class PedidoSteps {
     private final BombonieresService bombonieresService =
         new BombonieresService(produtoRepository, insumoRepository, movimentacaoRepository);
     private final FidelidadeService fidelidadeService =
-        new FidelidadeService(fidelidadeRepository, beneficioRepository);
+        new FidelidadeService(fidelidadeRepository, beneficioRepository, clienteRepository, resgateRepository);
     private final ClassificacaoDeCompraService classificacaoService =
         new ClassificacaoDeCompraService(filmeRepository);
     private final ReservaService reservaService =

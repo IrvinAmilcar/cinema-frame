@@ -7,22 +7,52 @@ import java.util.UUID;
 
 public class PontosCliente {
 
+    private static final int LIMITE_ACUMULO_MENSAL = 500;
+
+    private static final double VALOR_BONUS_NIVEL1 = 100.0;  // acima de R$100
+    private static final double VALOR_BONUS_NIVEL2 = 200.0;  // acima de R$200
+    private static final double VALOR_BONUS_NIVEL3 = 500.0;  // acima de R$500
+    private static final double MULTIPLICADOR_NIVEL1 = 1.5;
+    private static final double MULTIPLICADOR_NIVEL2 = 2.0;
+    private static final double MULTIPLICADOR_NIVEL3 = 3.0;
+
     private final UUID clienteId;
     private int saldoAtivo;
     private final List<LancamentoPontos> lancamentos;
+    private final List<RegistroResgate> historicoResgates; // RN13
 
     public PontosCliente(UUID clienteId) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         this.clienteId = clienteId;
         this.saldoAtivo = 0;
         this.lancamentos = new ArrayList<>();
+        this.historicoResgates = new ArrayList<>();
     }
 
-    public void acumularPontos(int pontos, LocalDate validade) {
+    public int calcularPontosAcumuladosNoMes(int mes, int ano) {
+        return lancamentos.stream()
+                .filter(l -> l.getDataCriacao().getMonthValue() == mes
+                          && l.getDataCriacao().getYear() == ano)
+                .mapToInt(LancamentoPontos::getPontosOriginais)
+                .sum();
+    }
+
+    public void acumularPontos(int pontos, LocalDate validade, LocalDate hoje) {
         if (pontos <= 0) throw new IllegalArgumentException("Pontos devem ser positivos");
         if (validade == null) throw new IllegalArgumentException("Validade é obrigatória");
-        lancamentos.add(new LancamentoPontos(pontos, validade));
-        saldoAtivo += pontos;
+        if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
+
+        int jaAcumuladoNoMes = calcularPontosAcumuladosNoMes(hoje.getMonthValue(), hoje.getYear());
+        int disponivelNoMes = LIMITE_ACUMULO_MENSAL - jaAcumuladoNoMes;
+        if (disponivelNoMes <= 0) {
+            throw new IllegalStateException(
+                "Limite mensal de " + LIMITE_ACUMULO_MENSAL + " pontos atingido para este mês"
+            );
+        }
+        int pontosAcumulaveis = Math.min(pontos, disponivelNoMes);
+
+        lancamentos.add(new LancamentoPontos(pontosAcumulaveis, validade, hoje));
+        saldoAtivo += pontosAcumulaveis;
     }
 
     public void expirarPontosVencidos(LocalDate hoje) {
@@ -34,10 +64,21 @@ public class PontosCliente {
         }
     }
 
-    public void debitarPontos(int pontos) {
+    public void debitarPontos(int pontos, UUID beneficioId, LocalDate hoje) {
         if (pontos <= 0) throw new IllegalArgumentException("Pontos a debitar devem ser positivos");
         if (saldoAtivo < pontos) throw new IllegalStateException("Saldo insuficiente de pontos");
-        // debita dos lançamentos mais antigos primeiro 
+
+        long resgatesDoMes = historicoResgates.stream()
+                .filter(r -> r.getBeneficioId().equals(beneficioId))
+                .filter(r -> r.getData().getMonthValue() == hoje.getMonthValue()
+                          && r.getData().getYear() == hoje.getYear())
+                .count();
+        if (resgatesDoMes >= 3) {
+            throw new IllegalStateException(
+                "Limite de 3 resgates do mesmo benefício por mês atingido"
+            );
+        }
+
         int restante = pontos;
         for (LancamentoPontos l : lancamentos) {
             if (restante == 0) break;
@@ -48,9 +89,28 @@ public class PontosCliente {
             }
         }
         saldoAtivo -= pontos;
+
+        historicoResgates.add(new RegistroResgate(beneficioId, pontos, hoje));
+    }
+
+    public static int calcularPontosComBonus(double valorGasto, int pontosBase) {
+        if (valorGasto >= VALOR_BONUS_NIVEL3) {
+            return (int) Math.floor(pontosBase * MULTIPLICADOR_NIVEL3);
+        } else if (valorGasto >= VALOR_BONUS_NIVEL2) {
+            return (int) Math.floor(pontosBase * MULTIPLICADOR_NIVEL2);
+        } else if (valorGasto >= VALOR_BONUS_NIVEL1) {
+            return (int) Math.floor(pontosBase * MULTIPLICADOR_NIVEL1);
+        }
+        return pontosBase;
+    }
+
+    public void registrarResgateNoHistorico(RegistroResgate registro) {
+        if (registro == null) throw new IllegalArgumentException("Registro é obrigatório");
+        historicoResgates.add(registro);
     }
 
     public int getSaldoAtivo() { return saldoAtivo; }
     public UUID getClienteId() { return clienteId; }
     public List<LancamentoPontos> getLancamentos() { return List.copyOf(lancamentos); }
+    public List<RegistroResgate> getHistoricoResgates() { return List.copyOf(historicoResgates); }
 }

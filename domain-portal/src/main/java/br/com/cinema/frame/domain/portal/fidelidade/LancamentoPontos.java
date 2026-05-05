@@ -5,12 +5,19 @@ import java.time.LocalDate;
 public class LancamentoPontos {
 
     private int saldo;
+    private final int pontosOriginais; 
     private final LocalDate validade;
+    private final LocalDate dataCriacao; 
     private boolean expirado;
 
-    public LancamentoPontos(int saldo, LocalDate validade) {
+    public LancamentoPontos(int saldo, LocalDate validade, LocalDate dataCriacao) {
+        if (saldo <= 0) throw new IllegalArgumentException("Saldo deve ser positivo");
+        if (validade == null) throw new IllegalArgumentException("Validade é obrigatória");
+        if (dataCriacao == null) throw new IllegalArgumentException("Data de criação é obrigatória");
         this.saldo = saldo;
+        this.pontosOriginais = saldo;
         this.validade = validade;
+        this.dataCriacao = dataCriacao;
         this.expirado = false;
     }
 
@@ -20,7 +27,10 @@ public class LancamentoPontos {
     }
 
     public void expirar() { this.expirado = true; this.saldo = 0; }
+
     public boolean isExpirado() { return expirado; }
     public int getSaldo() { return saldo; }
+    public int getPontosOriginais() { return pontosOriginais; }
     public LocalDate getValidade() { return validade; }
+    public LocalDate getDataCriacao() { return dataCriacao; }
 }
