@@ -19,20 +19,24 @@ Os requisitos da 2.ª entrega são:
 | Camada | Status |
 |---|---|
 | Domínio + BDD + CML (1.ª entrega) | ✅ Completo e aprovado |
-| Banco de dados: Neon PostgreSQL 17.8 (cloud, compartilhado) | ✅ Conectado e funcionando |
+| Banco de dados: PostgreSQL 17.10 via Docker local (porta 5433) | ✅ Conectado e funcionando |
+| `docker-compose.yml` na raiz do projeto | ✅ Feito |
 | `infrastructure/pom.xml` — driver PostgreSQL adicionado | ✅ Feito |
 | `presentation-backend/src/.../FrameApplication.java` — classe principal Spring Boot + CORS | ✅ Feito |
 | `presentation-backend/src/main/resources/application.properties` — JPA + porta 8080 | ✅ Feito |
-| `presentation-backend/src/main/resources/application-local.properties` — credenciais do banco (gitignored) | ✅ Feito (cada membro precisa criar localmente) |
+| `presentation-backend/src/main/resources/application-local.properties` — credenciais do banco (gitignored) | ✅ Feito (cada membro cria localmente) |
+| `presentation-backend/src/main/resources/application-local.properties.example` — template para o time | ✅ Feito |
 | Estrutura do frontend React + Vite — `package.json`, `vite.config.ts`, `App.tsx`, `client.ts` | ✅ Feito |
 | `mvn install -DskipTests` — todos os 8 módulos compilando | ✅ Confirmado |
+| `mvn spring-boot:run` — backend sobe e conecta ao banco | ✅ Confirmado |
 | Classes `@Entity` na camada `infrastructure` | ❌ Não implementado |
 | Controllers REST em `presentation-backend` | ❌ Não implementado |
 | Padrões de projeto (Proxy, Observer, Iterator, Template Method, Strategy, Decorator) | ❌ Não implementado |
 | Telas no frontend React | ❌ Não implementado |
 
 **Decisão de stack confirmada pelo time:**
-- Banco: **Neon PostgreSQL** (cloud, gratuito, compartilhado por todos sem instalar nada localmente)
+- Banco: **PostgreSQL 17.10 via Docker local** — cada membro tem seu próprio banco, sem compartilhar dados
+- Porta Docker: **5433** (5432 pode estar ocupada por instalação local do PostgreSQL)
 - Frontend: **React 19 + Vite + TypeScript** (porta 5173, proxy `/api` → Spring Boot 8080)
 - Backend: **Spring Boot 4.0.5 + JPA/Hibernate 7.2.7**
 
@@ -652,32 +656,47 @@ Este guia define a ordem exata de execução. **Não pule fases.** Cada fase dep
 
 ### O que cada membro precisa fazer UMA VEZ após dar `git pull`
 
-**1. Criar o arquivo de credenciais locais** (nunca vai ao GitHub):
+**1. Instalar Docker Desktop** (se ainda não tiver): https://www.docker.com/products/docker-desktop
+
+**2. Criar o banco PostgreSQL local** (rodar uma vez só no terminal):
+```bash
+docker run --name frame-db \
+  -e POSTGRES_PASSWORD=frame \
+  -e POSTGRES_DB=framedb \
+  -p 5433:5432 \
+  -v frame-db-data:/var/lib/postgresql/data \
+  -d postgres:17
+```
+> O `-v frame-db-data:/var/lib/postgresql/data` garante que os dados ficam salvos mesmo se o container for parado. Para iniciar o banco nos próximos dias: `docker start frame-db`
+
+**3. Criar o arquivo de credenciais locais** (nunca vai ao GitHub):
+
+Copiar o arquivo exemplo e renomear:
 ```
 presentation-backend/src/main/resources/application-local.properties
 ```
-Conteúdo (solicite ao Irvin a string de conexão do Neon via WhatsApp/Discord):
+Conteúdo (igual para todos — cada um tem seu banco local):
 ```properties
-spring.datasource.url=jdbc:postgresql://<URL-DO-NEON>?sslmode=require&channelBinding=require
+spring.datasource.url=jdbc:postgresql://localhost:5433/framedb
 spring.datasource.driver-class-name=org.postgresql.Driver
-spring.datasource.username=neondb_owner
-spring.datasource.password=<SENHA>
+spring.datasource.username=postgres
+spring.datasource.password=frame
 ```
 
-**2. Instalar dependências do frontend:**
+**4. Instalar dependências do frontend:**
 ```bash
 cd presentation-frontend
 npm install
 ```
 
-**3. Verificar que o projeto compila:**
+**5. Verificar que o projeto compila:**
 ```bash
 # Na raiz do projeto
 mvn install -DskipTests
 ```
 Esperado: `BUILD SUCCESS` com 8 módulos.
 
-**4. Criar sua branch individual:**
+**6. Criar sua branch individual:**
 ```bash
 git checkout main
 git pull origin main
@@ -685,7 +704,7 @@ git checkout -b feature/fabiana-jpa-bomboniere  # Fabiana
 git checkout -b feature/amanda-jpa-fidelidade   # Amanda
 git checkout -b feature/julia-jpa-pedido        # Julia
 ```
-Irvin já está na `main` — pode criar `feature/irvin-jpa-grade` quando começar.
+Irvin: `feature/irvin-jpa-grade`
 
 ---
 
@@ -906,7 +925,9 @@ Com a aplicação rodando, testar manualmente:
 
 ### ~~5.3~~ ✅ Banco PostgreSQL já configurado
 
-O grupo já está usando **Neon PostgreSQL** em nuvem desde o início. Não é necessário nenhuma migração antes da entrega. O `application-local.properties` (gitignored) já aponta para o banco correto. As tabelas são criadas automaticamente pelo JPA na primeira vez que cada `@Entity` for adicionada.
+Cada membro usa **PostgreSQL 17 via Docker local** (porta 5433). O `docker-compose.yml` na raiz do projeto sobe o banco com um único comando. O `application-local.properties` (gitignored) aponta para `localhost:5433/framedb`. As tabelas são criadas automaticamente pelo JPA na primeira vez que cada `@Entity` for adicionada.
+
+> **Nota:** A porta é 5433 (não 5432) porque a 5432 pode estar ocupada por uma instalação local do PostgreSQL na máquina de alguns membros.
 
 ---
 

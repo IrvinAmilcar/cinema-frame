@@ -1,12 +1,23 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # INSTRUÇÕES:
 #   1. Copie este arquivo e renomeie a cópia para: application-local.properties
-#   2. Preencha com a connection string que o Irvin vai compartilhar no grupo
-#   3. NUNCA commite o application-local.properties — ele está no .gitignore
+#   2. Suba o PostgreSQL local com Docker (uma vez só):
+#
+#      docker run --name frame-db \
+#        -e POSTGRES_PASSWORD=frame \
+#        -e POSTGRES_DB=framedb \
+#        -p 5433:5432 \
+#        -v frame-db-data:/var/lib/postgresql/data \
+#        -d postgres:17
+#
+#   3. Para iniciar o banco depois (sem recriar):
+#      docker start frame-db
+#
+#   4. NUNCA commite o application-local.properties — ele está no .gitignore
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Banco Neon (nuvem — compartilhado por todos)
-spring.datasource.url=jdbc:postgresql://SEU-HOST.neon.tech/frame_db?sslmode=require
+# Banco PostgreSQL local via Docker
+spring.datasource.url=jdbc:postgresql://localhost:5433/framedb
 spring.datasource.driver-class-name=org.postgresql.Driver
-spring.datasource.username=SEU_USUARIO
-spring.datasource.password=SUA_SENHA
+spring.datasource.username=postgres
+spring.datasource.password=frame

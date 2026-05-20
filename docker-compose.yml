@@ -1,0 +1,15 @@
+services:
+  frame-db:
+    image: postgres:17
+    container_name: frame-db
+    environment:
+      POSTGRES_DB: framedb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: frame
+    ports:
+      - "5433:5432"
+    volumes:
+      - frame-db-data:/var/lib/postgresql/data
+
+volumes:
+  frame-db-data:
