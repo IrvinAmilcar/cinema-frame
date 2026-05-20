@@ -1,0 +1,12 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# INSTRUÇÕES:
+#   1. Copie este arquivo e renomeie a cópia para: application-local.properties
+#   2. Preencha com a connection string que o Irvin vai compartilhar no grupo
+#   3. NUNCA commite o application-local.properties — ele está no .gitignore
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Banco Neon (nuvem — compartilhado por todos)
+spring.datasource.url=jdbc:postgresql://SEU-HOST.neon.tech/frame_db?sslmode=require
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.datasource.username=SEU_USUARIO
+spring.datasource.password=SUA_SENHA

@@ -14,7 +14,27 @@ Os requisitos da 2.ª entrega são:
 - Implementar a camada de persistência com mapeamento objeto-relacional (JPA)
 - Implementar a camada de apresentação web
 
-**Estado atual do código:** A 1.ª entrega está completa — domínio, BDD e CML. A 2.ª entrega ainda não foi implementada. Nenhuma classe tem `@Entity`, nenhum controller existe, nenhum padrão de projeto foi codificado.
+**Estado atual do código — atualizado em 2026-05-20:**
+
+| Camada | Status |
+|---|---|
+| Domínio + BDD + CML (1.ª entrega) | ✅ Completo e aprovado |
+| Banco de dados: Neon PostgreSQL 17.8 (cloud, compartilhado) | ✅ Conectado e funcionando |
+| `infrastructure/pom.xml` — driver PostgreSQL adicionado | ✅ Feito |
+| `presentation-backend/src/.../FrameApplication.java` — classe principal Spring Boot + CORS | ✅ Feito |
+| `presentation-backend/src/main/resources/application.properties` — JPA + porta 8080 | ✅ Feito |
+| `presentation-backend/src/main/resources/application-local.properties` — credenciais do banco (gitignored) | ✅ Feito (cada membro precisa criar localmente) |
+| Estrutura do frontend React + Vite — `package.json`, `vite.config.ts`, `App.tsx`, `client.ts` | ✅ Feito |
+| `mvn install -DskipTests` — todos os 8 módulos compilando | ✅ Confirmado |
+| Classes `@Entity` na camada `infrastructure` | ❌ Não implementado |
+| Controllers REST em `presentation-backend` | ❌ Não implementado |
+| Padrões de projeto (Proxy, Observer, Iterator, Template Method, Strategy, Decorator) | ❌ Não implementado |
+| Telas no frontend React | ❌ Não implementado |
+
+**Decisão de stack confirmada pelo time:**
+- Banco: **Neon PostgreSQL** (cloud, gratuito, compartilhado por todos sem instalar nada localmente)
+- Frontend: **React 19 + Vite + TypeScript** (porta 5173, proxy `/api` → Spring Boot 8080)
+- Backend: **Spring Boot 4.0.5 + JPA/Hibernate 7.2.7**
 
 ---
 
@@ -618,130 +638,56 @@ Este guia define a ordem exata de execução. **Não pule fases.** Cada fase dep
 
 ---
 
-## Fase 0 — Preparação do ambiente (todos juntos, 1 reunião)
+## Fase 0 — Preparação do ambiente ✅ CONCLUÍDA
 
-### 0.1 — Adicionar driver do banco no `infrastructure/pom.xml`
+> **Esta fase foi concluída por Irvin em 2026-05-20. Os itens abaixo são histórico — não é necessário refazer nada.**
 
-Abrir o arquivo [infrastructure/pom.xml](../infrastructure/pom.xml) e adicionar dentro de `<dependencies>`:
-
-```xml
-<!-- Banco H2 para desenvolvimento local -->
-<dependency>
-    <groupId>com.h2database</groupId>
-    <artifactId>h2</artifactId>
-    <scope>runtime</scope>
-</dependency>
-
-<!-- PostgreSQL para entrega final (deixe comentado por enquanto) -->
-<!--
-<dependency>
-    <groupId>org.postgresql</groupId>
-    <artifactId>postgresql</artifactId>
-    <scope>runtime</scope>
-</dependency>
--->
-```
-
-**Quem faz:** Irvin (já tem mais contexto do projeto). Faz o commit. Todos dão `git pull`.
+### ~~0.1~~ ✅ Driver PostgreSQL adicionado ao `infrastructure/pom.xml`
+### ~~0.2~~ ✅ `application.properties` criado com JPA + porta 8080 + import de credenciais locais
+### ~~0.3~~ ✅ `FrameApplication.java` criado com CORS configurado para React (porta 5173)
+### ~~0.4~~ ✅ Stack decidida: React 19 + Vite + TypeScript (estrutura criada em `presentation-frontend/`)
+### ~~0.5~~ ✅ Banco Neon PostgreSQL conectado e verificado (`HikariPool-1 - Start completed`)
 
 ---
 
-### 0.2 — Criar `application.properties` no módulo `presentation-backend`
+### O que cada membro precisa fazer UMA VEZ após dar `git pull`
 
-Criar o arquivo em:  
-`presentation-backend/src/main/resources/application.properties`
-
+**1. Criar o arquivo de credenciais locais** (nunca vai ao GitHub):
+```
+presentation-backend/src/main/resources/application-local.properties
+```
+Conteúdo (solicite ao Irvin a string de conexão do Neon via WhatsApp/Discord):
 ```properties
-# Banco H2 em memória (desenvolvimento)
-spring.datasource.url=jdbc:h2:mem:framedb;DB_CLOSE_DELAY=-1
-spring.datasource.driver-class-name=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=
-spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-spring.jpa.hibernate.ddl-auto=create-drop
-spring.jpa.show-sql=true
-spring.h2.console.enabled=true
-
-# CORS — permite requisições do frontend local
-spring.web.cors.allowed-origins=http://localhost:4200,http://localhost:3000
+spring.datasource.url=jdbc:postgresql://<URL-DO-NEON>?sslmode=require&channelBinding=require
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.datasource.username=neondb_owner
+spring.datasource.password=<SENHA>
 ```
 
-**Quem faz:** Irvin. Faz o commit. Todos dão `git pull`.
-
----
-
-### 0.3 — Criar classe principal do Spring Boot
-
-Criar em `presentation-backend/src/main/java/br/com/cinema/frame/`:
-
-```java
-@SpringBootApplication
-public class FrameApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(FrameApplication.class, args);
-    }
-}
+**2. Instalar dependências do frontend:**
+```bash
+cd presentation-frontend
+npm install
 ```
 
-**Quem faz:** Irvin. Commit + push. Todos dão `git pull`.
+**3. Verificar que o projeto compila:**
+```bash
+# Na raiz do projeto
+mvn install -DskipTests
+```
+Esperado: `BUILD SUCCESS` com 8 módulos.
 
----
-
-### 0.4 — Decidir tecnologia do frontend
-
-**Opção A — Vaadin (recomendada para quem tem menos experiência com frontend):**
-- Tudo em Java — sem HTML/CSS/JS separados
-- Adicionar ao `presentation-frontend/pom.xml`:
-  ```xml
-  <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-spring-boot-starter</artifactId>
-      <version>24.4.0</version>
-  </dependency>
-  ```
-
-**Opção B — Thymeleaf (mais simples, integrado ao Spring Boot):**
-- Templates HTML com dados do servidor
-- Adicionar ao `presentation-backend/pom.xml`:
-  ```xml
-  <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-thymeleaf</artifactId>
-  </dependency>
-  ```
-
-**Opção C — Angular (separado do backend, requer build separado):**
-- Mais trabalho de configuração, mas mais completo visualmente
-- Grupo deve ter experiência prévia com Node.js e TypeScript
-
-> **Recomendação:** Use Thymeleaf se o tempo for curto. Use Vaadin se quiserem ficar 100% em Java. Use Angular somente se já tiverem experiência.
-
-**O grupo decide juntos antes de cada um começar a implementar a camada web.**
-
----
-
-### 0.5 — Criar branches individuais
-
-Cada integrante cria sua branch a partir da `main` atualizada:
-
+**4. Criar sua branch individual:**
 ```bash
 git checkout main
 git pull origin main
-git checkout -b feature/irvin-jpa-grade      # Irvin
 git checkout -b feature/fabiana-jpa-bomboniere  # Fabiana
 git checkout -b feature/amanda-jpa-fidelidade   # Amanda
 git checkout -b feature/julia-jpa-pedido        # Julia
 ```
+Irvin já está na `main` — pode criar `feature/irvin-jpa-grade` quando começar.
 
 ---
-
-### 0.6 — Verificar que o projeto compila
-
-```bash
-mvn clean install -DskipTests
-```
-
-Se compilar sem erros, todos estão prontos para começar.
 
 ---
 
@@ -958,25 +904,9 @@ Com a aplicação rodando, testar manualmente:
 - Fazer check-in com QR Code inválido → esperar status `INVALIDO`
 - Acumular pontos e resgatar benefício → verificar saldo debitado
 
-### 5.3 — Trocar banco para PostgreSQL antes da entrega
+### ~~5.3~~ ✅ Banco PostgreSQL já configurado
 
-Quando o grupo estiver pronto para a demo ao professor:
-
-1. Instalar PostgreSQL (ou subir via Docker: `docker run -e POSTGRES_PASSWORD=frame -e POSTGRES_DB=frame_db -p 5432:5432 postgres`)
-2. Comentar as dependências H2 no `infrastructure/pom.xml` e descomentar PostgreSQL
-3. Atualizar `application.properties`:
-
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/frame_db
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.datasource.username=postgres
-spring.datasource.password=frame
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.h2.console.enabled=false
-```
-
-O código JPA **não muda** — apenas o `application.properties` e o driver.
+O grupo já está usando **Neon PostgreSQL** em nuvem desde o início. Não é necessário nenhuma migração antes da entrega. O `application-local.properties` (gitignored) já aponta para o banco correto. As tabelas são criadas automaticamente pelo JPA na primeira vez que cada `@Entity` for adicionada.
 
 ---
 

@@ -14,3 +14,10 @@ target/
 
 # Env
 .env
+
+# Credenciais do banco — nunca commitar
+application-local.properties
+
+# Node (frontend React)
+node_modules/
+dist/
