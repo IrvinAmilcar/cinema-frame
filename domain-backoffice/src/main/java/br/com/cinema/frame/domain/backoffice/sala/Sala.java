@@ -25,6 +25,12 @@ public class Sala {
         this.tipo = tipo;
     }
 
+    public static Sala reconstituir(UUID id, int numero, int capacidade, TipoSala tipo) {
+        Sala s = new Sala(numero, capacidade, tipo);
+        s.id = id;
+        return s;
+    }
+
     public UUID getId() { return id; }
     public int getNumero() { return numero; }
     public int getCapacidade() { return capacidade; }

@@ -64,6 +64,16 @@ public class Filme {
         this.ativo = true;
     }
 
+    public static Filme reconstituir(UUID id, String titulo, Duration duracao,
+                                     ClassificacaoIndicativa classificacao, GeneroFilme genero,
+                                     String trailerURL, boolean ativo) {
+        Filme f = new Filme(titulo, duracao, classificacao, genero);
+        f.id = id;
+        f.trailerURL = trailerURL;
+        if (!ativo) f.desativar();
+        return f;
+    }
+
     public UUID getId() { return id; }
     public String getTitulo() { return titulo; }
     public Duration getDuracao() { return duracao; }

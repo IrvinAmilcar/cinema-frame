@@ -58,6 +58,13 @@ public class GradeDeExibicao {
         return sessao;
     }
 
+    public static GradeDeExibicao reconstituir(UUID id, LocalDate inicio, LocalDate fim, List<Sessao> sessoes) {
+        GradeDeExibicao g = new GradeDeExibicao(inicio, fim);
+        g.id = id;
+        g.sessoes = new ArrayList<>(sessoes);
+        return g;
+    }
+
     public UUID getId() { return id; }
     public LocalDate getInicio() { return inicio; }
     public LocalDate getFim() { return fim; }
