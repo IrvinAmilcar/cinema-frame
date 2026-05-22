@@ -14,7 +14,7 @@ Os requisitos da 2.ª entrega são:
 - Implementar a camada de persistência com mapeamento objeto-relacional (JPA)
 - Implementar a camada de apresentação web
 
-**Estado atual do código — atualizado em 2026-05-20:**
+**Estado atual do código — atualizado em 2026-05-22:**
 
 | Camada | Status |
 |---|---|
@@ -29,10 +29,16 @@ Os requisitos da 2.ª entrega são:
 | Estrutura do frontend React + Vite — `package.json`, `vite.config.ts`, `App.tsx`, `client.ts` | ✅ Feito |
 | `mvn install -DskipTests` — todos os 8 módulos compilando | ✅ Confirmado |
 | `mvn spring-boot:run` — backend sobe e conecta ao banco | ✅ Confirmado |
-| Classes `@Entity` na camada `infrastructure` | ❌ Não implementado |
-| Controllers REST em `presentation-backend` | ❌ Não implementado |
-| Padrões de projeto (Proxy, Observer, Iterator, Template Method, Strategy, Decorator) | ❌ Não implementado |
-| Telas no frontend React | ❌ Não implementado |
+| **F7 — Catálogo de Filmes: JPA + REST + Proxy** | ✅ Implementado e testado (Irvin) |
+| **F4 — Grade de Exibição: JPA + REST + Proxy** | ✅ Implementado e testado (Irvin) |
+| Padrão **Proxy** — F7 (`FilmeRepositoryProxy`) e F4 (`GradeDeExibicaoRepositoryProxy`) | ✅ Funcionando e validado |
+| Classes `@Entity` na camada `infrastructure` (Filmes, Salas, Grades, Sessões) | ✅ Feito |
+| Controllers REST em `presentation-backend` (`/api/filmes`, `/api/salas`, `/api/grades`) | ✅ Feito |
+| `GlobalExceptionHandler` — 409 para conflitos, 400 para argumentos inválidos | ✅ Feito |
+| F5/F6 — Bomboniere + Check-in (Fabiana) — Observer | ❌ Pendente (Fabiana) |
+| F3/F8 — Fidelidade + Fechamento de Caixa (Amanda) — Iterator + Template Method | ❌ Pendente (Amanda) |
+| F1/F2 — Compra de Ingresso + Explorar Programação (Julia) — Strategy + Decorator | ❌ Pendente (Julia) |
+| Telas no frontend React | ❌ Pendente |
 
 **Decisão de stack confirmada pelo time:**
 - Banco: **PostgreSQL 17.10 via Docker local** — cada membro tem seu próprio banco, sem compartilhar dados
