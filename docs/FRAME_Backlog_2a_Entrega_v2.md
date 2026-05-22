@@ -35,10 +35,18 @@ Os requisitos da 2.ª entrega são:
 | Classes `@Entity` na camada `infrastructure` (Filmes, Salas, Grades, Sessões) | ✅ Feito |
 | Controllers REST em `presentation-backend` (`/api/filmes`, `/api/salas`, `/api/grades`) | ✅ Feito |
 | `GlobalExceptionHandler` — 409 para conflitos, 400 para argumentos inválidos | ✅ Feito |
+| **Sessões recorrentes diárias** — `Sessao.inicio` é `LocalTime`; a grade define o período; sessões repetem todos os dias | ✅ Implementado |
+| **Validação de data passada** — `GradeDeExibicao` rejeita `inicio` anterior a hoje | ✅ Implementado |
+| **Bloqueio de remoção de grade** — `GradeService.removerGrade()` bloqueia se qualquer sessão de hoje já iniciou | ✅ Implementado |
+| **Remoção de grade via REST** — `DELETE /api/grades/{gradeId}` | ✅ Implementado |
+| **Frontend — Tela de Grade** (`GradePage.tsx`) — criar/remover grade, adicionar/remover sessão, "Sala livre às" | ✅ Implementado |
+| **Frontend — Tela de Filmes** (`FilmesPage.tsx`) — listar, cadastrar, ativar/desativar, remover | ✅ Implementado |
+| **Frontend — Tela de Salas** (`SalasPage.tsx`) — listar, cadastrar | ✅ Implementado |
+| `SessaoJpa.inicio` mapeado como `TIME` no banco (`@JdbcTypeCode(SqlTypes.TIME)`) | ✅ Feito |
+| Datas/horas serializadas como `String` nos `*Response` (sem dependência de Jackson feature flags) | ✅ Feito |
 | F5/F6 — Bomboniere + Check-in (Fabiana) — Observer | ❌ Pendente (Fabiana) |
 | F3/F8 — Fidelidade + Fechamento de Caixa (Amanda) — Iterator + Template Method | ❌ Pendente (Amanda) |
 | F1/F2 — Compra de Ingresso + Explorar Programação (Julia) — Strategy + Decorator | ❌ Pendente (Julia) |
-| Telas no frontend React | ❌ Pendente |
 
 **Decisão de stack confirmada pelo time:**
 - Banco: **PostgreSQL 17.10 via Docker local** — cada membro tem seu próprio banco, sem compartilhar dados
@@ -198,41 +206,73 @@ public class FilmeRepositoryAdapter implements FilmeRepository {
 
 **Definição:** Fornece um substituto ou representante de outro objeto para controlar o acesso a ele, podendo adicionar lógica antes ou depois da operação real.
 
-**No FRAME (F4 — conflito de horário):**
-```java
-// infrastructure/.../grade/SessaoRepositoryProxy.java
-@Repository
-public class SessaoRepositoryProxy implements SessaoRepository {
+**No FRAME (F4 — conflito de horário entre grades):**
 
-    private final SessaoRepositoryAdapter real;
+O proxy intercepta o `salvar()` da grade. Antes de persistir, percorre todas as sessões já salvas em **outras grades cujos períodos se sobrepõem** com a grade que está sendo salva, e verifica conflito de sala+horário.
+
+```java
+// infrastructure/.../grade/GradeDeExibicaoRepositoryProxy.java
+@Repository
+public class GradeDeExibicaoRepositoryProxy implements GradeDeExibicaoRepository {
+
+    private final GradeDeExibicaoRepositoryAdapter real;
+    private final SessaoJpaRepository sessaoJpa;
+    private final GradeJpaRepository gradeJpa;
 
     @Override
-    public void salvar(Sessao novaSessao) {
-        List<Sessao> existentes = real.buscarPorSala(novaSessao.getSala().getId());
-        for (Sessao s : existentes) {
-            if (s.conflitaCom(novaSessao))
-                throw new IllegalStateException("Conflito de horário na sala " + novaSessao.getSala().getNumero());
+    public void salvar(GradeDeExibicao grade) {
+        // Para cada sessão da grade a ser salva, verifica conflito com sessões de outras grades
+        for (Sessao novaSessao : grade.getSessoes()) {
+            List<SessaoJpa> candidatas = sessaoJpa.findBySalaId(novaSessao.getSala().getId());
+            for (SessaoJpa candidataJpa : candidatas) {
+                if (candidataJpa.getGradeId().equals(grade.getId())) continue; // mesma grade, pula
+
+                // Só conflita se os períodos das duas grades se sobrepõem
+                GradeJpa gradeExistente = gradeJpa.findById(candidataJpa.getGradeId()).orElse(null);
+                if (gradeExistente == null) continue;
+                boolean periodosSeOverpoem =
+                    !grade.getInicio().isAfter(gradeExistente.getFim()) &&
+                    !gradeExistente.getInicio().isAfter(grade.getFim());
+                if (!periodosSeOverpoem) continue;
+
+                // Agora verifica conflito de horário
+                Sessao sessaoExistente = candidataJpa.toDomain(...);
+                if (novaSessao.conflitaCom(sessaoExistente))
+                    throw new IllegalStateException(
+                        "Conflito de horário na sala " + novaSessao.getSala().getNumero()
+                    );
+            }
         }
-        real.salvar(novaSessao);
+        real.salvar(grade);
     }
 
     // demais métodos delegam ao real sem interceptação
 }
 ```
 
+> **Nota de design:** O proxy está no repositório da **grade** (não da sessão), porque a grade é o agregado raiz — todas as operações de escrita passam por ela. Isso mantém o domínio limpo sem saber de JPA.
+
 **No FRAME (F7 — remoção protegida de filme):**
+
 ```java
-// infrastructure/.../grade/FilmeRepositoryProxy.java
+// infrastructure/.../catalogo/FilmeRepositoryProxy.java
 @Repository
 public class FilmeRepositoryProxy implements FilmeRepository {
 
     private final FilmeRepositoryAdapter real;
-    private final SessaoRepository sessaoRepository;
+    private final SessaoJpaRepository sessaoJpa;
+    private final GradeJpaRepository gradeJpa;
 
     @Override
     public void remover(UUID id) {
-        List<Sessao> futuras = sessaoRepository.buscarSessoesFuturasPorFilme(id, LocalDateTime.now());
-        if (!futuras.isEmpty())
+        // Bloqueia remoção se o filme tem sessões em grades que ainda não terminaram
+        LocalDate hoje = LocalDate.now();
+        boolean temSessoesFuturas = sessaoJpa.findByFilmeId(id).stream()
+            .anyMatch(s -> {
+                GradeJpa g = gradeJpa.findById(s.getGradeId()).orElse(null);
+                return g != null && !g.getFim().isBefore(hoje);
+            });
+        if (temSessoesFuturas)
             throw new IllegalStateException("Filme possui sessões futuras e não pode ser removido");
         real.remover(id);
     }
@@ -453,54 +493,66 @@ public class ProgramacaoComRecomendacaoDecorator implements ProgramacaoService {
 
 ### Irvin — F4 (Grade de Exibição) + F7 (Catálogo de Filmes)
 
-#### [F4] JPA — Grade de Exibição
+#### [F4] JPA — Grade de Exibição ✅ CONCLUÍDO
 
-Criar no módulo `infrastructure`:
+Módulo `infrastructure`:
 
 | Entidade de domínio | Classe JPA | Repositório JPA | Adaptador |
 |---|---|---|---|
 | `Filme` | `FilmeJpa` | `FilmeJpaRepository` | `FilmeRepositoryAdapter` |
 | `Sala` | `SalaJpa` | `SalaJpaRepository` | `SalaRepositoryAdapter` |
-| `Sessao` | `SessaoJpa` | `SessaoJpaRepository` | `SessaoRepositoryProxy` ← **Proxy aqui** |
-| `GradeDeExibicao` | `GradeJpa` | `GradeJpaRepository` | `GradeRepositoryAdapter` |
+| `Sessao` | `SessaoJpa` (campo `inicio` como `LocalTime` com `@JdbcTypeCode(SqlTypes.TIME)`) | `SessaoJpaRepository` | — (gerenciada via `GradeJpa`) |
+| `GradeDeExibicao` | `GradeJpa` | `GradeJpaRepository` | `GradeDeExibicaoRepositoryProxy` ← **Proxy aqui** |
 
-**Padrão Proxy — F4:** O `SessaoRepositoryProxy` intercepta o método `salvar()` e verifica conflito de horário antes de delegar ao adaptador real.
+**Comportamento da sessão recorrente:** `Sessao.inicio` é `LocalTime` (horário diário). A `GradeDeExibicao` tem datas `inicio`/`fim`. Uma sessão das 20:00 em uma grade de 01/06 a 30/06 ocorre todos os dias às 20:00 durante junho. O portal filtra as sessões cujas grades estão ativas hoje e cujo horário ainda não passou.
 
-#### [F4] Web — Tela de Grade Semanal
+**Padrão Proxy — F4:** O `GradeDeExibicaoRepositoryProxy` intercepta `salvar()` e verifica conflitos de sala+horário entre grades com períodos sobrepostos.
 
-No módulo `presentation-backend`, criar:
-- `GET /api/grade/{data}` — retorna a grade do dia como JSON (lista de sessões com filme + sala + horário)
-- `POST /api/grade/{gradeId}/sessoes` — adiciona sessão; se conflito, retorna `409 Conflict` com mensagem clara
-- `DELETE /api/grade/{gradeId}/sessoes/{sessaoId}` — remove sessão futura
+**Validações implementadas em `GradeDeExibicao`:**
+- `inicio` não pode ser data passada (construtor valida)
+- `removerSessao()` bloqueia remoção de sessão já iniciada
+- `GradeService.removerGrade()` bloqueia remoção se alguma sessão de hoje já iniciou
 
-No módulo `presentation-frontend`:
-- Tela com grid semanal de sessões por sala
-- Formulário de criação de sessão com feedback visual de conflito
+#### [F4] Web — Tela de Grade ✅ CONCLUÍDO
+
+`presentation-backend`:
+- `GET /api/grades` — lista todas as grades com sessões
+- `POST /api/grades` — cria grade; rejeita data passada com 400
+- `POST /api/grades/{gradeId}/sessoes` — adiciona sessão diária; conflito de horário retorna 409
+- `DELETE /api/grades/{gradeId}/sessoes/{sessaoId}` — remove sessão futura
+- `DELETE /api/grades/{gradeId}` — remove grade (bloqueado se sessão hoje já iniciou)
+
+`presentation-frontend` (`GradePage.tsx`):
+- Formulário de criação com `min` nos campos de data (não permite passado)
+- Formulário de adição de sessão diária com seleção de grade, filme, sala e horário
+- Lista de grades com tabela de sessões mostrando "Início (diário)" e "Sala livre às" (`getFimComIntervalo()`)
+- Botão "Remover grade" com confirmação
+- Botão "Remover" por sessão individual com confirmação
 
 ---
 
-#### [F7] JPA — Catálogo de Filmes
+#### [F7] JPA — Catálogo de Filmes ✅ CONCLUÍDO
 
-Reusa `FilmeJpa`/`FilmeJpaRepository` criados em F4. Acrescentar:
+Reusa `FilmeJpa`/`FilmeJpaRepository` criados em F4. Acrescentado:
 
-- `FilmeRepositoryProxy` — intercepta `remover()` e bloqueia se há sessões futuras
+- `FilmeRepositoryProxy` — intercepta `remover()` e bloqueia se há sessões em grades que ainda não terminaram
 
-**Padrão Proxy — F7:** O `FilmeRepositoryProxy` verifica sessões futuras via `SessaoRepository` antes de permitir exclusão.
+**Padrão Proxy — F7:** O `FilmeRepositoryProxy` verifica, via `SessaoJpaRepository` e `GradeJpaRepository`, se há sessões do filme em grades com `fim >= hoje`. Se houver, lança `IllegalStateException` (retornado como 409).
 
-#### [F7] Web — Catálogo de Filmes
+#### [F7] Web — Catálogo de Filmes ✅ CONCLUÍDO
 
-No módulo `presentation-backend`, criar:
+`presentation-backend`:
 - `GET /api/filmes` — lista todos os filmes (ativos e inativos)
-- `GET /api/filmes/ativos` — lista apenas filmes ativos
 - `POST /api/filmes` — cadastra novo filme
 - `PUT /api/filmes/{id}` — atualiza dados e/ou trailer URL
 - `PATCH /api/filmes/{id}/ativar` · `/desativar` — ativa ou desativa
-- `DELETE /api/filmes/{id}` — remoção protegida pelo Proxy
+- `DELETE /api/filmes/{id}` — remoção protegida pelo Proxy (409 se há sessões futuras)
+- `GET /api/salas` · `POST /api/salas` — CRUD de salas
 
-No módulo `presentation-frontend`:
-- Listagem de filmes com badges de status (ativo/inativo)
-- Botões de ativar/desativar e remover (com feedback de bloqueio quando há sessões)
-- Formulário de cadastro com campo para URL de trailer
+`presentation-frontend` (`FilmesPage.tsx`, `SalasPage.tsx`):
+- Listagem de filmes com badges Ativo/Inativo
+- Botões de ativar, desativar e remover com feedback de bloqueio (409 exibe mensagem)
+- Formulário de cadastro com título, duração, classificação, gênero e URL de trailer
 
 ---
 
@@ -697,10 +749,24 @@ npm install
 
 **5. Verificar que o projeto compila:**
 ```bash
-# Na raiz do projeto
+# Na raiz do projeto (use 'mvn', não './mvnw' — não há Maven wrapper)
 mvn install -DskipTests
 ```
 Esperado: `BUILD SUCCESS` com 8 módulos.
+
+**6. Rodar o backend:**
+```bash
+# PowerShell: execute os dois comandos separadamente (não use &&)
+mvn install -DskipTests
+mvn -pl presentation-backend spring-boot:run
+```
+
+**7. Rodar o frontend (em outro terminal):**
+```bash
+cd presentation-frontend
+npm run dev
+```
+Acesse: `http://localhost:5173`
 
 **6. Criar sua branch individual:**
 ```bash
@@ -952,8 +1018,8 @@ Cada membro usa **PostgreSQL 17 via Docker local** (porta 5433). O `docker-compo
 
 | Padrão | Integrante | Onde procurar no código |
 |---|---|---|
-| Proxy (conflito de horário) | Irvin | `infrastructure/.../grade/SessaoRepositoryProxy.java` |
-| Proxy (remoção protegida) | Irvin | `infrastructure/.../grade/FilmeRepositoryProxy.java` |
+| Proxy (conflito de horário entre grades) | Irvin | `infrastructure/.../grade/GradeDeExibicaoRepositoryProxy.java` |
+| Proxy (remoção protegida de filme) | Irvin | `infrastructure/.../catalogo/FilmeRepositoryProxy.java` |
 | Observer (estoque) | Fabiana | `EstoqueObserver.java` + `AlertaEstoqueObserver.java` |
 | Iterator (pontos) | Amanda | `domain-portal/.../fidelidade/LancamentosIterator.java` |
 | Template Method (caixa) | Amanda | `domain-backoffice/.../caixa/RelatorioFechamento.java` |
