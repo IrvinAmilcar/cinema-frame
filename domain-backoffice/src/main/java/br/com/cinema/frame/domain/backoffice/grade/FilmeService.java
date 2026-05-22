@@ -5,7 +5,7 @@ import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -65,10 +65,7 @@ public class FilmeService {
         filmeRepository.buscarPorId(id)
             .orElseThrow(() -> new IllegalArgumentException("Filme não encontrado: " + id));
 
-        LocalDateTime agora = LocalDateTime.now();
-        boolean temSessoesFuturas = sessaoRepository.buscarPorFilme(id)
-            .stream()
-            .anyMatch(s -> s.getInicio().isAfter(agora));
+        boolean temSessoesFuturas = !sessaoRepository.buscarPorFilme(id).isEmpty();
 
         if (temSessoesFuturas)
             throw new IllegalStateException("Filme possui sessões futuras cadastradas e não pode ser removido");

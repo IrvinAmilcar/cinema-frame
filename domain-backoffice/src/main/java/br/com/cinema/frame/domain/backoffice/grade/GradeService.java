@@ -7,6 +7,7 @@ import br.com.cinema.frame.domain.backoffice.sala.SalaRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,7 +48,7 @@ public class GradeService {
         return grade;
     }
 
-    public void adicionarSessao(UUID gradeId, UUID filmeId, UUID salaId, LocalDateTime inicio) {
+    public void adicionarSessao(UUID gradeId, UUID filmeId, UUID salaId, LocalTime inicio) {
         GradeDeExibicao grade = gradeRepository.buscarPorId(gradeId)
             .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada: " + gradeId));
 
@@ -63,6 +64,11 @@ public class GradeService {
         Sessao sessao = new Sessao(filme, sala, inicio);
         grade.adicionarSessao(sessao);
         gradeRepository.salvar(grade);
+    }
+
+    public GradeDeExibicao buscarPorId(UUID id) {
+        return gradeRepository.buscarPorId(id)
+            .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada: " + id));
     }
 
     public GradeDeExibicao buscarPorData(LocalDate data) {
@@ -86,6 +92,24 @@ public class GradeService {
             : List.of();
 
         return new ResultadoRemocaoSessao(sessao, ingressosParaReembolso);
+    }
+
+    public void removerGrade(UUID id) {
+        GradeDeExibicao grade = gradeRepository.buscarPorId(id)
+            .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada: " + id));
+
+        LocalDate hoje = LocalDate.now();
+        if (!hoje.isBefore(grade.getInicio()) && !hoje.isAfter(grade.getFim())) {
+            LocalTime agora = LocalTime.now();
+            boolean algumaSessaoJaIniciou = grade.getSessoes().stream()
+                .anyMatch(s -> !s.getInicio().isAfter(agora));
+            if (algumaSessaoJaIniciou)
+                throw new IllegalStateException(
+                    "Não é possível remover a grade: uma ou mais sessões de hoje já foram iniciadas"
+                );
+        }
+
+        gradeRepository.remover(id);
     }
 
     public List<GradeDeExibicao> listarTodas() {

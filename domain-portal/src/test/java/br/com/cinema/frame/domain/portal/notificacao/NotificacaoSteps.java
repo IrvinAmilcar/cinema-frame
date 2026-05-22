@@ -14,6 +14,7 @@ import io.cucumber.java.pt.Então;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -69,7 +70,7 @@ public class NotificacaoSteps {
     @Dado("existe uma sessão cadastrada para o filme {string}")
     public void existeSessaoCadastrada(String titulo) {
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
-        sessao = new Sessao(filme, sala, LocalDate.now().plusDays(7).atTime(20, 0));
+        sessao = new Sessao(filme, sala, LocalTime.of(20, 0));
         when(sessaoRepository.buscarPorId(sessao.getId())).thenReturn(Optional.of(sessao));
         when(filmeFavoritadoRepository.buscarNaoNotificadosPorFilme(filme.getId()))
             .thenReturn(new ArrayList<>(favoritosNaoNotificados));

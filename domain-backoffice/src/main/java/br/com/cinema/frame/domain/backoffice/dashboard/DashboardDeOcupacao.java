@@ -1,5 +1,6 @@
 package br.com.cinema.frame.domain.backoffice.dashboard;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
@@ -29,7 +30,7 @@ public class DashboardDeOcupacao {
 
         List<Ingresso> ingressos = ingressoRepository.buscarPorSessao(sessao);
 
-        double precoUnitario = precificacaoService.calcularPreco(sessao);
+        double precoUnitario = precificacaoService.calcularPreco(sessao, LocalDate.now());
         int capacidade = sessao.getSala().getCapacidade();
 
         // L7: multiplica pelo fator do tipo (INTEIRA=1.0, MEIA=0.5, CONVITE=0.0)

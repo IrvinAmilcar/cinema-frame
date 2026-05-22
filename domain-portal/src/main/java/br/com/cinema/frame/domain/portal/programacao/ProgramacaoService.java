@@ -6,6 +6,7 @@ import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
 import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -34,9 +35,13 @@ public class ProgramacaoService {
         if (agora == null)
             throw new IllegalArgumentException("Horário atual não pode ser nulo");
 
+        var hoje = agora.toLocalDate();
+        var horaAtual = agora.toLocalTime();
+
         return gradeRepository.listarTodas().stream()
+            .filter(g -> !g.getInicio().isAfter(hoje) && !g.getFim().isBefore(hoje))
             .flatMap(g -> g.getSessoes().stream())
-            .filter(s -> s.getInicio().isAfter(agora))
+            .filter(s -> s.getInicio().isAfter(horaAtual))
             .collect(Collectors.toList());
     }
 

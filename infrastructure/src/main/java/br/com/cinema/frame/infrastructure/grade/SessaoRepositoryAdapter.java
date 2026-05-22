@@ -5,6 +5,8 @@ import br.com.cinema.frame.domain.backoffice.grade.SessaoRepository;
 import br.com.cinema.frame.infrastructure.sala.SalaJpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,13 +17,16 @@ public class SessaoRepositoryAdapter implements SessaoRepository {
     private final SessaoJpaRepository sessaoJpa;
     private final FilmeJpaRepository filmeJpa;
     private final SalaJpaRepository salaJpa;
+    private final GradeJpaRepository gradeJpa;
 
     public SessaoRepositoryAdapter(SessaoJpaRepository sessaoJpa,
                                    FilmeJpaRepository filmeJpa,
-                                   SalaJpaRepository salaJpa) {
+                                   SalaJpaRepository salaJpa,
+                                   GradeJpaRepository gradeJpa) {
         this.sessaoJpa = sessaoJpa;
         this.filmeJpa = filmeJpa;
         this.salaJpa = salaJpa;
+        this.gradeJpa = gradeJpa;
     }
 
     @Override
@@ -34,9 +39,20 @@ public class SessaoRepositoryAdapter implements SessaoRepository {
         return sessaoJpa.findById(id).map(this::reconstituir);
     }
 
+    /**
+     * Retorna apenas sessões de grades ainda ativas (grade.fim >= hoje)
+     * e cujo horário ainda não passou (se a grade termina hoje).
+     * Usado pelo FilmeRepositoryProxy para verificar sessões futuras.
+     */
     @Override
     public List<Sessao> buscarPorFilme(UUID filmeId) {
+        LocalDate hoje = LocalDate.now();
+        LocalTime agora = LocalTime.now();
         return sessaoJpa.findByFilmeId(filmeId).stream()
+            .filter(s -> gradeJpa.findById(s.getGradeId())
+                .map(g -> g.getFim().isAfter(hoje) ||
+                          (g.getFim().isEqual(hoje) && s.getInicio().isAfter(agora)))
+                .orElse(false))
             .map(this::reconstituir)
             .toList();
     }

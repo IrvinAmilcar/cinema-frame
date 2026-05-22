@@ -24,15 +24,18 @@ public class GradeDeExibicaoRepositoryProxy implements GradeDeExibicaoRepository
 
     private final GradeDeExibicaoRepositoryAdapter real;
     private final SessaoJpaRepository sessaoJpa;
+    private final GradeJpaRepository gradeJpa;
     private final FilmeJpaRepository filmeJpa;
     private final SalaJpaRepository salaJpa;
 
     public GradeDeExibicaoRepositoryProxy(GradeDeExibicaoRepositoryAdapter real,
                                           SessaoJpaRepository sessaoJpa,
+                                          GradeJpaRepository gradeJpa,
                                           FilmeJpaRepository filmeJpa,
                                           SalaJpaRepository salaJpa) {
         this.real = real;
         this.sessaoJpa = sessaoJpa;
+        this.gradeJpa = gradeJpa;
         this.filmeJpa = filmeJpa;
         this.salaJpa = salaJpa;
     }
@@ -46,6 +49,15 @@ public class GradeDeExibicaoRepositoryProxy implements GradeDeExibicaoRepository
                 .toList();
 
             for (SessaoJpa candidataJpa : candidatas) {
+                // Sessões de grades com períodos que não se sobrepõem não conflitam
+                var gradeExistente = gradeJpa.findById(candidataJpa.getGradeId()).orElse(null);
+                if (gradeExistente == null) continue;
+
+                boolean periodosSeOverpoem =
+                    !grade.getInicio().isAfter(gradeExistente.getFim()) &&
+                    !gradeExistente.getInicio().isAfter(grade.getFim());
+                if (!periodosSeOverpoem) continue;
+
                 var filme = filmeJpa.findById(candidataJpa.getFilmeId())
                     .orElseThrow(() -> new IllegalStateException("Filme não encontrado: " + candidataJpa.getFilmeId()))
                     .toDomain();
@@ -57,7 +69,7 @@ public class GradeDeExibicaoRepositoryProxy implements GradeDeExibicaoRepository
                 if (sessaoExistente.conflitaCom(novaSessao))
                     throw new IllegalStateException(
                         "Conflito de horário entre grades: sala " + novaSessao.getSala().getNumero()
-                        + " já está ocupada no período solicitado"
+                        + " já está ocupada no período solicitado por outra grade"
                     );
             }
         }

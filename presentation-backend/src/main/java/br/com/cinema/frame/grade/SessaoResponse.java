@@ -2,7 +2,7 @@ package br.com.cinema.frame.grade;
 
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 
-import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 public record SessaoResponse(
@@ -11,9 +11,11 @@ public record SessaoResponse(
     String filmeTitulo,
     UUID salaId,
     int salaNumero,
-    LocalDateTime inicio,
-    LocalDateTime fim
+    String inicio,
+    String fim
 ) {
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("HH:mm");
+
     public static SessaoResponse from(Sessao s) {
         return new SessaoResponse(
             s.getId(),
@@ -21,8 +23,8 @@ public record SessaoResponse(
             s.getFilme().getTitulo(),
             s.getSala().getId(),
             s.getSala().getNumero(),
-            s.getInicio(),
-            s.getFim()
+            s.getInicio().format(FMT),
+            s.getFimComIntervalo().format(FMT)
         );
     }
 }

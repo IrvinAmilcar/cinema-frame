@@ -18,7 +18,7 @@ import io.cucumber.java.pt.Então;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Optional;
 
@@ -35,6 +35,7 @@ public class PrecificacaoSteps {
 
     private Sessao sessao;
     private GradeDeExibicao grade;
+    private LocalDate dataParaPreco;
     private double precoCalculado;
 
     @Dado("que existe uma sessão cadastrada numa sala padrão numa sexta-feira")
@@ -91,7 +92,7 @@ public class PrecificacaoSteps {
             .get()
             .getSessoes()
             .get(0);
-        precoCalculado = precificacaoService.calcularPreco(sessaoDoBanco);
+        precoCalculado = precificacaoService.calcularPreco(sessaoDoBanco, dataParaPreco);
     }
 
     @Então("o preço deve ser R$ {double}")
@@ -103,12 +104,9 @@ public class PrecificacaoSteps {
         Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120),
             ClassificacaoIndicativa.QUATORZE, GeneroFilme.ACAO);
         Sala sala = new Sala(1, 100, tipoSala);
-        LocalDateTime inicio = LocalDateTime.now()
-            .with(TemporalAdjusters.nextOrSame(dia))
-            .withHour(20)
-            .withMinute(0);
+        dataParaPreco = LocalDate.now().with(TemporalAdjusters.nextOrSame(dia));
 
-        Sessao s = new Sessao(filme, sala, inicio);
+        Sessao s = new Sessao(filme, sala, LocalTime.of(20, 0));
 
         grade = new GradeDeExibicao(LocalDate.now(), LocalDate.now().plusDays(7));
         grade.adicionarSessao(s);

@@ -43,16 +43,18 @@ public class GradeController {
     public GradeResponse adicionarSessao(@PathVariable UUID gradeId,
                                          @RequestBody SessaoRequest req) {
         gradeService.adicionarSessao(gradeId, req.filmeId(), req.salaId(), req.inicio());
-        GradeDeExibicao grade = gradeService.listarTodas().stream()
-            .filter(g -> g.getId().equals(gradeId))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada: " + gradeId));
-        return GradeResponse.from(grade);
+        return GradeResponse.from(gradeService.buscarPorId(gradeId));
     }
 
     @DeleteMapping("/{gradeId}/sessoes/{sessaoId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removerSessao(@PathVariable UUID gradeId, @PathVariable UUID sessaoId) {
         gradeService.removerSessao(gradeId, sessaoId, LocalDateTime.now());
+    }
+
+    @DeleteMapping("/{gradeId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removerGrade(@PathVariable UUID gradeId) {
+        gradeService.removerGrade(gradeId);
     }
 }

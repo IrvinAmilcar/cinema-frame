@@ -52,7 +52,7 @@ public class CheckInService {
         if (ingresso.isUtilizado())
             throw new IllegalStateException("Ingresso já utilizado");
 
-        LocalDateTime inicioSessao = ingresso.getSessao().getInicio();
+        LocalDateTime inicioSessao = agora.toLocalDate().atTime(ingresso.getSessao().getInicio());
         LocalDateTime aberturaPortas = inicioSessao.minusMinutes(MINUTOS_ANTES_PERMITIDOS);
         LocalDateTime fechamentoPortas = inicioSessao.plusMinutes(MINUTOS_ANTES_PERMITIDOS);
 

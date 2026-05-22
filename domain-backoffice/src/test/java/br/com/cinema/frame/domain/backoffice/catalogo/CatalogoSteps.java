@@ -14,7 +14,7 @@ import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,7 +50,7 @@ public class CatalogoSteps {
     @Dado("o filme possui sessões futuras cadastradas")
     public void filme_possui_sessoes_futuras() {
         Sala sala = new Sala(1, 50, TipoSala.PADRAO);
-        Sessao sessaoFutura = new Sessao(filme, sala, LocalDateTime.now().plusDays(1));
+        Sessao sessaoFutura = new Sessao(filme, sala, LocalTime.of(23, 50));
         when(sessaoRepository.buscarPorFilme(filme.getId())).thenReturn(List.of(sessaoFutura));
     }
 

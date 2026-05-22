@@ -9,6 +9,7 @@ import io.cucumber.java.pt.*;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,13 +39,15 @@ public class ProgramacaoSteps {
     private Sessao criarSessaoFutura(String tituloFilme, GeneroFilme genero, ClassificacaoIndicativa classificacao) {
         Filme filme = new Filme(tituloFilme, Duration.ofMinutes(120), classificacao, genero);
         Sala sala = new Sala(contadorSala++, 100, TipoSala.PADRAO);
-        return new Sessao(filme, sala, agora.plusDays(1));
+        // agora = 10:00 — "futura" usa 20:00, que é após 10:00
+        return new Sessao(filme, sala, LocalTime.of(20, 0));
     }
 
     private Sessao criarSessaoPassada(String tituloFilme, GeneroFilme genero, ClassificacaoIndicativa classificacao) {
         Filme filme = new Filme(tituloFilme, Duration.ofMinutes(120), classificacao, genero);
         Sala sala = new Sala(contadorSala++, 100, TipoSala.PADRAO);
-        return new Sessao(filme, sala, agora.minusDays(1));
+        // agora = 10:00 — "passada" usa 08:00, que é antes de 10:00
+        return new Sessao(filme, sala, LocalTime.of(8, 0));
     }
 
     private void adicionarSessaoNaGrade(Sessao sessao) {
@@ -92,9 +95,13 @@ public class ProgramacaoSteps {
     public void que_existe_uma_sessao_passada_cadastrada_para_o_filme(String nomeFilme) {
         Filme filme = new Filme(nomeFilme, Duration.ofMinutes(120), ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         Sala sala = new Sala(contadorSala++, 100, TipoSala.PADRAO);
-        Sessao sessaoPassada = new Sessao(filme, sala, LocalDate.now().minusDays(1).atTime(20, 0));
-        GradeDeExibicao grade = new GradeDeExibicao(LocalDate.now().minusDays(7), LocalDate.now());
-        grade.adicionarSessao(sessaoPassada);
+        Sessao sessaoPassada = new Sessao(filme, sala, LocalTime.of(8, 0));
+        GradeDeExibicao grade = GradeDeExibicao.reconstituir(
+            java.util.UUID.randomUUID(),
+            LocalDate.now().minusDays(7),
+            LocalDate.now(),
+            java.util.List.of(sessaoPassada)
+        );
         grades.add(grade);
         atualizarMock();
     }

@@ -1,18 +1,21 @@
 package br.com.cinema.frame.domain.backoffice.precificacao;
 
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
+import java.time.LocalDate;
 
 public class PrecificacaoService {
 
     private static final double PRECO_BASE = 20.0;
 
-    public double calcularPreco(Sessao sessao) {
+    public double calcularPreco(Sessao sessao, LocalDate data) {
         if (sessao == null)
             throw new IllegalArgumentException("Sessão não pode ser nula");
+        if (data == null)
+            throw new IllegalArgumentException("Data não pode ser nula");
 
         double preco = PRECO_BASE;
         preco = aplicarTipoSala(preco, sessao.getSala().getTipo());
-        preco = aplicarDescontoSemanal(preco, sessao.getInicio().getDayOfWeek());
+        preco = aplicarDescontoSemanal(preco, data.getDayOfWeek());
         return preco;
     }
 

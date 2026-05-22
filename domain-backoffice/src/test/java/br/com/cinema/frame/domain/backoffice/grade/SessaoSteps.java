@@ -15,6 +15,7 @@ import io.cucumber.java.pt.Então;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -70,15 +71,14 @@ public class SessaoSteps {
 
     @Dado("a gerente já cadastrou uma sessão na grade às {int}:{int}")
     public void gerenteJaCadastrouSessao(int hora, int minuto) {
-        LocalDateTime inicio = LocalDate.now().atTime(hora, minuto);
-        gradeService.adicionarSessao(grade.getId(), filme.getId(), sala.getId(), inicio);
+        gradeService.adicionarSessao(grade.getId(), filme.getId(), sala.getId(), LocalTime.of(hora, minuto));
         sessaoAdicionada = grade.getSessoes().get(grade.getSessoes().size() - 1);
     }
 
+    // "para amanhã" — com recorrência diária, usamos um horário sempre no futuro (23:50)
     @Dado("a gerente já cadastrou uma sessão para amanhã às {int}:{int}")
     public void gerenteJaCadastrouSessaoParaAmanha(int hora, int minuto) {
-        LocalDateTime inicio = LocalDate.now().plusDays(1).atTime(hora, minuto);
-        gradeService.adicionarSessao(grade.getId(), filme.getId(), sala.getId(), inicio);
+        gradeService.adicionarSessao(grade.getId(), filme.getId(), sala.getId(), LocalTime.of(23, 50));
         sessaoAdicionada = grade.getSessoes().get(grade.getSessoes().size() - 1);
     }
 
@@ -91,17 +91,17 @@ public class SessaoSteps {
         when(ingressoRepository.buscarPorSessao(sessaoAdicionada)).thenReturn(ingressos);
     }
 
+    // "já iniciada" — horário de 2 minutos atrás, garantidamente no passado
     @Dado("a gerente já cadastrou uma sessão que já foi iniciada")
     public void gerenteJaCadastrouSessaoJaIniciada() {
-        LocalDateTime inicio = LocalDateTime.now().minusHours(2);
+        LocalTime inicio = LocalTime.now().minusMinutes(2);
         gradeService.adicionarSessao(grade.getId(), filme.getId(), sala.getId(), inicio);
         sessaoAdicionada = grade.getSessoes().get(grade.getSessoes().size() - 1);
     }
 
     @Quando("a gerente adiciona a sessão na grade às {int}:{int}")
     public void gerenteAdicionaSessao(int hora, int minuto) {
-        LocalDateTime inicio = LocalDate.now().atTime(hora, minuto);
-        gradeService.adicionarSessao(grade.getId(), filme.getId(), sala.getId(), inicio);
+        gradeService.adicionarSessao(grade.getId(), filme.getId(), sala.getId(), LocalTime.of(hora, minuto));
     }
 
     @Quando("a gerente tenta cadastrar uma sessão de {string} com duração de {int} minutos e gênero {string} às {int}:{int}")
@@ -110,8 +110,7 @@ public class SessaoSteps {
             Filme novoFilme = new Filme(titulo, Duration.ofMinutes(minutos),
                 ClassificacaoIndicativa.QUATORZE, GeneroFilme.valueOf(genero));
             when(filmeRepository.buscarPorId(novoFilme.getId())).thenReturn(Optional.of(novoFilme));
-            LocalDateTime inicio = LocalDate.now().atTime(hora, minuto);
-            gradeService.adicionarSessao(grade.getId(), novoFilme.getId(), sala.getId(), inicio);
+            gradeService.adicionarSessao(grade.getId(), novoFilme.getId(), sala.getId(), LocalTime.of(hora, minuto));
         } catch (Exception e) {
             excecaoCapturada = e;
         }
@@ -137,8 +136,7 @@ public class SessaoSteps {
     @Quando("a gerente tenta adicionar o filme inativo na grade às {int}:{int}")
     public void gerenteTentaAdicionarFilmeInativoNaGrade(int hora, int minuto) {
         try {
-            LocalDateTime inicio = LocalDate.now().atTime(hora, minuto);
-            gradeService.adicionarSessao(grade.getId(), filme.getId(), sala.getId(), inicio);
+            gradeService.adicionarSessao(grade.getId(), filme.getId(), sala.getId(), LocalTime.of(hora, minuto));
         } catch (Exception e) {
             excecaoCapturada = e;
         }

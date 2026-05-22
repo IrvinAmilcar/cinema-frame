@@ -3,6 +3,7 @@ package br.com.cinema.frame.domain.portal.pedido;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -105,7 +106,7 @@ public class PedidoSteps {
             ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         when(filmeRepository.buscarPorId(filme.getId())).thenReturn(Optional.of(filme));
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
-        sessao = new Sessao(filme, sala, LocalDate.now().atTime(20, 0));
+        sessao = new Sessao(filme, sala, LocalTime.of(20, 0));
 
         grade = new GradeDeExibicao(LocalDate.now(), LocalDate.now().plusDays(7));
         grade.adicionarSessao(sessao);
@@ -131,7 +132,7 @@ public class PedidoSteps {
             classificacao, GeneroFilme.ACAO);
         when(filmeRepository.buscarPorId(filme.getId())).thenReturn(Optional.of(filme));
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
-        sessao = new Sessao(filme, sala, LocalDate.now().plusDays(1).atTime(20, 0));
+        sessao = new Sessao(filme, sala, LocalTime.of(20, 0));
 
         grade = new GradeDeExibicao(LocalDate.now(), LocalDate.now().plusDays(7));
         grade.adicionarSessao(sessao);

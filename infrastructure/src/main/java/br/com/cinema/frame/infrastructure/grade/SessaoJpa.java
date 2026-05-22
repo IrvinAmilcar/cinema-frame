@@ -4,8 +4,10 @@ import br.com.cinema.frame.domain.backoffice.grade.Filme;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -24,8 +26,9 @@ public class SessaoJpa {
     @Column(nullable = false)
     private UUID salaId;
 
-    @Column(nullable = false)
-    private LocalDateTime inicio;
+    @Column(nullable = false, columnDefinition = "TIME")
+    @JdbcTypeCode(SqlTypes.TIME)
+    private LocalTime inicio;
 
     protected SessaoJpa() {}
 
@@ -47,5 +50,5 @@ public class SessaoJpa {
     public UUID getGradeId() { return gradeId; }
     public UUID getFilmeId() { return filmeId; }
     public UUID getSalaId() { return salaId; }
-    public LocalDateTime getInicio() { return inicio; }
+    public LocalTime getInicio() { return inicio; }
 }

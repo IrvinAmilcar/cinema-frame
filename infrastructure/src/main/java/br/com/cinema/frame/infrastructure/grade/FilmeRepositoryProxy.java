@@ -6,14 +6,13 @@ import br.com.cinema.frame.domain.backoffice.grade.SessaoRepository;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Proxy (F7): intercepta remover() e bloqueia se o filme possui sessões futuras.
- * Marcado como @Primary para que o Spring o injete no lugar do adapter simples.
+ * "Futuras" = pertencentes a grades ainda ativas com horário não expirado hoje.
  */
 @Repository
 @Primary
@@ -29,9 +28,7 @@ public class FilmeRepositoryProxy implements FilmeRepository {
 
     @Override
     public void remover(UUID id) {
-        boolean temSessoesFuturas = sessaoRepository.buscarPorFilme(id)
-            .stream()
-            .anyMatch(s -> s.getInicio().isAfter(LocalDateTime.now()));
+        boolean temSessoesFuturas = !sessaoRepository.buscarPorFilme(id).isEmpty();
 
         if (temSessoesFuturas)
             throw new IllegalStateException("Filme possui sessões futuras e não pode ser removido");

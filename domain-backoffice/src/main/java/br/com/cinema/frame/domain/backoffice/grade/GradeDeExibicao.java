@@ -17,6 +17,8 @@ public class GradeDeExibicao {
     public GradeDeExibicao(LocalDate inicio, LocalDate fim) {
         if (inicio == null || fim == null)
             throw new IllegalArgumentException("Período da grade não pode ser nulo");
+        if (inicio.isBefore(LocalDate.now()))
+            throw new IllegalArgumentException("Data de início não pode ser no passado");
         if (fim.isBefore(inicio))
             throw new IllegalArgumentException("Data de fim não pode ser anterior ao início");
 
@@ -51,7 +53,7 @@ public class GradeDeExibicao {
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException("Sessão não encontrada: " + sessaoId));
 
-        if (!sessao.getInicio().isAfter(agora))
+        if (!sessao.getInicio().isAfter(agora.toLocalTime()))
             throw new IllegalStateException("Não é possível remover sessão que já foi iniciada ou encerrada");
 
         sessoes.remove(sessao);
@@ -59,11 +61,15 @@ public class GradeDeExibicao {
     }
 
     public static GradeDeExibicao reconstituir(UUID id, LocalDate inicio, LocalDate fim, List<Sessao> sessoes) {
-        GradeDeExibicao g = new GradeDeExibicao(inicio, fim);
+        GradeDeExibicao g = new GradeDeExibicao();
         g.id = id;
+        g.inicio = inicio;
+        g.fim = fim;
         g.sessoes = new ArrayList<>(sessoes);
         return g;
     }
+
+    private GradeDeExibicao() {}
 
     public UUID getId() { return id; }
     public LocalDate getInicio() { return inicio; }

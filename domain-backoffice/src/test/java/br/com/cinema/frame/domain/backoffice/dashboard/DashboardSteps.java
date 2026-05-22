@@ -15,7 +15,7 @@ import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -58,9 +58,7 @@ public class DashboardSteps {
         Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120),
             ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         Sala sala = new Sala(1, capacidade, TipoSala.PADRAO);
-        sessao = new Sessao(filme, sala, LocalDateTime.now().plusDays(1)
-            .with(java.time.DayOfWeek.FRIDAY)
-            .withHour(20).withMinute(0));
+        sessao = new Sessao(filme, sala, LocalTime.of(20, 0));
     }
 
     @Dado("foram vendidos {int} ingressos para essa sessão")
@@ -74,9 +72,7 @@ public class DashboardSteps {
         Filme filme = new Filme("Outro Filme", Duration.ofMinutes(120),
             ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         Sala sala = new Sala(2, capacidade, TipoSala.PADRAO);
-        outraSessao = new Sessao(filme, sala, LocalDateTime.now().plusDays(2)
-            .with(java.time.DayOfWeek.FRIDAY)
-            .withHour(20).withMinute(0));
+        outraSessao = new Sessao(filme, sala, LocalTime.of(20, 0));
     }
 
     @Dado("foram vendidos {int} ingressos para essa outra sessão")

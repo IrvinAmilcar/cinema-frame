@@ -19,6 +19,7 @@ import io.cucumber.java.pt.Então;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,7 +46,7 @@ public class CheckInSteps {
         Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120),
             ClassificacaoIndicativa.LIVRE, GeneroFilme.ACAO);
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
-        sessao = new Sessao(filme, sala, LocalDate.now().atTime(hora, minuto));
+        sessao = new Sessao(filme, sala, LocalTime.of(hora, minuto));
         ingresso = new Ingresso(sessao, TipoIngresso.INTEIRA);
         when(ingressoRepository.buscarPorId(ingresso.getId())).thenReturn(Optional.of(ingresso));
         // funcionário autorizado não lança exceção (comportamento padrão do mock)

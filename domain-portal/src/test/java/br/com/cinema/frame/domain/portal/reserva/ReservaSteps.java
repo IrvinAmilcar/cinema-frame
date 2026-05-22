@@ -15,6 +15,7 @@ import io.cucumber.java.pt.Então;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -44,7 +45,7 @@ public class ReservaSteps {
         Filme filme = new Filme("Filme Teste", Duration.ofMinutes(120),
             ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         Sala sala = new Sala(1, 100, TipoSala.PADRAO);
-        sessao = new Sessao(filme, sala, agora.plusHours(2));
+        sessao = new Sessao(filme, sala, LocalTime.of(16, 0));
 
         grade = new GradeDeExibicao(LocalDate.now(), LocalDate.now().plusDays(7));
         grade.adicionarSessao(sessao);
