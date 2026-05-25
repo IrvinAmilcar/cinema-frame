@@ -129,32 +129,39 @@ public class BomboniereController {
     // =====================================================
 
     @PostMapping("/produtos/{id}/vender")
-    public String venderProduto(
-            @PathVariable UUID id
-    ) {
+public String venderProduto(
+        @PathVariable UUID id
+) {
 
-        ProdutoDaBomboniere produto =
-                produtoRepository
-                        .buscarPorId(id)
-                        .orElseThrow(() ->
-                                new RuntimeException("Produto não encontrado"));
+    ProdutoDaBomboniere produto =
+            produtoRepository
+                    .buscarPorId(id)
+                    .orElseThrow(() ->
+                            new RuntimeException("Produto não encontrado"));
 
-        for (var item : produto.getReceita()) {
-
-            Insumo insumo =
-                    insumoRepository
-                            .buscarPorId(item.getInsumo().getId())
-                            .orElseThrow(() ->
-                                    new RuntimeException("Insumo não encontrado"));
-
-            insumo.baixar(item.getQuantidade());
-
-            insumoRepository.salvar(insumo);
-        }
-
-        return "Venda realizada com sucesso";
+    if (produto.getReceita().isEmpty()) {
+        throw new RuntimeException(
+                "Produto não possui receita cadastrada"
+        );
     }
 
+    for (var item : produto.getReceita()) {
+
+        Insumo insumo =
+                insumoRepository
+                        .buscarPorId(item.getInsumo().getId())
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Insumo não encontrado"
+                                ));
+
+        insumo.baixar(item.getQuantidade());
+
+        insumoRepository.salvar(insumo);
+    }
+
+    return "Venda realizada com sucesso";
+}
     // =====================================================
     // ESTORNO
     // =====================================================
