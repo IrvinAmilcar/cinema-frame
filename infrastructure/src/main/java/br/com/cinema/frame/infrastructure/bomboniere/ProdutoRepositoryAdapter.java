@@ -14,7 +14,9 @@ public class ProdutoRepositoryAdapter
 
     private final ProdutoJpaRepository jpa;
 
-    public ProdutoRepositoryAdapter(ProdutoJpaRepository jpa) {
+    public ProdutoRepositoryAdapter(
+            ProdutoJpaRepository jpa
+    ) {
         this.jpa = jpa;
     }
 
@@ -30,21 +32,23 @@ public class ProdutoRepositoryAdapter
     }
 
     @Override
-    public Optional<ProdutoDaBomboniere> buscarPorNome(String nome) {
-        return jpa.findByNome(nome)
-                .map(ProdutoJpa::toDomain);
-    }
-
-    @Override
     public List<ProdutoDaBomboniere> listarTodos() {
         return jpa.findAll()
                 .stream()
                 .map(ProdutoJpa::toDomain)
                 .toList();
     }
-
     @Override
-    public void remover(UUID id) {
-        jpa.deleteById(id);
-    }
+public Optional<ProdutoDaBomboniere> buscarPorNome(
+        String nome
+) {
+
+    return jpa.findByNome(nome)
+            .map(ProdutoJpa::toDomain);
+}
+
+@Override
+public void remover(UUID id) {
+    jpa.deleteById(id);
+}
 }

@@ -1,7 +1,10 @@
 package br.com.cinema.frame.infrastructure.bomboniere;
 
 import br.com.cinema.frame.domain.backoffice.bomboniere.Insumo;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import java.util.UUID;
 
@@ -24,12 +27,10 @@ public class InsumoJpa {
     @Column(nullable = false)
     private double nivelCritico;
 
-    @Version
-    private Long version;
-
     protected InsumoJpa() {}
 
     public static InsumoJpa fromDomain(Insumo i) {
+
         InsumoJpa e = new InsumoJpa();
 
         e.id = i.getId();
@@ -42,6 +43,7 @@ public class InsumoJpa {
     }
 
     public Insumo toDomain() {
+
         return Insumo.reconstituir(
                 id,
                 nome,
@@ -49,9 +51,5 @@ public class InsumoJpa {
                 quantidadeEmEstoque,
                 nivelCritico
         );
-    }
-
-    public UUID getId() {
-        return id;
     }
 }

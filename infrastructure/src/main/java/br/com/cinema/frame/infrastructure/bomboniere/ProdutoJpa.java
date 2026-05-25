@@ -1,10 +1,10 @@
 package br.com.cinema.frame.infrastructure.bomboniere;
 
-import br.com.cinema.frame.domain.backoffice.bomboniere.CategoriaProduto;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
-import jakarta.persistence.*;
-
-import java.util.ArrayList;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,12 +27,12 @@ public class ProdutoJpa {
     @Column(nullable = false)
     private boolean ativo;
 
-    @Version
-    private Long version;
-
     protected ProdutoJpa() {}
 
-    public static ProdutoJpa fromDomain(ProdutoDaBomboniere p) {
+    public static ProdutoJpa fromDomain(
+            ProdutoDaBomboniere p
+    ) {
+
         ProdutoJpa e = new ProdutoJpa();
 
         e.id = p.getId();
@@ -45,17 +45,17 @@ public class ProdutoJpa {
     }
 
     public ProdutoDaBomboniere toDomain() {
+
         return ProdutoDaBomboniere.reconstituir(
                 id,
                 nome,
                 preco,
-                CategoriaProduto.valueOf(categoria),
-                new ArrayList<>(),
+                Enum.valueOf(
+                        br.com.cinema.frame.domain.backoffice.bomboniere.CategoriaProduto.class,
+                        categoria
+                ),
+                List.of(),
                 ativo
         );
-    }
-
-    public UUID getId() {
-        return id;
     }
 }

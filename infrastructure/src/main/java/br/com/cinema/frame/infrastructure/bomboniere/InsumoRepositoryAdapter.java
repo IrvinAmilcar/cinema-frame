@@ -14,7 +14,9 @@ public class InsumoRepositoryAdapter
 
     private final InsumoJpaRepository jpa;
 
-    public InsumoRepositoryAdapter(InsumoJpaRepository jpa) {
+    public InsumoRepositoryAdapter(
+            InsumoJpaRepository jpa
+    ) {
         this.jpa = jpa;
     }
 
@@ -25,18 +27,21 @@ public class InsumoRepositoryAdapter
 
     @Override
     public Optional<Insumo> buscarPorId(UUID id) {
+
         return jpa.findById(id)
                 .map(InsumoJpa::toDomain);
     }
 
     @Override
     public Optional<Insumo> buscarPorNome(String nome) {
+
         return jpa.findByNome(nome)
                 .map(InsumoJpa::toDomain);
     }
 
     @Override
     public List<Insumo> listarTodos() {
+
         return jpa.findAll()
                 .stream()
                 .map(InsumoJpa::toDomain)
@@ -45,6 +50,7 @@ public class InsumoRepositoryAdapter
 
     @Override
     public List<Insumo> listarEstoqueCritico() {
+
         return jpa.findAll()
                 .stream()
                 .map(InsumoJpa::toDomain)

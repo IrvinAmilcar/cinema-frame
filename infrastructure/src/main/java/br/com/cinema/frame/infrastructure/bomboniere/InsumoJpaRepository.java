@@ -11,6 +11,7 @@ public interface InsumoJpaRepository
 
     Optional<InsumoJpa> findByNome(String nome);
 
-    List<InsumoJpa> findByQuantidadeEmEstoqueLessThanEqual(double quantidade);
-
+    List<InsumoJpa> findByQuantidadeEmEstoqueLessThanEqual(
+            double nivelCritico
+    );
 }
