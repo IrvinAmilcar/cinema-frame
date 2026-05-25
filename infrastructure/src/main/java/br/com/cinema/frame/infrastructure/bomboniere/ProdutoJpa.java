@@ -1,10 +1,11 @@
 package br.com.cinema.frame.infrastructure.bomboniere;
 
+import br.com.cinema.frame.domain.backoffice.bomboniere.CategoriaProduto;
+import br.com.cinema.frame.domain.backoffice.bomboniere.ItemDeReceita;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,35 +28,60 @@ public class ProdutoJpa {
     @Column(nullable = false)
     private boolean ativo;
 
-    protected ProdutoJpa() {}
+    @OneToMany(
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JoinColumn(name = "produto_id")
+    private List<ItemDeReceitaJpa> receita = new ArrayList<>();
+
+    protected ProdutoJpa() {
+    }
 
     public static ProdutoJpa fromDomain(
-            ProdutoDaBomboniere p
+            ProdutoDaBomboniere produto
     ) {
 
-        ProdutoJpa e = new ProdutoJpa();
+        ProdutoJpa entity = new ProdutoJpa();
 
-        e.id = p.getId();
-        e.nome = p.getNome();
-        e.preco = p.getPreco();
-        e.categoria = p.getCategoria().name();
-        e.ativo = p.isAtivo();
+        entity.id = produto.getId();
+        entity.nome = produto.getNome();
+        entity.preco = produto.getPreco();
+        entity.categoria = produto.getCategoria().name();
+        entity.ativo = produto.isAtivo();
 
-        return e;
+        entity.receita =
+                produto.getReceita()
+                        .stream()
+                        .map(item -> new ItemDeReceitaJpa(
+                                InsumoJpa.fromDomain(item.getInsumo()),
+                                item.getQuantidade()
+                        ))
+                        .toList();
+
+        return entity;
     }
 
     public ProdutoDaBomboniere toDomain() {
 
-        return ProdutoDaBomboniere.reconstituir(
-                id,
-                nome,
-                preco,
-                Enum.valueOf(
-                        br.com.cinema.frame.domain.backoffice.bomboniere.CategoriaProduto.class,
-                        categoria
-                ),
-                List.of(),
-                ativo
-        );
+        ProdutoDaBomboniere produto =
+                ProdutoDaBomboniere.reconstituir(
+                        id,
+                        nome,
+                        preco,
+                        CategoriaProduto.valueOf(categoria),
+                        new ArrayList<>(),
+                        ativo
+                );
+
+        for (ItemDeReceitaJpa item : receita) {
+
+            produto.adicionarItemReceita(
+                    item.getInsumo().toDomain(),
+                    item.getQuantidade()
+            );
+        }
+
+        return produto;
     }
 }

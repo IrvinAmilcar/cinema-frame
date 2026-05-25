@@ -185,4 +185,32 @@ public class BomboniereController {
 
         return "Estorno realizado com sucesso";
     }
+
+    @PostMapping("/produtos/{produtoId}/receita")
+public String adicionarReceita(
+        @PathVariable UUID produtoId,
+        @RequestBody AdicionarReceitaRequest request
+) {
+
+    ProdutoDaBomboniere produto =
+            produtoRepository
+                    .buscarPorId(produtoId)
+                    .orElseThrow(() ->
+                            new RuntimeException("Produto não encontrado"));
+
+    Insumo insumo =
+            insumoRepository
+                    .buscarPorId(request.insumoId())
+                    .orElseThrow(() ->
+                            new RuntimeException("Insumo não encontrado"));
+
+    produto.adicionarItemReceita(
+            insumo,
+            request.quantidade()
+    );
+
+    produtoRepository.salvar(produto);
+
+    return "Receita adicionada com sucesso";
+}
 }
