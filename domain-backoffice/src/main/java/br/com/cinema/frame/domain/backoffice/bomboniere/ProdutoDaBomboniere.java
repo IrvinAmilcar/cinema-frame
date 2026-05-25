@@ -30,12 +30,46 @@ public class ProdutoDaBomboniere {
         this.ativo = true;
     }
 
+    private ProdutoDaBomboniere(
+            UUID id,
+            String nome,
+            double preco,
+            CategoriaProduto categoria,
+            List<ItemDeReceita> receita,
+            boolean ativo
+    ) {
+        this.id = id;
+        this.nome = nome;
+        this.preco = preco;
+        this.categoria = categoria;
+        this.receita = receita;
+        this.ativo = ativo;
+    }
+
     public void adicionarItemReceita(Insumo insumo, double quantidade) {
         receita.add(new ItemDeReceita(insumo, quantidade));
     }
 
     public void desativar() { this.ativo = false; }
     public void ativar() { this.ativo = true; }
+
+    public static ProdutoDaBomboniere reconstituir(
+            UUID id,
+            String nome,
+            double preco,
+            CategoriaProduto categoria,
+            List<ItemDeReceita> receita,
+            boolean ativo
+    ) {
+        return new ProdutoDaBomboniere(
+                id,
+                nome,
+                preco,
+                categoria,
+                receita,
+                ativo
+        );
+    }
 
     public UUID getId() { return id; }
     public String getNome() { return nome; }

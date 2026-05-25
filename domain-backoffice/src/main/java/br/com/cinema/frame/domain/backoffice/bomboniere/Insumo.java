@@ -25,6 +25,20 @@ public class Insumo {
         this.nivelCritico = nivelCritico;
     }
 
+    private Insumo(
+            UUID id,
+            String nome,
+            String unidade,
+            double quantidadeEmEstoque,
+            double nivelCritico
+    ) {
+        this.id = id;
+        this.nome = nome;
+        this.unidade = unidade;
+        this.quantidadeEmEstoque = quantidadeEmEstoque;
+        this.nivelCritico = nivelCritico;
+    }
+
     public void baixar(double quantidade) {
         if (quantidade <= 0)
             throw new IllegalArgumentException("Quantidade para baixa deve ser positiva");
@@ -39,10 +53,26 @@ public class Insumo {
     }
 
     public void repor(double quantidade) {
-    if (quantidade <= 0)
-        throw new IllegalArgumentException("Quantidade para reposição deve ser positiva");
-    this.quantidadeEmEstoque += quantidade;
-}
+        if (quantidade <= 0)
+            throw new IllegalArgumentException("Quantidade para reposição deve ser positiva");
+        this.quantidadeEmEstoque += quantidade;
+    }
+
+    public static Insumo reconstituir(
+            UUID id,
+            String nome,
+            String unidade,
+            double quantidadeEmEstoque,
+            double nivelCritico
+    ) {
+        return new Insumo(
+                id,
+                nome,
+                unidade,
+                quantidadeEmEstoque,
+                nivelCritico
+        );
+    }
 
     public UUID getId() { return id; }
     public String getNome() { return nome; }

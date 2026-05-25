@@ -33,6 +33,40 @@ public class MovimentacaoEstoque {
         this.momento = momento;
     }
 
+    private MovimentacaoEstoque(
+            UUID id,
+            UUID insumoId,
+            TipoMovimentacao tipo,
+            double quantidade,
+            String motivo,
+            LocalDateTime momento
+    ) {
+        this.id = id;
+        this.insumoId = insumoId;
+        this.tipo = tipo;
+        this.quantidade = quantidade;
+        this.motivo = motivo;
+        this.momento = momento;
+    }
+
+    public static MovimentacaoEstoque reconstituir(
+            UUID id,
+            UUID insumoId,
+            TipoMovimentacao tipo,
+            double quantidade,
+            String motivo,
+            LocalDateTime momento
+    ) {
+        return new MovimentacaoEstoque(
+                id,
+                insumoId,
+                tipo,
+                quantidade,
+                motivo,
+                momento
+        );
+    }
+
     public UUID getId() { return id; }
     public UUID getInsumoId() { return insumoId; }
     public TipoMovimentacao getTipo() { return tipo; }
