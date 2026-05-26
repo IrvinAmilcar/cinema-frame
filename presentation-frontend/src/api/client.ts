@@ -13,7 +13,7 @@ export interface InsumoResponse {
   id: string;
   nome: string;
   unidade: string;
-  quantidade: number; 
+  quantidadeEmEstoque: number; 
   nivelCritico: number;
 }
 
@@ -24,6 +24,7 @@ export interface ProdutoBomboniereResponse {
 }
 export interface InsumoRequest {
   nome: string;
+  unidade: string;
   quantidade: number;
   nivelCritico: number;
 }

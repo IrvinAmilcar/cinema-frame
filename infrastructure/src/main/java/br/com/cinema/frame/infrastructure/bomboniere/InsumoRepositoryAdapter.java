@@ -3,6 +3,7 @@ package br.com.cinema.frame.infrastructure.bomboniere;
 import br.com.cinema.frame.domain.backoffice.bomboniere.Insumo;
 import br.com.cinema.frame.domain.backoffice.bomboniere.InsumoRepository;
 import org.springframework.stereotype.Repository;
+import br.com.cinema.frame.infrastructure.bomboniere.InsumoJpaRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,9 +22,20 @@ public class InsumoRepositoryAdapter
     }
 
     @Override
-    public void salvar(Insumo insumo) {
-        jpa.save(InsumoJpa.fromDomain(insumo));
-    }
+public void salvar(Insumo insumo) {
+    // Busca se já existe para garantir que é uma atualização ou cria novo
+    InsumoJpa jpaEntity = jpa.findById(insumo.getId())
+            .orElse(new InsumoJpa()); // Se não achar, cria um novo
+            
+    // Atualiza os campos
+    jpaEntity.setId(insumo.getId()); // Certifique-se de ter o setter setId no InsumoJpa
+    jpaEntity.setNome(insumo.getNome());
+    jpaEntity.setUnidade(insumo.getUnidade());
+    jpaEntity.setQuantidadeEmEstoque(insumo.getQuantidadeEmEstoque());
+    jpaEntity.setNivelCritico(insumo.getNivelCritico());
+    
+    jpa.save(jpaEntity);
+}
 
     @Override
     public Optional<Insumo> buscarPorId(UUID id) {
@@ -50,11 +62,10 @@ public class InsumoRepositoryAdapter
 
     @Override
     public List<Insumo> listarEstoqueCritico() {
-
-        return jpa.findAll()
-                .stream()
-                .map(InsumoJpa::toDomain)
-                .filter(Insumo::isEstoqueCritico)
-                .toList();
+       
+        return jpa.findAll().stream() 
+            .filter(j -> j.getQuantidadeEmEstoque() <= j.getNivelCritico()) 
+            .map(InsumoJpa::toDomain)
+            .toList();
     }
 }

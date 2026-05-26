@@ -15,10 +15,10 @@ export default function BombonierePage() {
   const [modalReceitaAberto, setModalReceitaAberto] = useState<{aberto: boolean, produtoId: string | null}>({aberto: false, produtoId: null});
   const [modalReporAberto, setModalReporAberto] = useState<{aberto: boolean, insumo: InsumoResponse | null}>({aberto: false, insumo: null});
   // Formulários
-  const [formInsumo, setFormInsumo] = useState({ nome: '', unidade: 'g (gramas)', quantidade: 0, nivelCritico: 0 });
-  const [formProduto, setFormProduto] = useState({ nome: '', preco: 0, categoria: 'SALGADO' });
+  const [formInsumo, setFormInsumo] = useState({ nome: '', unidade: 'g (gramas)', quantidade: '', nivelCritico: '' });
+  const [formProduto, setFormProduto] = useState({ nome: '', preco: '', categoria: 'SALGADO' });
   const [formReceita, setFormReceita] = useState({ insumoId: '', quantidade: 0 });
-  const [formRepor, setFormRepor] = useState({ quantidade: 0 });
+  const [formRepor, setFormRepor] = useState({ quantidade: '' });
 
   useEffect(() => {
     carregarDados();
@@ -27,6 +27,10 @@ export default function BombonierePage() {
   const carregarDados = async () => {
     try {
       const insumosData = await apiBomboniere.listarInsumos();
+
+      console.log("Insumo do backend:", insumosData[0]); // <-- adicione essa linha
+      setInsumos(insumosData);
+
       const produtosData = await apiBomboniere.listarProdutos();
       const alertasData = await apiBomboniere.listarAlertas();
       setInsumos(insumosData);
@@ -41,17 +45,22 @@ export default function BombonierePage() {
 
   const handleCadastrarInsumo = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // LOG PARA TESTE: Veja no console do navegador o que está sendo enviado
+  console.log("Enviando:", formInsumo);
     try {
-      // O seu backend atualmente não recebe a "unidade" no Request, se precisar, atualize o InsumoRequest no Java!
+      
       await apiBomboniere.cadastrarInsumo({
         nome: formInsumo.nome,
+        unidade: formInsumo.unidade,
         quantidade: Number(formInsumo.quantidade),
         nivelCritico: Number(formInsumo.nivelCritico)
       });
       setModalInsumoAberto(false);
-      setFormInsumo({ nome: '', unidade: 'g (gramas)', quantidade: 0, nivelCritico: 0 });
+      setFormInsumo({ nome: '', unidade: 'g (gramas)', quantidade: '', nivelCritico: '' });
       carregarDados();
     } catch (error) {
+      console.error("Erro completo:", error);
       alert("Erro ao cadastrar insumo.");
     }
   };
@@ -65,7 +74,7 @@ export default function BombonierePage() {
         categoria: formProduto.categoria
       });
       setModalProdutoAberto(false);
-      setFormProduto({ nome: '', preco: 0, categoria: 'SALGADO' });
+      setFormProduto({ nome: '', preco: '', categoria: 'SALGADO' });
       carregarDados();
     } catch (error) {
       alert("Erro ao cadastrar produto.");
@@ -94,7 +103,7 @@ export default function BombonierePage() {
     try {
       await apiBomboniere.reporEstoque(modalReporAberto.insumo.id, Number(formRepor.quantidade));
       setModalReporAberto({ aberto: false, insumo: null });
-      setFormRepor({ quantidade: 0 });
+      setFormRepor({ quantidade: '' });
       carregarDados(); // Recarrega para mostrar o estoque novo!
       alert("Estoque atualizado com sucesso!");
     } catch (error) {
@@ -159,12 +168,12 @@ export default function BombonierePage() {
             </thead>
             <tbody>
               {insumos.map(insumo => {
-                const critico = insumo.quantidade <= insumo.nivelCritico;
+                const critico = insumo.quantidadeEmEstoque <= insumo.nivelCritico;
                 return (
                   <tr key={insumo.id} style={{ borderBottom: `1px solid ${cores.borda}` }}>
                     <td style={{ padding: '15px' }}>{insumo.nome}</td>
                     <td style={{ padding: '15px' }}>{insumo.unidade || 'UN'}</td>
-                    <td style={{ padding: '15px', fontWeight: 'bold' }}>{insumo.quantidade}</td>
+                    <td style={{ padding: '15px', fontWeight: 'bold' }}>{insumo.quantidadeEmEstoque}</td>
                     <td style={{ padding: '15px' }}>{insumo.nivelCritico}</td>
                     <td style={{ padding: '15px' }}>
                       <span style={{ padding: '5px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', backgroundColor: critico ? cores.vermelhoClaro : cores.verdeClaro, color: critico ? cores.vermelhoTexto : cores.verdeTexto }}>
@@ -229,7 +238,7 @@ export default function BombonierePage() {
                <div key={alerta.id} style={{ marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #FFCDD2' }}>
                   <h3 style={{ color: cores.vermelhoTexto, margin: '0 0 10px 0' }}>⚠️ {alerta.nome}</h3>
                   <div style={{ display: 'flex', gap: '50px', marginBottom: '10px' }}>
-                    <div><span style={{fontSize: '12px', color: '#666'}}>Quantidade Atual:</span><br/><strong>{alerta.quantidade}</strong></div>
+                    <div><span style={{fontSize: '12px', color: '#666'}}>Quantidade Atual:</span><br/><strong>{alerta.quantidadeEmEstoque}</strong></div>
                     <div><span style={{fontSize: '12px', color: '#666'}}>Nível Crítico:</span><br/><strong>{alerta.nivelCritico}</strong></div>
                   </div>
                   <button 
@@ -257,16 +266,21 @@ export default function BombonierePage() {
               </label>
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                 <label style={{ flex: 1 }}>Unidade *
-                  <select value={formInsumo.unidade} onChange={e => setFormInsumo({...formInsumo, unidade: e.target.value})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}>
+
+                  <select 
+                    aria-label="Selecione a unidade de medida" 
+                    value={formInsumo.unidade} 
+                    onChange={e => setFormInsumo({...formInsumo, unidade: e.target.value})} 
+                    style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}>
                     <option>g (gramas)</option><option>ml</option><option>unidades</option>
                   </select>
                 </label>
                 <label style={{ flex: 1 }}>Quantidade Inicial *
-                  <input required type="number" step="0.01" value={formInsumo.quantidade} onChange={e => setFormInsumo({...formInsumo, quantidade: Number(e.target.value)})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
+                  <input required type="number" step="0.01" value={formInsumo.quantidade} onChange={e => setFormInsumo({...formInsumo, quantidade: e.target.value})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
                 </label>
               </div>
               <label style={{ display: 'block', marginBottom: '20px' }}>Nível Crítico *
-                <input required type="number" step="0.01" value={formInsumo.nivelCritico} onChange={e => setFormInsumo({...formInsumo, nivelCritico: Number(e.target.value)})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
+                <input required type="number" step="0.01" value={formInsumo.nivelCritico} onChange={e => setFormInsumo({...formInsumo, nivelCritico: e.target.value})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
                 <small style={{ fontSize: '10px', color: '#888' }}>Quando o estoque atingir este valor, um alerta será exibido.</small>
               </label>
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -289,7 +303,7 @@ export default function BombonierePage() {
               </label>
               <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
                 <label style={{ flex: 1 }}>Preço *
-                  <input required type="number" step="0.01" value={formProduto.preco} onChange={e => setFormProduto({...formProduto, preco: Number(e.target.value)})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
+                  <input required type="number" step="0.01" value={formProduto.preco} onChange={e => setFormProduto({...formProduto, preco: e.target.value})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
                 </label>
                 <label style={{ flex: 1 }}>Categoria *
                   <select value={formProduto.categoria} onChange={e => setFormProduto({...formProduto, categoria: e.target.value})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}>
@@ -336,12 +350,12 @@ export default function BombonierePage() {
             <h2>Registrar Entrada de Estoque</h2>
             <div style={{ backgroundColor: cores.fundo, padding: '10px', borderRadius: '5px', marginBottom: '20px', border: `1px solid ${cores.borda}` }}>
               <strong>{modalReporAberto.insumo.nome}</strong>
-              <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#666' }}>Estoque atual: {modalReporAberto.insumo.quantidade} {modalReporAberto.insumo.unidade}</p>
+              <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#666' }}>Estoque atual: {modalReporAberto.insumo.quantidadeEmEstoque} {modalReporAberto.insumo.unidade}</p>
             </div>
             
             <form onSubmit={handleReporEstoque}>
               <label style={{ display: 'block', marginBottom: '20px' }}>Quantidade a Adicionar *
-                <input required type="number" step="0.01" value={formRepor.quantidade} onChange={e => setFormRepor({ quantidade: Number(e.target.value) })} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
+                <input required type="number" step="0.01" value={formRepor.quantidade} onChange={e => setFormRepor({ quantidade: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
               </label>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button type="button" onClick={() => setModalReporAberto({ aberto: false, insumo: null })} style={{ flex: 1, padding: '10px', backgroundColor: 'transparent', border: `1px solid ${cores.borda}`, borderRadius: '5px', cursor: 'pointer' }}>Cancelar</button>

@@ -37,12 +37,18 @@ public class BomboniereController {
 
     @PostMapping("/insumos")
     public InsumoResponse cadastrarInsumo(
+
+        
             @RequestBody InsumoRequest request
     ) {
 
+        System.out.println("JAVA RECEBEU: " + request.quantidade());
+
+        System.out.println("Recebendo insumo: " + request.nome() + ", unidade: " + request.unidade());
+
         Insumo insumo = new Insumo(
                 request.nome(),
-                request.unidade(),
+                request.unidade() != null ? request.unidade() : "UN",
                 request.quantidade(),
                 request.nivelCritico()
         );
@@ -53,8 +59,8 @@ public class BomboniereController {
                 insumo.getId(),
                 insumo.getNome(),
                 insumo.getUnidade(),
-                (int) insumo.getQuantidadeEmEstoque(),
-                (int) insumo.getNivelCritico()
+                insumo.getQuantidadeEmEstoque(),
+                insumo.getNivelCritico()
         );
     }
 
@@ -81,8 +87,9 @@ public class BomboniereController {
                 .map(insumo -> new InsumoResponse(
                         insumo.getId(),
                         insumo.getNome(),
-                        (int) insumo.getQuantidadeEmEstoque(),
-                        (int) insumo.getNivelCritico()
+                        insumo.getUnidade(),
+                        insumo.getQuantidadeEmEstoque(),
+                        insumo.getNivelCritico()
                 ))
                 .toList();
     }
@@ -100,8 +107,9 @@ public class BomboniereController {
                 .map(insumo -> new InsumoResponse(
                         insumo.getId(),
                         insumo.getNome(),
-                        (int) insumo.getQuantidadeEmEstoque(),
-                        (int) insumo.getNivelCritico()
+                        insumo.getUnidade(),
+                        insumo.getQuantidadeEmEstoque(),
+                        insumo.getNivelCritico()
                 ))
                 .toList();
     }

@@ -6,7 +6,7 @@ public record InsumoResponse(
         UUID id,
         String nome,
         String unidade, 
-        Integer quantidade,
-        Integer nivelCritico
+        Double quantidadeEmEstoque,
+        Double nivelCritico
 ) {
 }

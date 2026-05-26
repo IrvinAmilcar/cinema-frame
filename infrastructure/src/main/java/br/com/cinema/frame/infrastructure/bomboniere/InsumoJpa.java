@@ -27,6 +27,14 @@ public class InsumoJpa {
     @Column(nullable = false)
     private double nivelCritico;
 
+    public double getQuantidadeEmEstoque() {
+        return quantidadeEmEstoque;
+    }
+
+    public double getNivelCritico() {
+        return nivelCritico;
+    }
+
     protected InsumoJpa() {}
 
     public static InsumoJpa fromDomain(Insumo i) {
@@ -36,8 +44,8 @@ public class InsumoJpa {
         e.id = i.getId();
         e.nome = i.getNome();
         e.unidade = i.getUnidade();
-        e.quantidadeEmEstoque = i.getQuantidadeEmEstoque();
-        e.nivelCritico = i.getNivelCritico();
+        e.setQuantidadeEmEstoque(i.getQuantidadeEmEstoque());
+        e.setNivelCritico(i.getNivelCritico());
 
         return e;
     }
@@ -52,4 +60,17 @@ public class InsumoJpa {
                 nivelCritico
         );
     }
+
+   
+public void setQuantidadeEmEstoque(double quantidadeEmEstoque) {
+    this.quantidadeEmEstoque = quantidadeEmEstoque;
+}
+
+public void setNivelCritico(double nivelCritico) {
+    this.nivelCritico = nivelCritico;
+}
+
+public void setId(UUID id) { this.id = id; }
+public void setNome(String nome) { this.nome = nome; }
+public void setUnidade(String unidade) { this.unidade = unidade; }
 }
