@@ -42,7 +42,7 @@ public class BomboniereController {
 
         Insumo insumo = new Insumo(
                 request.nome(),
-                "UN",
+                request.unidade(),
                 request.quantidade(),
                 request.nivelCritico()
         );
@@ -52,9 +52,24 @@ public class BomboniereController {
         return new InsumoResponse(
                 insumo.getId(),
                 insumo.getNome(),
+                insumo.getUnidade(),
                 (int) insumo.getQuantidadeEmEstoque(),
                 (int) insumo.getNivelCritico()
         );
+    }
+
+    @PostMapping("/insumos/{id}/repor")
+    public void reporEstoque(
+            @PathVariable java.util.UUID id, 
+            @RequestBody ReposicaoRequest request
+    ) {
+        
+        Insumo insumo = insumoRepository.buscarPorId(id)
+                .orElseThrow(() -> new RuntimeException("Insumo não encontrado"));
+        
+        insumo.repor(request.quantidade());
+        
+        insumoRepository.salvar(insumo);
     }
 
     @GetMapping("/insumos")

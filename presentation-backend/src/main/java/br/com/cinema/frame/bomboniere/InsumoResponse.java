@@ -5,6 +5,7 @@ import java.util.UUID;
 public record InsumoResponse(
         UUID id,
         String nome,
+        String unidade, 
         Integer quantidade,
         Integer nivelCritico
 ) {

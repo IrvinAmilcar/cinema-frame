@@ -12,6 +12,7 @@ export default api
 export interface InsumoResponse {
   id: string;
   nome: string;
+  unidade: string;
   quantidade: number; 
   nivelCritico: number;
 }
@@ -20,6 +21,22 @@ export interface ProdutoBomboniereResponse {
   id: string;
   nome: string;
   preco: number;
+}
+export interface InsumoRequest {
+  nome: string;
+  quantidade: number;
+  nivelCritico: number;
+}
+
+export interface ProdutoRequest {
+  nome: string;
+  preco: number;
+  categoria: string;
+}
+
+export interface ReceitaRequest {
+  insumoId: string;
+  quantidade: number;
 }
 
 const API_URL = 'http://localhost:8080'; 
@@ -40,13 +57,50 @@ export const apiBomboniere = {
     return res.json();
   },
 
+  cadastrarInsumo: async (dados: InsumoRequest): Promise<void> => {
+    const res = await fetch(`${API_URL}/bomboniere/insumos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    });
+    if (!res.ok) throw new Error('Erro ao cadastrar insumo');
+  },
+
+  // ===== AQUI ESTÁ A FUNÇÃO QUE ESTAVA FALTANDO =====
+  reporEstoque: async (id: string, quantidade: number): Promise<void> => {
+    const res = await fetch(`${API_URL}/bomboniere/insumos/${id}/repor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quantidade })
+    });
+    if (!res.ok) throw new Error('Erro ao repor estoque');
+  },
+
   // ==========================
-  // PRODUTOS
+  // PRODUTOS E RECEITAS
   // ==========================
   listarProdutos: async (): Promise<ProdutoBomboniereResponse[]> => {
     const res = await fetch(`${API_URL}/bomboniere/produtos`);
     if (!res.ok) throw new Error('Erro ao listar produtos');
     return res.json();
+  },
+
+  cadastrarProduto: async (dados: ProdutoRequest): Promise<void> => {
+    const res = await fetch(`${API_URL}/bomboniere/produtos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    });
+    if (!res.ok) throw new Error('Erro ao cadastrar produto');
+  },
+
+  adicionarReceita: async (produtoId: string, dados: ReceitaRequest): Promise<void> => {
+    const res = await fetch(`${API_URL}/bomboniere/produtos/${produtoId}/receita`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    });
+    if (!res.ok) throw new Error('Erro ao adicionar receita');
   },
 
   // ==========================
@@ -57,6 +111,6 @@ export const apiBomboniere = {
       method: 'POST',
     });
     if (!res.ok) throw new Error('Erro ao realizar a venda');
-    return res.text(); 
+    return res.text();
   }
 };
