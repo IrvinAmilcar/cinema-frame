@@ -72,7 +72,12 @@ export default function SalasPage() {
           type="number" placeholder="Capacidade (lugares)" required min={1}
           value={form.capacidade} onChange={e => setForm({ ...form, capacidade: e.target.value })}
         />
-        <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
+       <label htmlFor="tipo-select">Tipo:</label>
+        <select 
+          id="tipo-select" 
+          value={form.tipo} 
+          onChange={e => setForm({ ...form, tipo: e.target.value })}
+        >
           {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
         <button type="submit">Cadastrar</button>

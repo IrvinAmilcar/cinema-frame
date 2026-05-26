@@ -74,10 +74,18 @@ export default function CatalogoPage() {
         <h3>Novo Filme</h3>
         <input placeholder="Título" required value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} />
         <input type="number" placeholder="Duração (min)" required min={1} value={form.duracaoMinutos} onChange={e => setForm({ ...form, duracaoMinutos: Number(e.target.value) })} />
-        <select value={form.classificacaoIndicativa} onChange={e => setForm({ ...form, classificacaoIndicativa: e.target.value })}>
+        <select 
+          aria-label="Classificação Indicativa" 
+          value={form.classificacaoIndicativa} 
+          onChange={e => setForm({ ...form, classificacaoIndicativa: e.target.value })}
+        >
           {CLASSIFICACOES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <select value={form.genero} onChange={e => setForm({ ...form, genero: e.target.value })}>
+        <select 
+          aria-label="Gênero" 
+          value={form.genero} 
+          onChange={e => setForm({ ...form, genero: e.target.value })}
+        >
           {GENEROS.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
         <input placeholder="URL do trailer" value={form.trailerURL} onChange={e => setForm({ ...form, trailerURL: e.target.value })} />
