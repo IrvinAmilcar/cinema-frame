@@ -276,11 +276,25 @@ export default function BombonierePage() {
                   </select>
                 </label>
                 <label style={{ flex: 1 }}>Quantidade Inicial *
-                  <input required type="number" step="0.01" value={formInsumo.quantidade} onChange={e => setFormInsumo({...formInsumo, quantidade: e.target.value})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
+                    <input 
+                        required 
+                        type="number" 
+                        step={formInsumo.unidade === 'unidades' ? '1' : '0.01'}
+                        value={formInsumo.quantidade} 
+                        onChange={e => setFormInsumo({...formInsumo, quantidade: e.target.value})} 
+                        style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}
+                        />
                 </label>
               </div>
               <label style={{ display: 'block', marginBottom: '20px' }}>Nível Crítico *
-                <input required type="number" step="0.01" value={formInsumo.nivelCritico} onChange={e => setFormInsumo({...formInsumo, nivelCritico: e.target.value})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
+                <input 
+                    required 
+                    type="number" 
+                    step={formInsumo.unidade === 'unidades' ? '1' : '0.01'}
+                    value={formInsumo.nivelCritico} 
+                    onChange={e => setFormInsumo({...formInsumo, nivelCritico: e.target.value})} 
+                    style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}
+                    />      
                 <small style={{ fontSize: '10px', color: '#888' }}>Quando o estoque atingir este valor, um alerta será exibido.</small>
               </label>
               <div style={{ display: 'flex', gap: '10px' }}>
