@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import CatalogoPage from './pages/CatalogoPage'
 import GradePage from './pages/GradePage'
 import SalasPage from './pages/SalasPage'
+import BombonierePage from './pages/BombonierePage'
 
 function Home() {
   return <h2>Bem-vindo ao F.R.A.M.E — Backoffice</h2>
@@ -26,7 +27,7 @@ export default function App() {
           <Route path="/filmes" element={<CatalogoPage />} />
           <Route path="/salas" element={<SalasPage />} />
           <Route path="/grade" element={<GradePage />} />
-          {/* Fabiana: <Route path="/bomboniere" element={<BombonieirePage />} /> */}
+          <Route path="/bomboniere" element={<BombonierePage />} />
           {/* Fabiana: <Route path="/checkin" element={<CheckinPage />} /> */}
           {/* Amanda:  <Route path="/fidelidade" element={<FidelidadePage />} /> */}
           {/* Amanda:  <Route path="/caixa" element={<CaixaPage />} /> */}

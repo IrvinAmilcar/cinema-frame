@@ -1,6 +1,8 @@
 package br.com.cinema.frame.domain.backoffice.bomboniere;
 
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Insumo {
 
@@ -25,6 +27,31 @@ public class Insumo {
         this.nivelCritico = nivelCritico;
     }
 
+    private transient List<EstoqueObserver> observadores = new ArrayList<>();
+
+public void adicionarObservador(EstoqueObserver observer) {
+    if (this.observadores == null) {
+        this.observadores = new ArrayList<>();
+    }
+    this.observadores.add(observer);
+}
+
+public void removerObservador(EstoqueObserver observer) {
+    if (this.observadores != null) {
+        this.observadores.remove(observer);
+    }
+}
+
+private void verificarNivelCritico() {
+    if (this.quantidadeEmEstoque <= this.nivelCritico) {
+        if (this.observadores != null) {
+            for (EstoqueObserver observer : observadores) {
+                observer.notificarEstoqueCritico(this);
+            }
+        }
+    }
+}
+
     private Insumo(
             UUID id,
             String nome,
@@ -46,6 +73,8 @@ public class Insumo {
             throw new IllegalStateException("Estoque insuficiente para o insumo: " + nome);
 
         this.quantidadeEmEstoque -= quantidade;
+
+        verificarNivelCritico();
     }
 
     public boolean isEstoqueCritico() {

@@ -1,6 +1,7 @@
 package br.com.cinema.frame.bomboniere;
 
 import br.com.cinema.frame.domain.backoffice.bomboniere.CategoriaProduto;
+import br.com.cinema.frame.domain.backoffice.bomboniere.EstoqueObserver;
 import br.com.cinema.frame.domain.backoffice.bomboniere.Insumo;
 import br.com.cinema.frame.domain.backoffice.bomboniere.InsumoRepository;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
@@ -12,17 +13,22 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/bomboniere")
+@CrossOrigin(origins = "*")
 public class BomboniereController {
 
     private final InsumoRepository insumoRepository;
     private final ProdutoDaBombonieresRepository produtoRepository;
+    private final EstoqueObserver estoqueObserver;
+
 
     public BomboniereController(
             InsumoRepository insumoRepository,
-            ProdutoDaBombonieresRepository produtoRepository
+            ProdutoDaBombonieresRepository produtoRepository,
+            EstoqueObserver estoqueObserver
     ) {
         this.insumoRepository = insumoRepository;
         this.produtoRepository = produtoRepository;
+        this.estoqueObserver = estoqueObserver;
     }
 
     // =====================================================
@@ -154,6 +160,7 @@ public String venderProduto(
                                 new RuntimeException(
                                         "Insumo não encontrado"
                                 ));
+        insumo.adicionarObservador(estoqueObserver);
 
         insumo.baixar(item.getQuantidade());
 
