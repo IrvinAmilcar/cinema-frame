@@ -4,6 +4,7 @@ import CatalogoPage from './pages/CatalogoPage'
 import GradePage from './pages/GradePage'
 import SalasPage from './pages/SalasPage'
 import BombonierePage from './pages/BombonierePage'
+import CompraPage from './pages/CompraPage'
 
 type Modo = 'backoffice' | 'portal'
 
@@ -111,7 +112,7 @@ export default function App() {
             <Route path="/caixa" element={<EmConstrucao nome="Fechamento de Caixa" />} />
             {/* Portal */}
             <Route path="/programacao" element={<EmConstrucao nome="Programação" />} />
-            <Route path="/compra" element={<EmConstrucao nome="Comprar Ingresso" />} />
+            <Route path="/compra" element={<CompraPage />} />
             <Route path="/fidelidade" element={<EmConstrucao nome="Fidelidade" />} />
           </Routes>
         </main>

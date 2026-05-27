@@ -58,6 +58,14 @@ public class ReservaService {
         reservaRepository.salvar(reserva);
     }
 
+    public List<Integer> listarAssentosOcupados(UUID sessaoId, LocalDateTime agora) {
+        liberarExpiradas(sessaoId, agora);
+        return reservaRepository.buscarPorSessaoId(sessaoId).stream()
+                .filter(ReservaDeAssento::estaAtiva)
+                .map(ReservaDeAssento::getNumeroAssento)
+                .toList();
+    }
+
     public void liberarExpiradas(UUID sessaoId, LocalDateTime agora) {
         reservaRepository.buscarPorSessaoId(sessaoId).stream()
             .filter(r -> r.estaAtiva() && r.estaExpirada(agora))

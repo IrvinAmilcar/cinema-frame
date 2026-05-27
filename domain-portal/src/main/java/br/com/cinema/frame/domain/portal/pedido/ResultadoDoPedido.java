@@ -1,21 +1,22 @@
 package br.com.cinema.frame.domain.portal.pedido;
 
+import java.util.List;
 import java.util.Optional;
 
 public class ResultadoDoPedido {
 
-    private final QRCode qrCode;
+    private final List<QRCode> qrCodes;
     private final Voucher voucher;
 
-    public ResultadoDoPedido(QRCode qrCode, Voucher voucher) {
-        if (qrCode == null)
-            throw new IllegalArgumentException("QRCode não pode ser nulo");
+    public ResultadoDoPedido(List<QRCode> qrCodes, Voucher voucher) {
+        if (qrCodes == null || qrCodes.isEmpty())
+            throw new IllegalArgumentException("QRCodes não podem ser nulos ou vazios");
 
-        this.qrCode = qrCode;
+        this.qrCodes = List.copyOf(qrCodes);
         this.voucher = voucher;
     }
 
-    public QRCode getQrCode() { return qrCode; }
+    public List<QRCode> getQrCodes() { return qrCodes; }
 
     public Optional<Voucher> getVoucher() { return Optional.ofNullable(voucher); }
 

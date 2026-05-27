@@ -26,6 +26,19 @@ public class Cupom {
         this.validade = validade;
     }
 
+    private Cupom(UUID id, String codigo, TipoPromocao tipo, boolean cumulativo, LocalDate validade) {
+        this.id = id;
+        this.codigo = codigo;
+        this.tipo = tipo;
+        this.cumulativo = cumulativo;
+        this.validade = validade;
+    }
+
+    public static Cupom reconstituir(UUID id, String codigo, TipoPromocao tipo,
+                                      boolean cumulativo, LocalDate validade) {
+        return new Cupom(id, codigo, tipo, cumulativo, validade);
+    }
+
     public boolean estaValido(LocalDate hoje) {
         return !hoje.isAfter(validade);
     }

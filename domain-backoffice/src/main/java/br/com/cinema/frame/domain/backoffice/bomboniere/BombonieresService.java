@@ -95,6 +95,16 @@ public class BombonieresService implements EstoqueSubject {
         if (!produto.isAtivo())
             throw new IllegalStateException("Produto indisponível: " + produto.getNome());
 
+        // RN 7: verificar estoque de TODOS os insumos antes de debitar qualquer um
+        for (ItemDeReceita item : produto.getReceita()) {
+            Insumo insumo = insumoRepository.buscarPorId(item.getInsumo().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Insumo não encontrado: " + item.getInsumo().getNome()));
+            if (insumo.getQuantidadeEmEstoque() < item.getQuantidade())
+                throw new IllegalStateException(
+                    "Estoque insuficiente para o insumo '" + insumo.getNome() + "': " +
+                    "necessário " + item.getQuantidade() + ", disponível " + insumo.getQuantidadeEmEstoque());
+        }
+
         for (ItemDeReceita item : produto.getReceita()) {
             item.getInsumo().baixar(item.getQuantidade());
             insumoRepository.salvar(item.getInsumo());

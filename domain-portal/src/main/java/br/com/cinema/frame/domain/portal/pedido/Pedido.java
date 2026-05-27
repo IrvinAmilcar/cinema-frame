@@ -9,6 +9,7 @@ import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.List;
 import java.util.UUID;
 
 public class Pedido {
@@ -33,6 +34,32 @@ public class Pedido {
         this.clienteId = clienteId;
         this.ingressos = new ArrayList<>();
         this.produtos = new ArrayList<>();
+    }
+
+    private Pedido(UUID id, Sessao sessao, UUID clienteId) {
+        this.id = id;
+        this.sessao = sessao;
+        this.clienteId = clienteId;
+        this.ingressos = new ArrayList<>();
+        this.produtos = new ArrayList<>();
+    }
+
+    public static Pedido reconstituir(UUID id, Sessao sessao, UUID clienteId,
+                                      UUID reservaId, List<TipoIngresso> tiposIngresso) {
+        Pedido p = new Pedido(id, sessao, clienteId);
+        p.reservaId = reservaId;
+        for (TipoIngresso tipo : tiposIngresso) {
+            p.ingressos.add(new Ingresso(sessao, tipo));
+        }
+        return p;
+    }
+
+    public static Pedido reconstituirComIngressos(UUID id, Sessao sessao, UUID clienteId,
+                                                   UUID reservaId, List<Ingresso> ingressos) {
+        Pedido p = new Pedido(id, sessao, clienteId);
+        p.reservaId = reservaId;
+        p.ingressos.addAll(ingressos);
+        return p;
     }
 
     public void vincularReserva(UUID reservaId) {
@@ -64,14 +91,17 @@ public class Pedido {
             gestaoDeEstoque.vender(produto.getId());
         }
 
-        QRCode qrCode = new QRCode(ingressos.get(0).getId());
+        // RN 11: um QR Code único por ingresso, derivado do UUID de cada um
+        List<QRCode> qrCodes = ingressos.stream()
+                .map(i -> new QRCode(i.getId()))
+                .toList();
 
         Voucher voucher = null;
         if (!produtos.isEmpty()) {
             voucher = new Voucher(id, produtos);
         }
 
-        return new ResultadoDoPedido(qrCode, voucher);
+        return new ResultadoDoPedido(qrCodes, voucher);
     }
 
     public UUID getId() { return id; }

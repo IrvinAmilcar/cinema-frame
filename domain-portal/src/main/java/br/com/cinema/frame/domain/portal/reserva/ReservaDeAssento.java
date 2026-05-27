@@ -41,6 +41,7 @@ public class ReservaDeAssento {
     }
 
     public void confirmar(LocalDateTime agora) {
+        if (status == StatusReserva.CONFIRMADO) return; // já confirmado, idempotente
         if (status != StatusReserva.RESERVADO)
             throw new IllegalStateException("Reserva não está no estado RESERVADO");
         if (estaExpirada(agora))
@@ -63,6 +64,22 @@ public class ReservaDeAssento {
             throw new IllegalStateException("Reserva já expirada não pode ser cancelada");
 
         this.status = StatusReserva.CANCELADO;
+    }
+
+    private ReservaDeAssento(UUID id, Sessao sessao, int numeroAssento,
+                              StatusReserva status, LocalDateTime criadaEm, LocalDateTime expiracaoEm) {
+        this.id = id;
+        this.sessao = sessao;
+        this.numeroAssento = numeroAssento;
+        this.status = status;
+        this.criadaEm = criadaEm;
+        this.expiracaoEm = expiracaoEm;
+    }
+
+    public static ReservaDeAssento reconstituir(UUID id, Sessao sessao, int numeroAssento,
+                                                 StatusReserva status, LocalDateTime criadaEm,
+                                                 LocalDateTime expiracaoEm) {
+        return new ReservaDeAssento(id, sessao, numeroAssento, status, criadaEm, expiracaoEm);
     }
 
     public UUID getId() { return id; }

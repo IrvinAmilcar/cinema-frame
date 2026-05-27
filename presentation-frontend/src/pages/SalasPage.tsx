@@ -10,7 +10,7 @@ interface Sala {
 
 const TIPOS = ['COMUM', 'IMAX', 'TRES_D', 'VIP']
 
-const formInicial = { numero: '', capacidade: '', tipo: 'COMUM' }
+const formInicial = { numero: '', capacidade: '', tipo: 'PADRAO' }
 
 export default function SalasPage() {
   const [salas, setSalas] = useState<Sala[]>([])

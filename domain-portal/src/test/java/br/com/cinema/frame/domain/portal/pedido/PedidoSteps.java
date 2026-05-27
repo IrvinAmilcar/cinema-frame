@@ -266,8 +266,9 @@ public class PedidoSteps {
     @Então("o resultado deve conter um QRCode")
     public void resultadoDeveConterQRCode() {
         assertNotNull(resultado);
-        assertNotNull(resultado.getQrCode());
-        assertTrue(resultado.getQrCode().getCodigo().startsWith("QR-"));
+        assertNotNull(resultado.getQrCodes());
+        assertFalse(resultado.getQrCodes().isEmpty());
+        assertTrue(resultado.getQrCodes().get(0).getCodigo().startsWith("QR-"));
         verify(pedidoRepository, atLeastOnce()).salvar(any(Pedido.class));
     }
 
