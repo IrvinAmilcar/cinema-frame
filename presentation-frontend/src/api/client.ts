@@ -124,6 +124,14 @@ removerItemReceita: async (produtoId: string, insumoId: string): Promise<void> =
     if (!res.ok) throw new Error('Erro ao remover item da receita');
 },
 
+  toggleAtivo: async (id: string): Promise<ProdutoBomboniereResponse> => {
+    const res = await fetch(`${API_URL}/bomboniere/produtos/${id}/toggle-ativo`, {
+      method: 'PATCH',
+    });
+    if (!res.ok) throw new Error('Erro ao alterar status do produto');
+    return res.json();
+  },
+
   // ==========================
   // VENDAS
   // ==========================

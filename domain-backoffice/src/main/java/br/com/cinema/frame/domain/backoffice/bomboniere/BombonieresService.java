@@ -8,12 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class BombonieresService {
+public class BombonieresService implements EstoqueSubject {
 
     private final ProdutoDaBombonieresRepository produtoRepository;
     private final InsumoRepository insumoRepository;
     private final MovimentacaoEstoqueRepository movimentacaoRepository;
     private final RbacService rbacService;
+    private final List<EstoqueObserver> observadores = new ArrayList<>();
 
     // Construtor retrocompatível (sem RBAC)
     public BombonieresService(ProdutoDaBombonieresRepository produtoRepository,
@@ -37,6 +38,23 @@ public class BombonieresService {
         this.insumoRepository = insumoRepository;
         this.movimentacaoRepository = movimentacaoRepository;
         this.rbacService = rbacService;
+    }
+
+    @Override
+    public void adicionarObservador(EstoqueObserver observer) {
+        observadores.add(observer);
+    }
+
+    @Override
+    public void removerObservador(EstoqueObserver observer) {
+        observadores.remove(observer);
+    }
+
+    @Override
+    public void notificarObservadores(Insumo insumo) {
+        for (EstoqueObserver observer : observadores) {
+            observer.notificarEstoqueCritico(insumo);
+        }
     }
 
     public Insumo cadastrarInsumo(String nome, String unidade, double quantidade, double nivelCritico) {
@@ -93,6 +111,7 @@ public class BombonieresService {
         List<EstoqueNotificacao> notificacoes = new ArrayList<>();
         for (ItemDeReceita item : produto.getReceita()) {
             if (item.getInsumo().isEstoqueCritico()) {
+                notificarObservadores(item.getInsumo());
                 notificacoes.add(new EstoqueNotificacao(item.getInsumo()));
             }
         }

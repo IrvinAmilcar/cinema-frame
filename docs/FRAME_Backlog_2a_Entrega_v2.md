@@ -14,7 +14,7 @@ Os requisitos da 2.ª entrega são:
 - Implementar a camada de persistência com mapeamento objeto-relacional (JPA)
 - Implementar a camada de apresentação web
 
-**Estado atual do código — atualizado em 2026-05-22:**
+**Estado atual do código — atualizado em 2026-05-27:**
 
 | Camada | Status |
 |---|---|
@@ -44,7 +44,11 @@ Os requisitos da 2.ª entrega são:
 | **Frontend — Tela de Salas** (`SalasPage.tsx`) — listar, cadastrar | ✅ Implementado |
 | `SessaoJpa.inicio` mapeado como `TIME` no banco (`@JdbcTypeCode(SqlTypes.TIME)`) | ✅ Feito |
 | Datas/horas serializadas como `String` nos `*Response` (sem dependência de Jackson feature flags) | ✅ Feito |
-| F5/F6 — Bomboniere + Check-in (Fabiana) — Observer | ❌ Pendente (Fabiana) |
+| **Frontend — toggle Backoffice / Portal do Cliente** (`App.tsx`) — troca contexto de navegação e cor da sidebar | ✅ Implementado (Irvin) |
+| **F5 — Bomboniere: JPA + REST + Observer** — insumos, produtos, receitas, venda, alertas, ativar/desativar produto | ✅ Implementado (Fabiana) |
+| Padrão **Observer** — `EstoqueSubject` + `EstoqueObserver` + `AlertaEstoqueObserver`; `BombonieresService` implementa `EstoqueSubject` e notifica via `BomboniereConfig` | ✅ Funcionando e validado |
+| `NoOpMovimentacaoRepository` — placeholder até JPA de `MovimentacaoEstoque` ser implementado | ✅ Feito |
+| **F6 — Check-in** (Fabiana) — Observer (ocupação em tempo real) | ❌ Pendente (Fabiana) |
 | F3/F8 — Fidelidade + Fechamento de Caixa (Amanda) — Iterator + Template Method | ❌ Pendente (Amanda) |
 | F1/F2 — Compra de Ingresso + Explorar Programação (Julia) — Strategy + Decorator | ❌ Pendente (Julia) |
 
@@ -756,9 +760,11 @@ Esperado: `BUILD SUCCESS` com 8 módulos.
 
 **6. Rodar o backend:**
 ```bash
-# PowerShell: execute os dois comandos separadamente (não use &&)
+# Passo 1 — na raiz do projeto
 mvn install -DskipTests
-mvn -pl presentation-backend spring-boot:run
+# Passo 2 — entrar no módulo e rodar
+cd presentation-backend
+mvn spring-boot:run
 ```
 
 **7. Rodar o frontend (em outro terminal):**
@@ -768,23 +774,13 @@ npm run dev
 ```
 Acesse: `http://localhost:5173`
 
-**6. Criar sua branch individual:**
-```bash
-git checkout main
-git pull origin main
-git checkout -b feature/fabiana-jpa-bomboniere  # Fabiana
-git checkout -b feature/amanda-jpa-fidelidade   # Amanda
-git checkout -b feature/julia-jpa-pedido        # Julia
-```
-Irvin: `feature/irvin-jpa-grade`
-
 ---
 
 ---
 
-## Fase 1 — Persistência JPA (cada um na sua branch)
+## Fase 1 — Persistência JPA
 
-Ordem sugerida dentro de cada branch:
+Ordem sugerida de implementação:
 
 **1. Criar as classes `@Entity` no módulo `infrastructure`**
 
@@ -817,17 +813,18 @@ Com a aplicação rodando (`mvn spring-boot:run` no módulo `presentation-backen
 ```bash
 git add .
 git commit -m "feat(jpa): mapeamento JPA para [área] — [seu nome]"
+git push origin main
 ```
 
 ---
 
-## Fase 2 — Padrão de projeto (junto com a Fase 1, na mesma branch)
+## Fase 2 — Padrão de projeto (junto com a Fase 1)
 
 O padrão de projeto deve ser implementado **durante** a Fase 1, não depois, porque ele faz parte da camada de persistência/domínio.
 
 **Proxy (Irvin):** O Proxy substitui o adaptador simples para `Sessao` (F4) e para `Filme` (F7). Registre-o como `@Repository` no lugar do adaptador simples.
 
-**Observer (Fabiana):** A interface `EstoqueObserver` fica no domínio. O `AlertaEstoqueObserver` fica na infrastructure como `@Component`. O `BombonieresService` precisa aceitar uma lista de observers — injete via construtor ou via `@Autowired`.
+**Observer (Fabiana):** ✅ Implementado. `EstoqueSubject` e `EstoqueObserver` ficam no domínio. `AlertaEstoqueObserver` fica na infrastructure. `BombonieresService` implementa `EstoqueSubject` e recebe o observer via `BomboniereConfig` (bean Spring). A notificação é disparada em `venderInterno()` após detectar estoque crítico.
 
 **Iterator (Amanda):** O `LancamentosIterator` fica no domínio (sem dependência de framework). O `FidelidadeService` o usa ao calcular saldo.
 
@@ -839,7 +836,7 @@ O padrão de projeto deve ser implementado **durante** a Fase 1, não depois, po
 
 ---
 
-## Fase 3 — Camada de aplicação (cada um na sua branch)
+## Fase 3 — Camada de aplicação
 
 O módulo `application` está vazio. Antes de criar controllers, crie os casos de uso aqui:
 
@@ -881,7 +878,7 @@ Os Use Cases recebem as dependências via construtor e são instanciados pelo Sp
 
 ---
 
-## Fase 4 — Camada web (cada um na sua branch)
+## Fase 4 — Camada web
 
 ### 4.1 — Controllers REST (`presentation-backend`)
 
@@ -975,15 +972,13 @@ Com Angular: criar componentes em `presentation-frontend/src/app/`.
 
 ## Fase 5 — Integração final (todos juntos)
 
-### 5.1 — Pull Requests
+### 5.1 — Integração no main
 
-Cada integrante abre um PR da sua branch para `main`. Um colega revisa e aprova.
+Cada integrante commita diretamente no `main`. Antes de commitar, verificar:
 
-Checklist de revisão por PR:
 - [ ] Classes `@Entity` estão no módulo `infrastructure`, não em `domain-*`
 - [ ] Padrão de projeto está implementado em código Java real (não só citado)
-- [ ] Controller não chama serviço de domínio diretamente (vai pelo Use Case)
-- [ ] `mvn clean install` passa sem erros após o merge
+- [ ] `mvn install -DskipTests` passa sem erros após as alterações
 
 ### 5.2 — Testes de integração manuais
 

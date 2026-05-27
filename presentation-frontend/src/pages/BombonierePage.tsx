@@ -139,6 +139,15 @@ const handleRemoverItemReceita = async (produtoId: string, insumoId: string) => 
     }
 };
 
+const handleToggleAtivo = async (produtoId: string) => {
+    try {
+        await apiBomboniere.toggleAtivo(produtoId);
+        carregarDados();
+    } catch (error) {
+        alert("Erro ao alterar status do produto.");
+    }
+};
+
   // --- Estilos Baseados no Protótipo ---
   const cores = {
     vinho: '#8B0000',
@@ -230,7 +239,12 @@ const handleRemoverItemReceita = async (produtoId: string, insumoId: string) => 
               <div key={produto.id} style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: `1px solid ${cores.borda}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3 style={{ margin: 0 }}>{produto.nome}</h3>
-                  <span style={{ backgroundColor: cores.verdeClaro, color: cores.verdeTexto, padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>Ativo</span>
+                  <span
+                    onClick={() => handleToggleAtivo(produto.id)}
+                    style={{ backgroundColor: produto.ativo ? cores.verdeClaro : cores.vermelhoClaro, color: produto.ativo ? cores.verdeTexto : cores.vermelhoTexto, padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                    title="Clique para ativar/desativar">
+                    {produto.ativo ? 'Ativo' : 'Inativo'}
+                  </span>
                 </div>
                 {produto.categoria && <span style={{ backgroundColor: '#E3F2FD', color: '#1565C0', padding: '3px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', display: 'inline-block', marginTop: '5px' }}>{produto.categoria}</span>}
                 <h2 style={{ margin: '15px 0' }}>R$ {produto.preco.toFixed(2)}</h2>

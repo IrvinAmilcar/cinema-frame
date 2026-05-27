@@ -1,14 +1,13 @@
 package br.com.cinema.frame.bomboniere;
 
+import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.backoffice.bomboniere.CategoriaProduto;
-import br.com.cinema.frame.domain.backoffice.bomboniere.EstoqueObserver;
 import br.com.cinema.frame.domain.backoffice.bomboniere.Insumo;
 import br.com.cinema.frame.domain.backoffice.bomboniere.InsumoRepository;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ItemDeReceita;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBombonieresRepository;
 import org.springframework.web.bind.annotation.*;
-import br.com.cinema.frame.bomboniere.ProdutoBomboniereRequest;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -22,17 +21,16 @@ public class BomboniereController {
 
     private final InsumoRepository insumoRepository;
     private final ProdutoDaBombonieresRepository produtoRepository;
-    private final EstoqueObserver estoqueObserver;
-
+    private final BombonieresService bombonieresService;
 
     public BomboniereController(
             InsumoRepository insumoRepository,
             ProdutoDaBombonieresRepository produtoRepository,
-            EstoqueObserver estoqueObserver
+            BombonieresService bombonieresService
     ) {
         this.insumoRepository = insumoRepository;
         this.produtoRepository = produtoRepository;
-        this.estoqueObserver = estoqueObserver;
+        this.bombonieresService = bombonieresService;
     }
 
     // =====================================================
@@ -127,23 +125,22 @@ public class BomboniereController {
             @RequestBody ProdutoBomboniereRequest request
     ) {
 
-        ProdutoDaBomboniere produto =
-        new ProdutoDaBomboniere(
+        ProdutoDaBomboniere produto = new ProdutoDaBomboniere(
                 request.nome(),
-                request.preco().doubleValue(),  // double para o domínio
+                request.preco().doubleValue(),
                 CategoriaProduto.valueOf(request.categoria())
         );
 
-produtoRepository.salvar(produto);
+        produtoRepository.salvar(produto);
 
-return new ProdutoBomboniereResponse(
-        produto.getId(),
-        produto.getNome(),
-        BigDecimal.valueOf(produto.getPreco()),  // BigDecimal para o response
-        produto.getCategoria().name(),
-        produto.isAtivo(),
-        List.of()
-);
+        return new ProdutoBomboniereResponse(
+                produto.getId(),
+                produto.getNome(),
+                BigDecimal.valueOf(produto.getPreco()),
+                produto.getCategoria().name(),
+                produto.isAtivo(),
+                List.of()
+        );
     }
 
     @GetMapping("/produtos")
@@ -218,40 +215,10 @@ public void removerItemReceita(
     // =====================================================
 
     @PostMapping("/produtos/{id}/vender")
-public String venderProduto(
-        @PathVariable UUID id
-) {
-
-    ProdutoDaBomboniere produto =
-            produtoRepository
-                    .buscarPorId(id)
-                    .orElseThrow(() ->
-                            new RuntimeException("Produto não encontrado"));
-
-    if (produto.getReceita().isEmpty()) {
-        throw new RuntimeException(
-                "Produto não possui receita cadastrada"
-        );
+    public String venderProduto(@PathVariable UUID id) {
+        bombonieresService.vender(id);
+        return "Venda realizada com sucesso";
     }
-
-    for (var item : produto.getReceita()) {
-
-        Insumo insumo =
-                insumoRepository
-                        .buscarPorId(item.getInsumo().getId())
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Insumo não encontrado"
-                                ));
-        insumo.adicionarObservador(estoqueObserver);
-
-        insumo.baixar(item.getQuantidade());
-
-        insumoRepository.salvar(insumo);
-    }
-
-    return "Venda realizada com sucesso";
-}
     // =====================================================
     // ESTORNO
     // =====================================================
@@ -281,6 +248,35 @@ public String venderProduto(
         }
 
         return "Estorno realizado com sucesso";
+    }
+
+    @PatchMapping("/produtos/{id}/toggle-ativo")
+    public ProdutoBomboniereResponse toggleAtivo(@PathVariable UUID id) {
+        ProdutoDaBomboniere produto = produtoRepository.buscarPorId(id)
+                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+
+        if (produto.isAtivo()) {
+            produto.desativar();
+        } else {
+            produto.ativar();
+        }
+
+        produtoRepository.salvar(produto);
+
+        return new ProdutoBomboniereResponse(
+                produto.getId(),
+                produto.getNome(),
+                BigDecimal.valueOf(produto.getPreco()),
+                produto.getCategoria().name(),
+                produto.isAtivo(),
+                produto.getReceita().stream()
+                        .map(item -> new ProdutoBomboniereResponse.ItemReceitaResponse(
+                                item.getInsumo().getId().toString(),
+                                item.getInsumo().getNome(),
+                                item.getQuantidade()
+                        ))
+                        .toList()
+        );
     }
 
     @PostMapping("/produtos/{produtoId}/receita")
