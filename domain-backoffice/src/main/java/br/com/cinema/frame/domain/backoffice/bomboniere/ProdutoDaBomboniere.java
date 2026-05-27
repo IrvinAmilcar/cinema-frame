@@ -77,4 +77,13 @@ public class ProdutoDaBomboniere {
     public CategoriaProduto getCategoria() { return categoria; }
     public boolean isAtivo() { return ativo; }
     public List<ItemDeReceita> getReceita() { return Collections.unmodifiableList(receita); }
+
+    public void atualizarDados(String nome, double preco, CategoriaProduto categoria) {
+    // Como os campos são final, precisa ser feito via reconstituir
+    // Não adiciona aqui — veja o controller abaixo
+}
+
+    public void removerItemReceita(String insumoId) {
+        receita.removeIf(item -> item.getInsumo().getId().toString().equals(insumoId));
+    }
 }

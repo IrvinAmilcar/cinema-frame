@@ -4,10 +4,14 @@ import br.com.cinema.frame.domain.backoffice.bomboniere.CategoriaProduto;
 import br.com.cinema.frame.domain.backoffice.bomboniere.EstoqueObserver;
 import br.com.cinema.frame.domain.backoffice.bomboniere.Insumo;
 import br.com.cinema.frame.domain.backoffice.bomboniere.InsumoRepository;
+import br.com.cinema.frame.domain.backoffice.bomboniere.ItemDeReceita;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBombonieresRepository;
 import org.springframework.web.bind.annotation.*;
+import br.com.cinema.frame.bomboniere.ProdutoBomboniereRequest;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -124,34 +128,90 @@ public class BomboniereController {
     ) {
 
         ProdutoDaBomboniere produto =
-                new ProdutoDaBomboniere(
-                        request.nome(),
-                        request.preco().doubleValue(),
-                        CategoriaProduto.COMBO
-                );
-
-        produtoRepository.salvar(produto);
-
-        return new ProdutoBomboniereResponse(
-                produto.getId(),
-                produto.getNome(),
-                request.preco()
+        new ProdutoDaBomboniere(
+                request.nome(),
+                request.preco().doubleValue(),  // double para o domínio
+                CategoriaProduto.valueOf(request.categoria())
         );
+
+produtoRepository.salvar(produto);
+
+return new ProdutoBomboniereResponse(
+        produto.getId(),
+        produto.getNome(),
+        BigDecimal.valueOf(produto.getPreco()),  // BigDecimal para o response
+        produto.getCategoria().name(),
+        produto.isAtivo(),
+        List.of()
+);
     }
 
     @GetMapping("/produtos")
-    public List<ProdutoBomboniereResponse> listarProdutos() {
-
-        return produtoRepository
-                .listarTodos()
-                .stream()
-                .map(produto -> new ProdutoBomboniereResponse(
-                        produto.getId(),
-                        produto.getNome(),
-                        java.math.BigDecimal.valueOf(produto.getPreco())
+        public List<ProdutoBomboniereResponse> listarProdutos() {
+        return produtoRepository.listarTodos().stream()
+        .map(produto -> new ProdutoBomboniereResponse(
+            produto.getId(),
+            produto.getNome(),
+            java.math.BigDecimal.valueOf(produto.getPreco()),
+            produto.getCategoria().name(),
+            produto.isAtivo(),
+            produto.getReceita().stream()
+                .map(item -> new ProdutoBomboniereResponse.ItemReceitaResponse(
+                    item.getInsumo().getId().toString(),
+                    item.getInsumo().getNome(),
+                    item.getQuantidade()
                 ))
-                .toList();
-    }
+                .toList()
+        ))
+        .toList();
+}
+
+@PutMapping("/produtos/{id}")
+public ProdutoBomboniereResponse editarProduto(
+        @PathVariable UUID id,
+        @RequestBody ProdutoBomboniereRequest request
+) {
+    ProdutoDaBomboniere produto = produtoRepository.buscarPorId(id)
+            .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+
+    ProdutoDaBomboniere atualizado = ProdutoDaBomboniere.reconstituir(
+            produto.getId(),
+            request.nome(),
+            request.preco().doubleValue(),
+            CategoriaProduto.valueOf(request.categoria()),
+            new ArrayList<ItemDeReceita>(produto.getReceita()),
+            produto.isAtivo()
+    );
+
+    produtoRepository.salvar(atualizado);
+
+    return new ProdutoBomboniereResponse(
+            atualizado.getId(),
+            atualizado.getNome(),
+            BigDecimal.valueOf(atualizado.getPreco()),
+            atualizado.getCategoria().name(),
+            atualizado.isAtivo(),
+            atualizado.getReceita().stream()
+                .map(item -> new ProdutoBomboniereResponse.ItemReceitaResponse(
+                    item.getInsumo().getId().toString(),
+                    item.getInsumo().getNome(),
+                    item.getQuantidade()
+                ))
+                .toList()
+    );
+}
+
+@DeleteMapping("/produtos/{produtoId}/receita/{insumoId}")
+public void removerItemReceita(
+        @PathVariable UUID produtoId,
+        @PathVariable String insumoId
+) {
+    ProdutoDaBomboniere produto = produtoRepository.buscarPorId(produtoId)
+            .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+
+    produto.removerItemReceita(insumoId);
+    produtoRepository.salvar(produto);
+}
 
     // =====================================================
     // VENDA

@@ -14,6 +14,9 @@ export default function BombonierePage() {
   const [modalProdutoAberto, setModalProdutoAberto] = useState(false);
   const [modalReceitaAberto, setModalReceitaAberto] = useState<{aberto: boolean, produtoId: string | null}>({aberto: false, produtoId: null});
   const [modalReporAberto, setModalReporAberto] = useState<{aberto: boolean, insumo: InsumoResponse | null}>({aberto: false, insumo: null});
+  const [modalEditarProdutoAberto, setModalEditarProdutoAberto] = useState<{aberto: boolean, produto: any | null}>({aberto: false, produto: null});
+  const [formEditarProduto, setFormEditarProduto] = useState({ nome: '', preco: '', categoria: 'SALGADO' });
+  
   // Formulários
   const [formInsumo, setFormInsumo] = useState({ nome: '', unidade: 'g (gramas)', quantidade: '', nivelCritico: '' });
   const [formProduto, setFormProduto] = useState({ nome: '', preco: '', categoria: 'SALGADO' });
@@ -110,6 +113,31 @@ export default function BombonierePage() {
       alert("Erro ao repor estoque.");
     }
   };
+
+  const handleEditarProduto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!modalEditarProdutoAberto.produto) return;
+    try {
+        await apiBomboniere.editarProduto(modalEditarProdutoAberto.produto.id, {
+            nome: formEditarProduto.nome,
+            preco: Number(formEditarProduto.preco),
+            categoria: formEditarProduto.categoria
+        });
+        setModalEditarProdutoAberto({ aberto: false, produto: null });
+        carregarDados();
+    } catch (error) {
+        alert("Erro ao editar produto.");
+    }
+};
+
+const handleRemoverItemReceita = async (produtoId: string, insumoId: string) => {
+    try {
+        await apiBomboniere.removerItemReceita(produtoId, insumoId);
+        carregarDados();
+    } catch (error) {
+        alert("Erro ao remover item da receita.");
+    }
+};
 
   // --- Estilos Baseados no Protótipo ---
   const cores = {
@@ -216,14 +244,26 @@ export default function BombonierePage() {
                     {/* Renderiza a receita caso venha no Response */}
                     {produto.receita && produto.receita.map((item: any, index: number) => (
                       <li key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                        <span>{item.insumo.nome}: {item.quantidade}</span>
-                        <span style={{cursor:'pointer', color: 'red'}}>🗑️</span>
+                        <span>{item.insumoNome}: {item.quantidade}</span>
+                        <span 
+                            onClick={() => handleRemoverItemReceita(produto.id, item.insumoId)}
+                            style={{cursor:'pointer', color: 'red'}}>🗑️
+                        </span>
+                        
                       </li>
                     ))}
                     {(!produto.receita || produto.receita.length === 0) && <li>Nenhuma receita cadastrada.</li>}
                   </ul>
                 </div>
-                <button style={{ width: '100%', marginTop: '15px', padding: '10px', backgroundColor: '#F5F5F5', border: `1px solid ${cores.borda}`, borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Editar Produto</button>
+               
+               <button 
+                    onClick={() => {
+                        setModalEditarProdutoAberto({ aberto: true, produto: produto });
+                        setFormEditarProduto({ nome: produto.nome, preco: String(produto.preco), categoria: produto.categoria || 'SALGADO' });
+                    }}
+                    style={{ width: '100%', marginTop: '15px', padding: '10px', backgroundColor: '#F5F5F5', border: `1px solid ${cores.borda}`, borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    Editar Produto
+                </button>
               </div>
             ))}
           </div>
@@ -379,6 +419,33 @@ export default function BombonierePage() {
           </div>
         </div>
       )}
+
+      {modalEditarProdutoAberto.aberto && modalEditarProdutoAberto.produto && (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '10px', width: '400px' }}>
+            <h2>Editar Produto</h2>
+            <form onSubmit={handleEditarProduto}>
+                <label style={{ display: 'block', marginBottom: '10px' }}>Nome *
+                    <input required type="text" value={formEditarProduto.nome} onChange={e => setFormEditarProduto({...formEditarProduto, nome: e.target.value})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
+                </label>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                    <label style={{ flex: 1 }}>Preço *
+                        <input required type="number" step="0.01" value={formEditarProduto.preco} onChange={e => setFormEditarProduto({...formEditarProduto, preco: e.target.value})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}/>
+                    </label>
+                    <label style={{ flex: 1 }}>Categoria *
+                        <select value={formEditarProduto.categoria} onChange={e => setFormEditarProduto({...formEditarProduto, categoria: e.target.value})} style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: `1px solid ${cores.borda}` }}>
+                            <option>SALGADO</option><option>DOCE</option><option>BEBIDA</option><option>COMBO</option>
+                        </select>
+                    </label>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="button" onClick={() => setModalEditarProdutoAberto({ aberto: false, produto: null })} style={{ flex: 1, padding: '10px', backgroundColor: 'transparent', border: `1px solid ${cores.borda}`, borderRadius: '5px', cursor: 'pointer' }}>Cancelar</button>
+                    <button type="submit" style={{ flex: 1, padding: '10px', backgroundColor: cores.vinho, color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Atualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+)}
     </div>
   );
 }

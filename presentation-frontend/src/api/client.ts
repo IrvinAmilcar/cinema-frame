@@ -21,6 +21,9 @@ export interface ProdutoBomboniereResponse {
   id: string;
   nome: string;
   preco: number;
+  categoria?: string;
+  ativo?: boolean;
+  receita?: { insumoId: string; insumoNome: string; quantidade: number }[];
 }
 export interface InsumoRequest {
   nome: string;
@@ -103,6 +106,23 @@ export const apiBomboniere = {
     });
     if (!res.ok) throw new Error('Erro ao adicionar receita');
   },
+
+
+  editarProduto: async (id: string, dados: ProdutoRequest): Promise<void> => {
+    const res = await fetch(`${API_URL}/bomboniere/produtos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+    });
+    if (!res.ok) throw new Error('Erro ao editar produto');
+},
+
+removerItemReceita: async (produtoId: string, insumoId: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/bomboniere/produtos/${produtoId}/receita/${insumoId}`, {
+        method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Erro ao remover item da receita');
+},
 
   // ==========================
   // VENDAS
