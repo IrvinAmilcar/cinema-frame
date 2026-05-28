@@ -6,6 +6,7 @@ import SalasPage from './pages/SalasPage'
 import BombonierePage from './pages/BombonierePage'
 import CompraPage from './pages/CompraPage'
 import ProgramacaoPage from './pages/ProgramacaoPage'
+import PortalHomePage from './pages/PortalHomePage'
 import AuthModal, { type ClienteLogado } from './components/AuthModal'
 
 type Modo = 'backoffice' | 'portal'
@@ -14,35 +15,7 @@ function Home({ modo, cliente }: { modo: Modo; cliente: ClienteLogado | null }) 
   if (modo === 'backoffice') {
     return <h2>Bem-vindo ao F.R.A.M.E — Backoffice</h2>
   }
-  return (
-    <div style={{ padding: '24px 0' }}>
-      <h2 style={{ marginBottom: 8, color: '#1a1a2e' }}>
-        {cliente ? `Olá, ${cliente.nome.split(' ')[0]}!` : 'Bem-vindo ao Portal do Cliente'}
-      </h2>
-      <p style={{ color: '#888', marginBottom: 24 }}>
-        {cliente
-          ? 'Explore a programação e compre seus ingressos.'
-          : 'Faça login para ver recomendações personalizadas e comprar ingressos.'}
-      </p>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <QuickCard title='Programação' desc='Veja os filmes em cartaz hoje' to='/programacao' />
-        <QuickCard title='Comprar Ingresso' desc='Reserve seu assento e finalize a compra' to='/compra' />
-        {cliente && <QuickCard title='Fidelidade' desc='Consulte seus pontos e benefícios' to='/fidelidade' />}
-      </div>
-    </div>
-  )
-}
-
-function QuickCard({ title, desc, to }: { title: string; desc: string; to: string }) {
-  return (
-    <NavLink to={to} style={{ textDecoration: 'none' }}>
-      <div style={{ background: 'white', border: '1px solid #e0e0e0', borderRadius: 10,
-        padding: '16px 20px', minWidth: 200, cursor: 'pointer' }}>
-        <div style={{ fontWeight: 600, marginBottom: 4, color: '#1a1a2e' }}>{title}</div>
-        <div style={{ fontSize: 13, color: '#888' }}>{desc}</div>
-      </div>
-    </NavLink>
-  )
+  return <PortalHomePage cliente={cliente} />
 }
 
 function EmConstrucao({ nome }: { nome: string }) {
