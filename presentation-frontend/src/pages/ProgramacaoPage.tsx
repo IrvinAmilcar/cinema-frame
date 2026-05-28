@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react'
 import type { ClienteLogado } from '../components/AuthModal'
+import { useMoviePoster } from '../hooks/useMoviePoster'
 
 const COR = '#1565C0'
 const AMBER = '#f57c00'
 
-type Sessao = { id: string; inicio: string; sala: number }
+type Sessao = { id: string; inicio: string; sala: number; tipoSala: string }
+
+const TIPO_SALA_LABEL: Record<string, string> = {
+  PADRAO: 'Comum', TRES_D: '3D', IMAX: 'IMAX', VIP: 'VIP',
+}
+const TIPO_SALA_COR: Record<string, string> = {
+  PADRAO: '#546e7a', TRES_D: '#1565c0', IMAX: '#6a1b9a', VIP: '#b8860b',
+}
 type Filme = {
   filmeId: string
   titulo: string
@@ -59,22 +67,47 @@ export default function ProgramacaoPage({ cliente }: { cliente: ClienteLogado | 
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null)
   const [favoritados, setFavoritados] = useState<Set<string>>(new Set())
   const [ordenar, setOrdenar] = useState('')
+  const [novasRecomendacoes, setNovasRecomendacoes] = useState(false)
 
-  useEffect(() => {
-    setLoading(true)
-    setErro('')
+  function buildParams() {
     const params = new URLSearchParams()
     params.set('data', dataSelecionada)
     if (genero) params.set('genero', genero)
     if (classificacao) params.set('classificacao', classificacao)
     if (ordenar) params.set('ordenar', ordenar)
     if (cliente) params.set('clienteId', cliente.clienteId)
+    return params
+  }
 
-    fetch(`/api/programacao/filmes?${params}`)
+  useEffect(() => {
+    setLoading(true)
+    setErro('')
+    fetch(`/api/programacao/filmes?${buildParams()}`)
       .then(r => r.json())
       .then(data => { setFilmes(data); setLoading(false) })
       .catch(() => { setErro('Erro ao carregar programação.'); setLoading(false) })
   }, [genero, classificacao, dataSelecionada, ordenar, cliente?.clienteId])
+
+  // Polling silencioso a cada 30s para atualizar recomendações sem travar a tela
+  useEffect(() => {
+    if (!cliente) return
+    const intervalo = setInterval(() => {
+      fetch(`/api/programacao/filmes?${buildParams()}`)
+        .then(r => r.json())
+        .then((novos: Filme[]) => {
+          setFilmes(prev => {
+            const idsRecAntes = new Set(prev.filter(f => f.recomendado).map(f => f.filmeId))
+            const idsRecDepois = new Set(novos.filter(f => f.recomendado).map(f => f.filmeId))
+            const mudou = [...idsRecDepois].some(id => !idsRecAntes.has(id)) ||
+                          [...idsRecAntes].some(id => !idsRecDepois.has(id))
+            if (mudou) setNovasRecomendacoes(true)
+            return novos
+          })
+        })
+        .catch(() => {})
+    }, 10_000)
+    return () => clearInterval(intervalo)
+  }, [cliente?.clienteId, genero, classificacao, dataSelecionada, ordenar])
 
   useEffect(() => {
     if (!cliente) { setFavoritados(new Set()); return }
@@ -155,14 +188,31 @@ export default function ProgramacaoPage({ cliente }: { cliente: ClienteLogado | 
         <>
           {/* Seção "Para você" */}
           {cliente && (
-            <ParaVoceSection
-              recomendados={recomendados}
-              clienteNome={cliente.nome.split(' ')[0]}
-              favoritados={favoritados}
-              onVerDetalhes={setFilmeDetalhes}
-              onVerTrailer={setTrailerUrl}
-              onFavoritar={toggleFavoritar}
-            />
+            <>
+              {novasRecomendacoes && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: 10,
+                  padding: '10px 16px', marginBottom: 14,
+                }}>
+                  <span style={{ fontSize: 13, color: '#2e7d32', fontWeight: 500 }}>
+                    ✨ Suas recomendações foram atualizadas!
+                  </span>
+                  <button onClick={() => setNovasRecomendacoes(false)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2e7d32', fontSize: 16 }}>
+                    ✕
+                  </button>
+                </div>
+              )}
+              <ParaVoceSection
+                recomendados={recomendados}
+                clienteNome={cliente.nome.split(' ')[0]}
+                favoritados={favoritados}
+                onVerDetalhes={setFilmeDetalhes}
+                onVerTrailer={setTrailerUrl}
+                onFavoritar={toggleFavoritar}
+              />
+            </>
           )}
 
           {/* Seção "Em cartaz" */}
@@ -262,6 +312,8 @@ function FilmeCardDestaque({ filme, onVerDetalhes, onVerTrailer, favoritado, onF
   favoritado: boolean
   onFavoritar: (id: string) => void
 }) {
+  const { posterUrl } = useMoviePoster(filme.titulo)
+
   return (
     <div style={{
       width: 220, flexShrink: 0,
@@ -269,9 +321,15 @@ function FilmeCardDestaque({ filme, onVerDetalhes, onVerTrailer, favoritado, onF
       border: '1px solid #ffe0b2',
       borderTop: `3px solid ${AMBER}`,
       borderRadius: 10,
-      padding: 14,
-      display: 'flex', flexDirection: 'column', gap: 8,
+      overflow: 'hidden',
+      display: 'flex', flexDirection: 'column', gap: 0,
     }}>
+      {posterUrl && (
+        <div style={{ height: 130, overflow: 'hidden', cursor: 'pointer' }} onClick={onVerDetalhes}>
+          <img src={posterUrl} alt={filme.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      )}
+      <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
       {/* Title + favorite */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
         <div onClick={onVerDetalhes}
@@ -304,7 +362,9 @@ function FilmeCardDestaque({ filme, onVerDetalhes, onVerTrailer, favoritado, onF
       {/* Sessões */}
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {filme.sessoes.slice(0, 3).map(s => (
-          <span key={s.id} style={{ ...sessaoTag, fontSize: 11 }}>{s.inicio.slice(0, 5)}</span>
+          <span key={s.id} style={{ ...sessaoTag, fontSize: 11 }}>
+            {s.inicio.slice(0, 5)} · {TIPO_SALA_LABEL[s.tipoSala] ?? s.tipoSala}
+          </span>
         ))}
         {filme.sessoes.length > 3 && (
           <span style={{ fontSize: 11, color: '#aaa', alignSelf: 'center' }}>+{filme.sessoes.length - 3}</span>
@@ -324,6 +384,7 @@ function FilmeCardDestaque({ filme, onVerDetalhes, onVerTrailer, favoritado, onF
           </button>
         )}
       </div>
+      </div>
     </div>
   )
 }
@@ -334,8 +395,15 @@ function FilmeCard({ filme, onVerDetalhes, onVerTrailer, favoritado, onFavoritar
   filme: Filme; onVerDetalhes: () => void; onVerTrailer: (url: string) => void
   favoritado: boolean; onFavoritar: (id: string) => void; logado: boolean
 }) {
+  const { posterUrl } = useMoviePoster(filme.titulo)
+
   return (
     <div style={cardStyle}>
+      {posterUrl && (
+        <div style={{ margin: '-16px -16px 12px', height: 180, overflow: 'hidden', borderRadius: '10px 10px 0 0', cursor: 'pointer' }} onClick={onVerDetalhes}>
+          <img src={posterUrl} alt={filme.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
         <div onClick={onVerDetalhes} style={{ cursor: 'pointer', flex: 1 }}>
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4, color: '#1a1a2e' }}>{filme.titulo}</div>
@@ -364,7 +432,9 @@ function FilmeCard({ filme, onVerDetalhes, onVerTrailer, favoritado, onFavoritar
         <div style={{ fontSize: 12, color: '#888', marginBottom: 6 }}>Sessões:</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {filme.sessoes.map(s => (
-            <span key={s.id} style={sessaoTag}>{s.inicio.slice(0, 5)} · Sala {s.sala}</span>
+            <span key={s.id} style={{ ...sessaoTag, background: TIPO_SALA_COR[s.tipoSala] ? `${TIPO_SALA_COR[s.tipoSala]}18` : '#e3f2fd' }}>
+              {s.inicio.slice(0, 5)} · Sala {s.sala} · <strong style={{ color: TIPO_SALA_COR[s.tipoSala] ?? COR }}>{TIPO_SALA_LABEL[s.tipoSala] ?? s.tipoSala}</strong>
+            </span>
           ))}
         </div>
       </div>
@@ -436,7 +506,9 @@ function FilmeDetalhesModal({ filme, onFechar, onVerTrailer, favoritado, onFavor
           <div style={{ fontSize: 12, color: '#888', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Sessões disponíveis</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {filme.sessoes.map(s => (
-              <span key={s.id} style={sessaoTag}>{s.inicio.slice(0, 5)} · Sala {s.sala}</span>
+              <span key={s.id} style={{ ...sessaoTag, background: TIPO_SALA_COR[s.tipoSala] ? `${TIPO_SALA_COR[s.tipoSala]}18` : '#e3f2fd' }}>
+              {s.inicio.slice(0, 5)} · Sala {s.sala} · <strong style={{ color: TIPO_SALA_COR[s.tipoSala] ?? COR }}>{TIPO_SALA_LABEL[s.tipoSala] ?? s.tipoSala}</strong>
+            </span>
             ))}
           </div>
         </div>

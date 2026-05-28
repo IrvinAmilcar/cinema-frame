@@ -46,8 +46,8 @@ export default function GradePage() {
 
   function msg(ok: string) { setSucesso(ok); setErro(''); setTimeout(() => setSucesso(''), 3000) }
   function err(e: unknown) {
-    const ax = e as { response?: { data?: { message?: string }; status?: number } }
-    setErro(ax.response?.data?.message ?? `Erro ${ax.response?.status ?? ''}`)
+    const ax = e as { response?: { data?: { mensagem?: string; message?: string }; status?: number } }
+    setErro(ax.response?.data?.mensagem ?? ax.response?.data?.message ?? `Erro ${ax.response?.status ?? ''}`)
     setSucesso('')
   }
 
@@ -104,8 +104,21 @@ export default function GradePage() {
         Cada sessão cadastrada repete <strong>diariamente</strong> durante o período da grade.
       </p>
 
-      {erro    && <p style={{ color: 'red',   border: '1px solid red',   padding: '0.5rem' }}>{erro}</p>}
-      {sucesso && <p style={{ color: 'green', border: '1px solid green', padding: '0.5rem' }}>{sucesso}</p>}
+      {erro && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: '10px',
+          background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: '8px',
+          padding: '12px 16px', marginBottom: '1rem', color: '#92400e',
+        }}>
+          <span style={{ fontSize: '18px', flexShrink: 0 }}>⚠️</span>
+          <div>
+            <strong style={{ fontSize: '14px' }}>Não foi possível adicionar a sessão</strong>
+            <p style={{ margin: '2px 0 0', fontSize: '13px' }}>{erro}</p>
+          </div>
+          <button onClick={() => setErro('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#92400e', fontSize: '16px', flexShrink: 0 }}>✕</button>
+        </div>
+      )}
+      {sucesso && <p style={{ color: 'green', border: '1px solid green', padding: '0.5rem', borderRadius: '6px' }}>{sucesso}</p>}
 
       <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
 

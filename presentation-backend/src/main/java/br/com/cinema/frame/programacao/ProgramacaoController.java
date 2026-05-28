@@ -1,6 +1,7 @@
 package br.com.cinema.frame.programacao;
 
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
+import br.com.cinema.frame.domain.backoffice.precificacao.PrecificacaoService;
 import br.com.cinema.frame.domain.portal.programacao.ProgramacaoComRecomendacaoDecorator;
 import br.com.cinema.frame.domain.portal.programacao.ProgramacaoService;
 import br.com.cinema.frame.domain.portal.recomendacao.MotorDeRecomendacao;
@@ -20,25 +21,28 @@ public class ProgramacaoController {
     private final ProgramacaoService programacaoService;
     private final ProgramacaoComRecomendacaoDecorator programacaoDecorator;
     private final MotorDeRecomendacao motorDeRecomendacao;
+    private final PrecificacaoService precificacaoService;
 
     public ProgramacaoController(ProgramacaoService programacaoService,
                                   ProgramacaoComRecomendacaoDecorator programacaoDecorator,
-                                  MotorDeRecomendacao motorDeRecomendacao) {
+                                  MotorDeRecomendacao motorDeRecomendacao,
+                                  PrecificacaoService precificacaoService) {
         this.programacaoService = programacaoService;
         this.programacaoDecorator = programacaoDecorator;
         this.motorDeRecomendacao = motorDeRecomendacao;
+        this.precificacaoService = precificacaoService;
     }
 
     @GetMapping("/sessoes")
     public List<SessaoDisponivelResponse> listarSessoes(
             @RequestParam(required = false) String data) {
-        if (data != null) {
-            LocalDate dataFiltro = LocalDate.parse(data);
-            return programacaoService.listarSessoesPorData(dataFiltro)
-                    .stream().map(SessaoDisponivelResponse::from).toList();
-        }
-        return programacaoService.listarSessoesDisponiveis(LocalDateTime.now())
-                .stream().map(SessaoDisponivelResponse::from).toList();
+        LocalDate dataFiltro = data != null ? LocalDate.parse(data) : LocalDate.now();
+        List<Sessao> sessoes = data != null
+                ? programacaoService.listarSessoesPorData(dataFiltro)
+                : programacaoService.listarSessoesDisponiveis(LocalDateTime.now());
+        return sessoes.stream()
+                .map(s -> SessaoDisponivelResponse.from(s, precificacaoService.calcularPreco(s, dataFiltro)))
+                .toList();
     }
 
     /**

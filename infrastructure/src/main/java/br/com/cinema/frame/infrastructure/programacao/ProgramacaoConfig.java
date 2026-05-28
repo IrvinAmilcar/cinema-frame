@@ -2,6 +2,7 @@ package br.com.cinema.frame.infrastructure.programacao;
 
 import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
 import br.com.cinema.frame.domain.backoffice.grade.SessaoRepository;
+import br.com.cinema.frame.domain.backoffice.precificacao.PrecificacaoService;
 import br.com.cinema.frame.domain.portal.notificacao.FilmeFavoritadoRepository;
 import br.com.cinema.frame.domain.portal.notificacao.NotificacaoService;
 import br.com.cinema.frame.domain.portal.programacao.ProgramacaoComRecomendacaoDecorator;
@@ -14,6 +15,11 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ProgramacaoConfig {
+
+    @Bean
+    PrecificacaoService precificacaoService() {
+        return new PrecificacaoService();
+    }
 
     @Bean
     MotorDeRecomendacao motorDeRecomendacao(HistoricoDeComprasRepository historicoRepository,

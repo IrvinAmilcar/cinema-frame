@@ -10,16 +10,22 @@ public record SessaoDisponivelResponse(
         String genero,
         String classificacao,
         String inicio,
-        int capacidade
+        int capacidade,
+        double precoInteira,
+        double precoMeia,
+        String tipoSala
 ) {
-    public static SessaoDisponivelResponse from(Sessao s) {
+    public static SessaoDisponivelResponse from(Sessao s, double precoInteira) {
         return new SessaoDisponivelResponse(
                 s.getId(),
                 s.getFilme().getTitulo(),
                 s.getFilme().getGenero().name(),
                 s.getFilme().getClassificacaoIndicativa().name(),
                 s.getInicio().toString(),
-                s.getSala().getCapacidade()
+                s.getSala().getCapacidade(),
+                precoInteira,
+                precoInteira * 0.5,
+                s.getSala().getTipo().name()
         );
     }
 }

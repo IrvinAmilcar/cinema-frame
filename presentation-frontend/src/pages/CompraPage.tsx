@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
+import { useMoviePoster } from '../hooks/useMoviePoster'
 
 const API = 'http://localhost:8080'
 
@@ -20,7 +21,6 @@ function getDias() {
 const DIAS = getDias()
 const COR = '#8B0000'
 const COR_PORTAL = '#1565C0'
-const PRECO_INTEIRA = 30.0
 const COLS = 12
 
 const CLASSIFICACAO_IDADE: Record<string, number> = {
@@ -53,6 +53,9 @@ interface SessaoDisponivel {
   classificacao: string
   inicio: string
   capacidade: number
+  precoInteira: number
+  precoMeia: number
+  tipoSala: string
 }
 
 interface DescontoResponse {
@@ -130,7 +133,9 @@ export default function CompraPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const quantidade = qtdInteira + qtdMeia
-  const subtotal = qtdInteira * PRECO_INTEIRA + qtdMeia * PRECO_INTEIRA * 0.5
+  const precoInteira = sessao?.precoInteira ?? 0
+  const precoMeia = sessao?.precoMeia ?? 0
+  const subtotal = qtdInteira * precoInteira + qtdMeia * precoMeia
   const precoFinal = desconto ? desconto.valorFinal : subtotal
   const etapaIdx = ETAPAS.indexOf(etapa)
 
@@ -405,7 +410,7 @@ export default function CompraPage() {
       {/* ── ETAPA 1: Sessões ── */}
       {etapa === 'sessao' && (
         <div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
             {DIAS.map(d => (
               <button key={d.value} onClick={() => setDataSelecionada(d.value)}
                 style={{
@@ -419,19 +424,10 @@ export default function CompraPage() {
               </button>
             ))}
           </div>
-          <h2 style={{ fontSize: 17, marginBottom: 14 }}>Sessões disponíveis</h2>
           {sessoes.length === 0
             ? <p style={{ color: '#888' }}>Nenhuma sessão disponível no momento.</p>
-            : sessoes.map(s => (
-              <div key={s.id} style={{ background: 'white', border: '1px solid #e0e0e0', borderRadius: 10, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 15 }}>{s.filme}</div>
-                  <div style={{ color: '#666', fontSize: 12, marginTop: 3 }}>{s.genero} · {s.classificacao} · {s.inicio} · {s.capacidade} lugares</div>
-                </div>
-                <button onClick={() => selecionarSessao(s)} disabled={carregando} style={{ background: COR_PORTAL, color: 'white', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontWeight: 500, fontSize: 13 }}>
-                  Selecionar
-                </button>
-              </div>
+            : agruparPorFilme(sessoes).map(grupo => (
+              <FilmeComSessoes key={grupo.filme} grupo={grupo} onSelecionar={selecionarSessao} carregando={carregando} />
             ))}
         </div>
       )}
@@ -446,7 +442,7 @@ export default function CompraPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: 'white' }}>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 15 }}>Inteira</div>
-                <div style={{ color: '#666', fontSize: 13, marginTop: 2 }}>R$ {PRECO_INTEIRA.toFixed(2)}</div>
+                <div style={{ color: '#666', fontSize: 13, marginTop: 2 }}>R$ {precoInteira.toFixed(2)}</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <BtnQtd onClick={() => setQtdInteira(q => Math.max(0, q - 1))}>−</BtnQtd>
@@ -458,7 +454,7 @@ export default function CompraPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: 'white' }}>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 15 }}>Meia-entrada</div>
-                <div style={{ color: '#666', fontSize: 13, marginTop: 2 }}>R$ {(PRECO_INTEIRA * 0.5).toFixed(2)} <span style={{ fontSize: 11, color: '#aaa' }}>(estudante, idoso, PcD)</span></div>
+                <div style={{ color: '#666', fontSize: 13, marginTop: 2 }}>R$ {precoMeia.toFixed(2)} <span style={{ fontSize: 11, color: '#aaa' }}>(estudante, idoso, PcD)</span></div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <BtnQtd onClick={() => setQtdMeia(q => Math.max(0, q - 1))}>−</BtnQtd>
@@ -729,8 +725,8 @@ export default function CompraPage() {
             <Row label="Filme" value={sessao.filme} />
             <Row label="Sessão" value={sessao.inicio} />
             <Row label="Assentos" value={assentosSelecionados.map(numToLabel).join(', ')} />
-            {qtdInteira > 0 && <Row label="Inteira" value={`${qtdInteira}× — R$ ${(qtdInteira * PRECO_INTEIRA).toFixed(2)}`} />}
-            {qtdMeia > 0 && <Row label="Meia-entrada" value={`${qtdMeia}× — R$ ${(qtdMeia * PRECO_INTEIRA * 0.5).toFixed(2)}`} />}
+            {qtdInteira > 0 && <Row label="Inteira" value={`${qtdInteira}× — R$ ${(qtdInteira * precoInteira).toFixed(2)}`} />}
+            {qtdMeia > 0 && <Row label="Meia-entrada" value={`${qtdMeia}× — R$ ${(qtdMeia * precoMeia).toFixed(2)}`} />}
             <Row label="Subtotal ingressos" value={`R$ ${subtotal.toFixed(2)}`} />
             {carrinho.length > 0 && carrinho.map(i => (
               <Row key={i.produto.id} label={`${i.produto.nome} ×${i.qtd}`} value={`R$ ${(i.produto.preco * i.qtd).toFixed(2)}`} />
@@ -798,11 +794,123 @@ export default function CompraPage() {
   )
 }
 
-function SessaoCard({ sessao, extra }: { sessao: { filme: string; inicio: string }; extra?: string }) {
+interface GrupoFilme {
+  filme: string
+  genero: string
+  classificacao: string
+  sessoes: SessaoDisponivel[]
+}
+
+function agruparPorFilme(sessoes: SessaoDisponivel[]): GrupoFilme[] {
+  const map = new Map<string, GrupoFilme>()
+  for (const s of sessoes) {
+    if (!map.has(s.filme)) {
+      map.set(s.filme, { filme: s.filme, genero: s.genero, classificacao: s.classificacao, sessoes: [] })
+    }
+    map.get(s.filme)!.sessoes.push(s)
+  }
+  return Array.from(map.values())
+}
+
+const CLASSIFICACAO_COR: Record<string, string> = {
+  LIVRE: '#2e7d32', DEZ: '#1565c0', DOZE: '#6a1b9a',
+  QUATORZE: '#e65100', DEZESSEIS: '#b71c1c', DEZOITO: '#212121',
+}
+const CLASSIFICACAO_LABEL2: Record<string, string> = {
+  LIVRE: 'L', DEZ: '10', DOZE: '12', QUATORZE: '14', DEZESSEIS: '16', DEZOITO: '18',
+}
+const TIPO_SALA_LABEL: Record<string, string> = {
+  PADRAO: 'Comum', TRES_D: '3D', IMAX: 'IMAX', VIP: 'VIP',
+}
+const TIPO_SALA_COR: Record<string, string> = {
+  PADRAO: '#546e7a', TRES_D: '#1565c0', IMAX: '#6a1b9a', VIP: '#b8860b',
+}
+
+function FilmeComSessoes({ grupo, onSelecionar, carregando }: {
+  grupo: GrupoFilme; onSelecionar: (s: SessaoDisponivel) => void; carregando: boolean
+}) {
+  const { posterUrl } = useMoviePoster(grupo.filme)
+
   return (
-    <div style={{ background: 'white', border: '1px solid #e0e0e0', borderRadius: 10, padding: '14px 18px', marginBottom: 20 }}>
-      <div style={{ fontWeight: 600, fontSize: 15 }}>{sessao.filme}</div>
-      <div style={{ color: '#666', fontSize: 13, marginTop: 3 }}>{sessao.inicio}{extra ? ` · ${extra}` : ''}</div>
+    <div style={{
+      background: 'white', border: '1px solid #e8e8e8', borderRadius: 14,
+      marginBottom: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+      display: 'flex', alignItems: 'stretch',
+    }}>
+      {/* Poster */}
+      <div style={{ width: 110, flexShrink: 0, position: 'relative', background: '#1a1a2e' }}>
+        {posterUrl
+          ? <img src={posterUrl} alt={grupo.filme} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, minHeight: 140 }}>🎬</div>
+        }
+        {/* Badge de classificação */}
+        <div style={{
+          position: 'absolute', top: 8, left: 8,
+          background: CLASSIFICACAO_COR[grupo.classificacao] ?? '#555',
+          color: 'white', fontSize: 11, fontWeight: 700,
+          padding: '2px 6px', borderRadius: 5,
+        }}>
+          {CLASSIFICACAO_LABEL2[grupo.classificacao] ?? grupo.classificacao}
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      <div style={{ flex: 1, padding: '18px 22px', borderLeft: '1px solid #f0f0f0' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 14 }}>
+          <span style={{ fontWeight: 700, fontSize: 17, color: '#1a1a2e' }}>{grupo.filme}</span>
+          <span style={{ fontSize: 13, color: '#999' }}>{grupo.genero.replace('_', ' ')}</span>
+        </div>
+
+        {/* Botões de horário agrupados por tipo de sala */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
+          {grupo.sessoes.map(s => {
+            const cor = TIPO_SALA_COR[s.tipoSala] ?? COR_PORTAL
+            const label = TIPO_SALA_LABEL[s.tipoSala] ?? s.tipoSala
+            return (
+              <button key={s.id} onClick={() => onSelecionar(s)} disabled={carregando}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  padding: '10px 18px', borderRadius: 10, cursor: carregando ? 'default' : 'pointer',
+                  border: `2px solid ${cor}`, background: 'white', color: cor,
+                  transition: 'all 0.15s', gap: 3,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = cor; e.currentTarget.style.color = 'white' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = cor }}
+              >
+                <span style={{ fontSize: 15, fontWeight: 700 }}>{s.inicio}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, opacity: 0.85 }}>{label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SessaoCard({ sessao, extra }: { sessao: { filme: string; inicio: string; tipoSala?: string }; extra?: string }) {
+  const { posterUrl } = useMoviePoster(sessao.filme)
+  const cor = TIPO_SALA_COR[sessao.tipoSala ?? ''] ?? COR_PORTAL
+  const label = TIPO_SALA_LABEL[sessao.tipoSala ?? '']
+  return (
+    <div style={{ background: 'white', border: '1px solid #e0e0e0', borderRadius: 10, display: 'flex', alignItems: 'center', marginBottom: 20, overflow: 'hidden' }}>
+      <div style={{ width: 56, height: 72, flexShrink: 0, background: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+        {posterUrl
+          ? <img src={posterUrl} alt={sessao.filme} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : '🎬'}
+      </div>
+      <div style={{ padding: '12px 16px', flex: 1 }}>
+        <div style={{ fontWeight: 600, fontSize: 15 }}>{sessao.filme}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+          <span style={{ color: '#666', fontSize: 13 }}>{sessao.inicio}{extra ? ` · ${extra}` : ''}</span>
+          {label && (
+            <span style={{
+              background: `${cor}18`, color: cor,
+              fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
+            }}>{label}</span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

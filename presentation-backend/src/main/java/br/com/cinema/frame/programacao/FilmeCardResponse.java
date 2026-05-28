@@ -17,9 +17,9 @@ public record FilmeCardResponse(
         boolean recomendado,
         List<SessaoCardResponse> sessoes
 ) {
-    public record SessaoCardResponse(UUID id, String inicio, int sala) {
+    public record SessaoCardResponse(UUID id, String inicio, int sala, String tipoSala) {
         public static SessaoCardResponse from(Sessao s) {
-            return new SessaoCardResponse(s.getId(), s.getInicio().toString(), s.getSala().getNumero());
+            return new SessaoCardResponse(s.getId(), s.getInicio().toString(), s.getSala().getNumero(), s.getSala().getTipo().name());
         }
     }
 
