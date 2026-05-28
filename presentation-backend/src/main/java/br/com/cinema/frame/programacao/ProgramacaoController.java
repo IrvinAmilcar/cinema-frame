@@ -130,4 +130,30 @@ public class ProgramacaoController {
             );
         }).toList();
     }
+
+    @GetMapping("/filmes/{filmeId}")
+    public FilmeCardResponse detalharFilme(@PathVariable UUID filmeId,
+                                            @RequestParam(required = false) String data) {
+        LocalDate dataFiltro = (data != null) ? LocalDate.parse(data) : LocalDate.now();
+        List<Sessao> sessoes = programacaoService.listarSessoesPorData(dataFiltro).stream()
+                .filter(s -> s.getFilme().getId().equals(filmeId))
+                .toList();
+
+        if (sessoes.isEmpty())
+            throw new IllegalArgumentException("Filme não encontrado na programação: " + filmeId);
+
+        var filme = sessoes.get(0).getFilme();
+        return FilmeCardResponse.from(
+                filmeId,
+                filme.getTitulo(),
+                filme.getGenero().name(),
+                filme.getClassificacaoIndicativa().name(),
+                (int) filme.getDuracao().toMinutes(),
+                filme.getTrailerURL(),
+                filme.getSinopse(),
+                filme.getNota(),
+                false,
+                sessoes
+        );
+    }
 }

@@ -26,23 +26,20 @@ public class PedidoController {
     private final CupomRepository cupomRepository;
     private final BombonieresService bombonieresService;
     private final PedidoRepository pedidoRepository;
-
-    private final List<DescontoStrategy> estrategias = List.of(
-            new DescontoLeve2Pague1(),
-            new DescontoParceriaCartao(),
-            new DescontoEstudante()
-    );
+    private final MotorDePromocoes motorDePromocoes;
 
     public PedidoController(PedidoService pedidoService,
                              ReservaService reservaService,
                              CupomRepository cupomRepository,
                              BombonieresService bombonieresService,
-                             PedidoRepository pedidoRepository) {
+                             PedidoRepository pedidoRepository,
+                             MotorDePromocoes motorDePromocoes) {
         this.pedidoService = pedidoService;
         this.reservaService = reservaService;
         this.cupomRepository = cupomRepository;
         this.bombonieresService = bombonieresService;
         this.pedidoRepository = pedidoRepository;
+        this.motorDePromocoes = motorDePromocoes;
     }
 
     @PostMapping("/api/reserva")
@@ -83,17 +80,9 @@ public class PedidoController {
         Cupom cupom = cupomRepository.buscarPorCodigo(req.codigo())
                 .orElseThrow(() -> new IllegalArgumentException("Cupom não encontrado: " + req.codigo()));
 
-        // RN 9: valida prazo de validade do cupom
-        if (!cupom.estaValido(LocalDate.now()))
-            throw new IllegalArgumentException("Cupom expirado: " + req.codigo());
-
-        // Strategy pattern: seleciona a estratégia correta pelo tipo do cupom
-        DescontoStrategy estrategia = estrategias.stream()
-                .filter(e -> e.getTipo() == cupom.getTipo())
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Tipo de desconto não suportado"));
-
-        AplicacaoDeDesconto desconto = estrategia.aplicar(req.valorTotal(), req.quantidadeIngressos());
+        // Delega ao MotorDePromocoes que usa o padrão Strategy internamente
+        AplicacaoDeDesconto desconto = motorDePromocoes.aplicar(
+                cupom, req.valorTotal(), req.quantidadeIngressos(), LocalDate.now());
         return DescontoResponse.from(desconto, cupom.isCumulativo());
     }
 

@@ -5,58 +5,31 @@ import java.util.List;
 
 public class MotorDePromocoes {
 
-    private static final double PERCENTUAL_PARCERIA_CARTAO = 0.15;
-    private static final double PERCENTUAL_ESTUDANTE = 0.20;
+    private final List<DescontoStrategy> estrategias;
 
-    public AplicacaoDeDesconto aplicar(double valorTotal, int quantidadeIngressos,List<Cupom> cupons, LocalDate hoje) {
+    public MotorDePromocoes(List<DescontoStrategy> estrategias) {
+        if (estrategias == null)
+            throw new IllegalArgumentException("Lista de estratégias não pode ser nula");
+        this.estrategias = estrategias;
+    }
+
+    public AplicacaoDeDesconto aplicar(Cupom cupom, double valorTotal, int quantidadeIngressos, LocalDate hoje) {
+        if (cupom == null)
+            throw new IllegalArgumentException("Cupom não pode ser nulo");
         if (valorTotal < 0)
             throw new IllegalArgumentException("Valor total não pode ser negativo");
-        if (cupons == null)
-            throw new IllegalArgumentException("Lista de cupons não pode ser nula");
         if (hoje == null)
             throw new IllegalArgumentException("Data atual não pode ser nula");
 
-        validarCupons(cupons, hoje);
+        if (!cupom.estaValido(hoje))
+            throw new IllegalStateException("Cupom expirado: " + cupom.getCodigo());
 
-        double totalDesconto = 0.0;
+        // Padrão Strategy: seleciona a estratégia correta em tempo de execução pelo tipo do cupom
+        DescontoStrategy estrategia = estrategias.stream()
+            .filter(e -> e.getTipo() == cupom.getTipo())
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Tipo de desconto não suportado: " + cupom.getTipo()));
 
-        for (Cupom cupom : cupons) {
-            double desconto = calcularDesconto(cupom, valorTotal, quantidadeIngressos);
-            totalDesconto += desconto;
-        }
-
-        if (totalDesconto > valorTotal)
-            totalDesconto = valorTotal;
-
-        return new AplicacaoDeDesconto(valorTotal, totalDesconto);
-    }
-
-    private void validarCupons(List<Cupom> cupons, LocalDate hoje) {
-        for (Cupom cupom : cupons) {
-            if (!cupom.estaValido(hoje))
-                throw new IllegalStateException("Cupom expirado: " + cupom.getCodigo());
-        }
-
-        boolean temNaoCumulativo = cupons.stream().anyMatch(c -> !c.isCumulativo());
-        if (temNaoCumulativo && cupons.size() > 1)
-            throw new IllegalStateException("Cupons não cumulativos não podem ser combinados");
-    }
-
-    private double calcularDesconto(Cupom cupom, double valorTotal, int quantidadeIngressos) {
-        return switch (cupom.getTipo()) {
-            case LEVE2_PAGUE1 -> calcularLeve2Pague1(valorTotal, quantidadeIngressos);
-            case PARCERIA_CARTAO -> valorTotal * PERCENTUAL_PARCERIA_CARTAO;
-            case DESCONTO_ESTUDANTE -> valorTotal * PERCENTUAL_ESTUDANTE;
-            case REEMBOLSO -> 0.0;
-        };
-    }
-
-    private double calcularLeve2Pague1(double valorTotal, int quantidadeIngressos) {
-        if (quantidadeIngressos < 2)
-            return 0.0;
-
-        double precoUnitario = valorTotal / quantidadeIngressos;
-        int pares = quantidadeIngressos / 2;
-        return pares * precoUnitario;
+        return estrategia.aplicar(valorTotal, quantidadeIngressos);
     }
 }

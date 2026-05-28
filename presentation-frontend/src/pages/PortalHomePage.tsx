@@ -86,7 +86,7 @@ export default function PortalHomePage({ cliente }: { cliente: ClienteLogado | n
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#1a1a2e' }}>
-          {primeiroNome ? `Olá, ${primeiroNome}! 👋` : 'Bem-vindo ao F.R.A.M.E! 🎬'}
+          {primeiroNome ? `Olá, ${primeiroNome}!` : 'Bem-vindo ao F.R.A.M.E! 🎬'}
         </h1>
         <p style={{ margin: '6px 0 0', color: '#888', fontSize: 15 }}>
           {primeiroNome
