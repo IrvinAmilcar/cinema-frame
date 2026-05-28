@@ -2,6 +2,22 @@ import { useState, useEffect, useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 
 const API = 'http://localhost:8080'
+
+function getDias() {
+  const dias = []
+  const hoje = new Date()
+  const semana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+  const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(hoje)
+    d.setDate(hoje.getDate() + i)
+    const iso = d.toISOString().slice(0, 10)
+    const label = i === 0 ? 'Hoje' : `${semana[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`
+    dias.push({ label, value: iso })
+  }
+  return dias
+}
+const DIAS = getDias()
 const COR = '#8B0000'
 const COR_PORTAL = '#1565C0'
 const PRECO_INTEIRA = 30.0
@@ -94,6 +110,7 @@ export default function CompraPage() {
   const [etapa, setEtapa] = useState<Etapa>('sessao')
   const [sessoes, setSessoes] = useState<SessaoDisponivel[]>([])
   const [sessao, setSessao] = useState<SessaoDisponivel | null>(null)
+  const [dataSelecionada, setDataSelecionada] = useState(DIAS[0].value)
   const [qtdInteira, setQtdInteira] = useState(0)
   const [qtdMeia, setQtdMeia] = useState(0)
   const [pessoas, setPessoas] = useState<DadosPessoa[]>([])
@@ -155,11 +172,11 @@ export default function CompraPage() {
   })
 
   useEffect(() => {
-    fetch(`${API}/api/programacao/sessoes`)
+    fetch(`${API}/api/programacao/sessoes?data=${dataSelecionada}`)
       .then(r => r.json())
       .then(setSessoes)
       .catch(() => setErro('Não foi possível carregar as sessões disponíveis.'))
-  }, [])
+  }, [dataSelecionada])
 
   useEffect(() => {
     if (etapa === 'assento') {
@@ -388,7 +405,21 @@ export default function CompraPage() {
       {/* ── ETAPA 1: Sessões ── */}
       {etapa === 'sessao' && (
         <div>
-          <h2 style={{ fontSize: 17, marginBottom: 14 }}>Sessões disponíveis hoje</h2>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+            {DIAS.map(d => (
+              <button key={d.value} onClick={() => setDataSelecionada(d.value)}
+                style={{
+                  padding: '7px 14px', borderRadius: 20, fontSize: 13, cursor: 'pointer',
+                  border: dataSelecionada === d.value ? 'none' : '1px solid #ddd',
+                  background: dataSelecionada === d.value ? COR_PORTAL : 'white',
+                  color: dataSelecionada === d.value ? 'white' : '#555',
+                  fontWeight: dataSelecionada === d.value ? 600 : 400,
+                }}>
+                {d.label}
+              </button>
+            ))}
+          </div>
+          <h2 style={{ fontSize: 17, marginBottom: 14 }}>Sessões disponíveis</h2>
           {sessoes.length === 0
             ? <p style={{ color: '#888' }}>Nenhuma sessão disponível no momento.</p>
             : sessoes.map(s => (
@@ -456,15 +487,20 @@ export default function CompraPage() {
                     onChange={e => atualizarPessoa(i, { dataNascimento: e.target.value })}
                     max={new Date().toISOString().split('T')[0]}
                     style={{ width: '100%', padding: '9px 12px', borderRadius: 7, border: `1px solid ${erroIdade(p) ? '#c62828' : '#ccc'}`, fontSize: 14, marginBottom: 4, boxSizing: 'border-box' as const }} />
-                  {erroIdade(p) && (
-                    <p style={{ color: '#c62828', fontSize: 12, margin: '0 0 10px' }}>{erroIdade(p)}</p>
-                  )}
-                  {p.dataNascimento && !erroIdade(p) && idadeMinima > 0 && (
-                    <p style={{ color: '#2e7d32', fontSize: 12, margin: '0 0 10px' }}>
-                      Idade verificada: {calcularIdade(p.dataNascimento)} anos — permitido.
+                  {!p.dataNascimento ? (
+                    <p style={{ color: '#888', fontSize: 12, margin: '0 0 12px' }}>
+                      Informe a data de nascimento para continuar.
+                    </p>
+                  ) : erroIdade(p) ? (
+                    <p style={{ color: '#c62828', fontSize: 12, margin: '0 0 12px', fontWeight: 500 }}>
+                      ✕ {erroIdade(p)}
+                    </p>
+                  ) : (
+                    <p style={{ color: '#2e7d32', fontSize: 12, margin: '0 0 12px' }}>
+                      ✓ {calcularIdade(p.dataNascimento)} anos —{' '}
+                      {idadeMinima > 0 ? `permitido (mínimo ${idadeMinima} anos).` : 'livre para todos.'}
                     </p>
                   )}
-                  {!erroIdade(p) && <div style={{ marginBottom: p.tipo === 'MEIA' ? 10 : 0 }} />}
 
                   {/* RN 3: comprovante de elegibilidade para meia-entrada */}
                   {p.tipo === 'MEIA' && (

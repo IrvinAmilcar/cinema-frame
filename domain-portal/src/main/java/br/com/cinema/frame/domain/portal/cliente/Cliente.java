@@ -37,6 +37,18 @@ public class Cliente {
         this.filmesFavoritos = new ArrayList<>();
     }
 
+    private Cliente(ClienteId id, String nome, String email, LocalDate dataNascimento) {
+        this.id = id;
+        this.nome = nome;
+        this.email = email;
+        this.dataNascimento = dataNascimento;
+        this.filmesFavoritos = new ArrayList<>();
+    }
+
+    public static Cliente reconstituir(UUID id, String nome, String email, LocalDate dataNascimento) {
+        return new Cliente(new ClienteId(id), nome, email, dataNascimento);
+    }
+
     public void favoritarFilme(Filme filme) {
         if (filme == null)
             throw new IllegalArgumentException("Filme não pode ser nulo");

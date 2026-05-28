@@ -9,4 +9,6 @@ public interface FilmeFavoritadoRepository {
     void salvar(FilmeFavoritado filmeFavoritado);
     Optional<FilmeFavoritado> buscarPorId(UUID id);
     List<FilmeFavoritado> buscarNaoNotificadosPorFilme(UUID filmeId);
+    List<FilmeFavoritado> buscarPorUsuarioId(UUID usuarioId);
+    void removerPorUsuarioEFilme(UUID usuarioId, UUID filmeId);
 }

@@ -2,6 +2,7 @@ package br.com.cinema.frame.grade;
 
 import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicao;
 import br.com.cinema.frame.domain.backoffice.grade.GradeService;
+import br.com.cinema.frame.domain.portal.notificacao.NotificacaoService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -16,9 +17,11 @@ import java.util.UUID;
 public class GradeController {
 
     private final GradeService gradeService;
+    private final NotificacaoService notificacaoService;
 
-    public GradeController(GradeService gradeService) {
+    public GradeController(GradeService gradeService, NotificacaoService notificacaoService) {
         this.gradeService = gradeService;
+        this.notificacaoService = notificacaoService;
     }
 
     @GetMapping
@@ -42,7 +45,8 @@ public class GradeController {
     @ResponseStatus(HttpStatus.CREATED)
     public GradeResponse adicionarSessao(@PathVariable UUID gradeId,
                                          @RequestBody SessaoRequest req) {
-        gradeService.adicionarSessao(gradeId, req.filmeId(), req.salaId(), req.inicio());
+        UUID sessaoId = gradeService.adicionarSessao(gradeId, req.filmeId(), req.salaId(), req.inicio());
+        notificacaoService.notificarFavoritosParaSessao(sessaoId);
         return GradeResponse.from(gradeService.buscarPorId(gradeId));
     }
 

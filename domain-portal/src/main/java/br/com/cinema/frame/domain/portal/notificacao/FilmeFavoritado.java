@@ -25,6 +25,19 @@ public class FilmeFavoritado {
         this.notificado = true;
     }
 
+    public static FilmeFavoritado reconstituir(UUID id, UUID usuarioId, UUID filmeId, boolean notificado) {
+        if (id == null || usuarioId == null || filmeId == null)
+            throw new IllegalArgumentException("IDs não podem ser nulos");
+        return new FilmeFavoritado(id, usuarioId, filmeId, notificado);
+    }
+
+    private FilmeFavoritado(UUID id, UUID usuarioId, UUID filmeId, boolean notificado) {
+        this.id = id;
+        this.usuarioId = usuarioId;
+        this.filmeId = filmeId;
+        this.notificado = notificado;
+    }
+
     public UUID getId() { return id; }
     public UUID getUsuarioId() { return usuarioId; }
     public UUID getFilmeId() { return filmeId; }

@@ -5,5 +5,7 @@ public record FilmeRequest(
     int duracaoMinutos,
     String classificacaoIndicativa,
     String genero,
-    String trailerURL
+    String trailerURL,
+    String sinopse,
+    Double nota
 ) {}

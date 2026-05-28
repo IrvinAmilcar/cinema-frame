@@ -15,6 +15,8 @@ public class Filme {
     private GeneroFilme genero;
     private String trailerURL;
     private boolean ativo;
+    private String sinopse;
+    private double nota;
 
     public Filme(String titulo, Duration duracao, ClassificacaoIndicativa classificacaoIndicativa, GeneroFilme genero) {
         if (titulo == null || titulo.isBlank())
@@ -56,13 +58,13 @@ public class Filme {
         if (novoTrailerURL != null && !novoTrailerURL.isBlank()) this.trailerURL = novoTrailerURL;
     }
 
-    public void desativar() {
-        this.ativo = false;
+    public void definirDetalhes(String sinopse, Double nota) {
+        if (sinopse != null && !sinopse.isBlank()) this.sinopse = sinopse;
+        if (nota != null && nota >= 0 && nota <= 5) this.nota = nota;
     }
 
-    public void ativar() {
-        this.ativo = true;
-    }
+    public void desativar() { this.ativo = false; }
+    public void ativar() { this.ativo = true; }
 
     public static Filme reconstituir(UUID id, String titulo, Duration duracao,
                                      ClassificacaoIndicativa classificacao, GeneroFilme genero,
@@ -74,6 +76,15 @@ public class Filme {
         return f;
     }
 
+    public static Filme reconstituir(UUID id, String titulo, Duration duracao,
+                                     ClassificacaoIndicativa classificacao, GeneroFilme genero,
+                                     String trailerURL, boolean ativo, String sinopse, double nota) {
+        Filme f = reconstituir(id, titulo, duracao, classificacao, genero, trailerURL, ativo);
+        f.sinopse = sinopse;
+        f.nota = nota;
+        return f;
+    }
+
     public UUID getId() { return id; }
     public String getTitulo() { return titulo; }
     public Duration getDuracao() { return duracao; }
@@ -81,4 +92,6 @@ public class Filme {
     public GeneroFilme getGenero() { return genero; }
     public String getTrailerURL() { return trailerURL; }
     public boolean isAtivo() { return ativo; }
+    public String getSinopse() { return sinopse; }
+    public double getNota() { return nota; }
 }

@@ -1,5 +1,7 @@
 package br.com.cinema.frame.domain.portal.recomendacao;
 
+import br.com.cinema.frame.domain.portal.notificacao.FilmeFavoritado;
+import br.com.cinema.frame.domain.portal.notificacao.FilmeFavoritadoRepository;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Então;
@@ -17,11 +19,13 @@ public class RecomendacaoSteps {
 
     private HistoricoDeComprasRepository historicoRepository = mock(HistoricoDeComprasRepository.class);
     private FilmeSugeridoRepository filmeSugeridoRepository = mock(FilmeSugeridoRepository.class);
+    private FilmeFavoritadoRepository filmeFavoritadoRepository = mock(FilmeFavoritadoRepository.class);
     private MotorDeRecomendacao motor =
-        new MotorDeRecomendacao(historicoRepository, filmeSugeridoRepository);
+        new MotorDeRecomendacao(historicoRepository, filmeSugeridoRepository, filmeFavoritadoRepository);
 
     private HistoricoDeCompras historico;
     private final List<FilmeSugerido> catalogo = new ArrayList<>();
+    private final List<FilmeFavoritado> favoritosDoCliente = new ArrayList<>();
     private List<FilmeSugerido> sugestoes;
     private UUID clienteId;
 
@@ -59,6 +63,13 @@ public class RecomendacaoSteps {
         when(historicoRepository.buscarPorClienteId(clienteId)).thenReturn(Optional.of(historico));
     }
 
+    @Dado("que o cliente não possui histórico de compras")
+    public void clienteSemHistorico() {
+        clienteId = UUID.randomUUID();
+        historico = null;
+        when(historicoRepository.buscarPorClienteId(clienteId)).thenReturn(Optional.empty());
+    }
+
     @Dado("o catálogo cadastrado possui um filme {string} do gênero {string}")
     public void catalogoCadastradoPossuiFilme(String titulo, String genero) {
         catalogo.add(new FilmeSugerido(titulo, GeneroFilme.valueOf(genero)));
@@ -69,6 +80,30 @@ public class RecomendacaoSteps {
     public void catalogoCadastradoVazio() {
         catalogo.clear();
         when(filmeSugeridoRepository.listarTodos()).thenReturn(new ArrayList<>());
+    }
+
+    @Dado("o cliente favoritou o filme {string}")
+    public void clienteFavoritouFilme(String titulo) {
+        FilmeSugerido filme = catalogo.stream()
+            .filter(f -> f.getTitulo().equals(titulo))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Filme não encontrado no catálogo: " + titulo));
+        favoritosDoCliente.add(new FilmeFavoritado(clienteId, filme.getId()));
+        when(filmeFavoritadoRepository.buscarPorUsuarioId(clienteId))
+            .thenReturn(new ArrayList<>(favoritosDoCliente));
+    }
+
+    @Dado("o cliente já assistiu o filme {string}")
+    public void clienteJaAssistiuFilme(String titulo) {
+        FilmeSugerido filme = catalogo.stream()
+            .filter(f -> f.getTitulo().equals(titulo))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Filme não encontrado no catálogo: " + titulo));
+        if (historico == null) {
+            historico = new HistoricoDeCompras(clienteId);
+        }
+        historico.registrarFilme(filme.getId(), filme.getGenero());
+        when(historicoRepository.buscarPorClienteId(clienteId)).thenReturn(Optional.of(historico));
     }
 
     @Quando("o sistema gerar as recomendações para o cliente cadastrado")

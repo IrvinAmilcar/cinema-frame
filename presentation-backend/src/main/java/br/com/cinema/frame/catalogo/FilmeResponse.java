@@ -11,7 +11,9 @@ public record FilmeResponse(
     String classificacaoIndicativa,
     String genero,
     String trailerURL,
-    boolean ativo
+    boolean ativo,
+    String sinopse,
+    double nota
 ) {
     public static FilmeResponse from(Filme f) {
         return new FilmeResponse(
@@ -21,7 +23,9 @@ public record FilmeResponse(
             f.getClassificacaoIndicativa().name(),
             f.getGenero().name(),
             f.getTrailerURL(),
-            f.isAtivo()
+            f.isAtivo(),
+            f.getSinopse(),
+            f.getNota()
         );
     }
 }

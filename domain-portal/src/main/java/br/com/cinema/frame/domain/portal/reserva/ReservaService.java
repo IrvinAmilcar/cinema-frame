@@ -35,7 +35,7 @@ public class ReservaService {
         liberarExpiradas(sessaoId, agora);
 
         boolean assentoOcupado = reservaRepository.buscarPorSessaoId(sessaoId).stream()
-            .anyMatch(r -> r.getNumeroAssento() == numeroAssento && r.estaAtiva());
+            .anyMatch(r -> r.getNumeroAssento() == numeroAssento && r.estaOcupado());
 
         if (assentoOcupado)
             throw new IllegalStateException("Assento " + numeroAssento + " já está reservado para esta sessão");
@@ -61,7 +61,7 @@ public class ReservaService {
     public List<Integer> listarAssentosOcupados(UUID sessaoId, LocalDateTime agora) {
         liberarExpiradas(sessaoId, agora);
         return reservaRepository.buscarPorSessaoId(sessaoId).stream()
-                .filter(ReservaDeAssento::estaAtiva)
+                .filter(ReservaDeAssento::estaOcupado)
                 .map(ReservaDeAssento::getNumeroAssento)
                 .toList();
     }

@@ -41,6 +41,8 @@ public class FilmeController {
         );
         if (req.trailerURL() != null)
             filme.atualizar(null, null, null, null, req.trailerURL());
+        if (req.sinopse() != null || req.nota() != null)
+            filme.definirDetalhes(req.sinopse(), req.nota());
         filmeService.cadastrar(filme);
         return FilmeResponse.from(filme);
     }
@@ -53,7 +55,9 @@ public class FilmeController {
             req.duracaoMinutos() > 0 ? Duration.ofMinutes(req.duracaoMinutos()) : null,
             req.classificacaoIndicativa() != null ? ClassificacaoIndicativa.valueOf(req.classificacaoIndicativa()) : null,
             req.genero() != null ? GeneroFilme.valueOf(req.genero()) : null,
-            req.trailerURL()
+            req.trailerURL(),
+            req.sinopse(),
+            req.nota()
         );
         return FilmeResponse.from(filme);
     }

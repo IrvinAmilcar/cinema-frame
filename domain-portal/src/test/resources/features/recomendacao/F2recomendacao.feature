@@ -47,3 +47,35 @@ Funcionalidade: Sistema de Recomendação por Perfil
     Então a lista de sugestões deve conter o filme "Diário de uma Paixão"
     E a lista de sugestões deve conter o filme "O Silêncio dos Inocentes"
     E a lista de sugestões não deve conter o filme "Velozes e Furiosos"
+
+  Cenário: Recomendar filme com base em favoritos quando não há histórico
+    Dado que o cliente não possui histórico de compras
+    E o catálogo cadastrado possui um filme "Titanic" do gênero "ROMANCE"
+    E o catálogo cadastrado possui um filme "Avatar" do gênero "ACAO"
+    E o cliente favoritou o filme "Titanic"
+    Quando o sistema gerar as recomendações para o cliente cadastrado
+    Então a lista de sugestões deve conter o filme "Titanic"
+    E a lista de sugestões não deve conter o filme "Avatar"
+
+  Cenário: Não recomendar para cliente sem histórico e sem favoritos
+    Dado que o cliente não possui histórico de compras
+    E o catálogo cadastrado possui um filme "Avatar" do gênero "ACAO"
+    Quando o sistema gerar as recomendações para o cliente cadastrado
+    Então a lista de sugestões deve estar vazia
+
+  Cenário: Gênero assistido tem mais peso que gênero apenas favoritado
+    Dado que existe um histórico cadastrado com os gêneros "ACAO"
+    E o catálogo cadastrado possui um filme "Velozes e Furiosos" do gênero "ACAO"
+    E o catálogo cadastrado possui um filme "Titanic" do gênero "ROMANCE"
+    E o cliente favoritou o filme "Titanic"
+    Quando o sistema gerar as recomendações para o cliente cadastrado
+    Então o primeiro filme sugerido deve ser do gênero "ACAO"
+
+  Cenário: Não recomendar filme que o cliente já assistiu
+    Dado que o cliente não possui histórico de compras
+    E o catálogo cadastrado possui um filme "Missão Impossível" do gênero "ACAO"
+    E o catálogo cadastrado possui um filme "Avatar" do gênero "ACAO"
+    E o cliente já assistiu o filme "Missão Impossível"
+    Quando o sistema gerar as recomendações para o cliente cadastrado
+    Então a lista de sugestões deve conter o filme "Avatar"
+    E a lista de sugestões não deve conter o filme "Missão Impossível"

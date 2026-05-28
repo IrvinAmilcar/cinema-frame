@@ -48,7 +48,7 @@ public class GradeService {
         return grade;
     }
 
-    public void adicionarSessao(UUID gradeId, UUID filmeId, UUID salaId, LocalTime inicio) {
+    public UUID adicionarSessao(UUID gradeId, UUID filmeId, UUID salaId, LocalTime inicio) {
         GradeDeExibicao grade = gradeRepository.buscarPorId(gradeId)
             .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada: " + gradeId));
 
@@ -64,6 +64,7 @@ public class GradeService {
         Sessao sessao = new Sessao(filme, sala, inicio);
         grade.adicionarSessao(sessao);
         gradeRepository.salvar(grade);
+        return sessao.getId();
     }
 
     public GradeDeExibicao buscarPorId(UUID id) {

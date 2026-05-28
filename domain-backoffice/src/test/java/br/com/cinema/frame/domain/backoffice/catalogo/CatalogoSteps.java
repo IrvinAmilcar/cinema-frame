@@ -66,7 +66,7 @@ public class CatalogoSteps {
 
     @Quando("a gerente atualiza o título do filme para {string}")
     public void gerente_atualiza_titulo(String novoTitulo) {
-        filmeAtualizado = filmeService.atualizar(filme.getId(), novoTitulo, null, null, null, null);
+        filmeAtualizado = filmeService.atualizar(filme.getId(), novoTitulo, null, null, null, null, null, null);
     }
 
     @Quando("a gerente remove o filme do catálogo")

@@ -64,6 +64,22 @@ public class NotificacaoService {
         }
     }
 
+    public List<UUID> listarFilmesFavoritados(UUID usuarioId) {
+        if (usuarioId == null)
+            throw new IllegalArgumentException("ID do usuário não pode ser nulo");
+        return filmeFavoritadoRepository.buscarPorUsuarioId(usuarioId).stream()
+                .map(FilmeFavoritado::getFilmeId)
+                .toList();
+    }
+
+    public void desfavoritarFilme(UUID usuarioId, UUID filmeId) {
+        if (usuarioId == null)
+            throw new IllegalArgumentException("ID do usuário não pode ser nulo");
+        if (filmeId == null)
+            throw new IllegalArgumentException("ID do filme não pode ser nulo");
+        filmeFavoritadoRepository.removerPorUsuarioEFilme(usuarioId, filmeId);
+    }
+
     public List<FilmeFavoritado> notificarFavoritosParaSessao(UUID sessaoId) {
         if (sessaoId == null)
             throw new IllegalArgumentException("ID da sessão não pode ser nulo");

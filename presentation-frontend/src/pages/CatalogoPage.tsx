@@ -9,12 +9,14 @@ interface Filme {
   genero: string
   trailerURL: string
   ativo: boolean
+  sinopse?: string
+  nota?: number
 }
 
 const CLASSIFICACOES = ['LIVRE', 'DEZ', 'DOZE', 'QUATORZE', 'DEZESSEIS', 'DEZOITO']
 const GENEROS = ['ACAO', 'AVENTURA', 'COMEDIA', 'DRAMA', 'FICCAO_CIENTIFICA', 'TERROR', 'ROMANCE', 'ANIMACAO', 'DOCUMENTARIO']
 
-const formInicial = { titulo: '', duracaoMinutos: 90, classificacaoIndicativa: 'LIVRE', genero: 'ACAO', trailerURL: '' }
+const formInicial = { titulo: '', duracaoMinutos: 90, classificacaoIndicativa: 'LIVRE', genero: 'ACAO', trailerURL: '', sinopse: '', nota: '' }
 
 export default function CatalogoPage() {
   const [filmes, setFilmes] = useState<Filme[]>([])
@@ -39,7 +41,11 @@ export default function CatalogoPage() {
   async function cadastrar(e: React.FormEvent) {
     e.preventDefault()
     try {
-      await api.post('/filmes', form)
+      await api.post('/filmes', {
+        ...form,
+        nota: form.nota !== '' ? Number(form.nota) : null,
+        sinopse: form.sinopse || null,
+      })
       setForm(formInicial)
       await carregar()
       msg('Filme cadastrado!')
@@ -89,6 +95,8 @@ export default function CatalogoPage() {
           {GENEROS.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
         <input placeholder="URL do trailer" value={form.trailerURL} onChange={e => setForm({ ...form, trailerURL: e.target.value })} />
+        <textarea placeholder="Sinopse" rows={3} value={form.sinopse} onChange={e => setForm({ ...form, sinopse: e.target.value })} style={{ resize: 'vertical' }} />
+        <input type="number" placeholder="Nota (0-5)" min={0} max={5} step={0.1} value={form.nota} onChange={e => setForm({ ...form, nota: e.target.value })} />
         <button type="submit">Cadastrar</button>
       </form>
 

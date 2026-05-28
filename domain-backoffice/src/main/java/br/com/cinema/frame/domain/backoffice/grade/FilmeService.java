@@ -39,10 +39,13 @@ public class FilmeService {
     }
 
     public Filme atualizar(UUID id, String novoTitulo, Duration novaDuracao,
-                            ClassificacaoIndicativa novaClassificacao, GeneroFilme novoGenero, String novoTrailerURL) {
+                            ClassificacaoIndicativa novaClassificacao, GeneroFilme novoGenero,
+                            String novoTrailerURL, String sinopse, Double nota) {
         Filme filme = filmeRepository.buscarPorId(id)
             .orElseThrow(() -> new IllegalArgumentException("Filme não encontrado: " + id));
         filme.atualizar(novoTitulo, novaDuracao, novaClassificacao, novoGenero, novoTrailerURL);
+        if (sinopse != null || nota != null)
+            filme.definirDetalhes(sinopse, nota);
         filmeRepository.salvar(filme);
         return filme;
     }

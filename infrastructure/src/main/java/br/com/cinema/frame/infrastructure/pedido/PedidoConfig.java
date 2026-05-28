@@ -8,6 +8,7 @@ import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
 import br.com.cinema.frame.domain.portal.pedido.PedidoRepository;
 import br.com.cinema.frame.domain.portal.pedido.PedidoService;
 import br.com.cinema.frame.domain.portal.programacao.ProgramacaoService;
+import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeComprasRepository;
 import br.com.cinema.frame.domain.portal.reserva.ReservaRepository;
 import br.com.cinema.frame.domain.portal.reserva.ReservaService;
 import org.springframework.context.annotation.Bean;
@@ -17,8 +18,9 @@ import org.springframework.context.annotation.Configuration;
 public class PedidoConfig {
 
     @Bean
-    ProgramacaoService programacaoService(GradeDeExibicaoRepository gradeRepository) {
-        return new ProgramacaoService(gradeRepository);
+    ProgramacaoService programacaoService(GradeDeExibicaoRepository gradeRepository,
+                                           IngressoRepository ingressoRepository) {
+        return new ProgramacaoService(gradeRepository, ingressoRepository);
     }
 
     @Bean
@@ -38,8 +40,9 @@ public class PedidoConfig {
                                 BombonieresService bombonieresService,
                                 ReservaService reservaService,
                                 IngressoRepository ingressoRepository,
+                                HistoricoDeComprasRepository historicoRepository,
                                 ClassificacaoDeCompraService classificacaoDeCompraService) {
         return new PedidoService(pedidoRepository, gradeRepository, bombonieresService,
-                ingressoRepository, null, null, classificacaoDeCompraService, reservaService);
+                ingressoRepository, null, historicoRepository, classificacaoDeCompraService, reservaService);
     }
 }

@@ -8,6 +8,7 @@ import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,20 @@ public class ProgramacaoService {
             .collect(Collectors.toList());
     }
 
+    public List<Sessao> listarSessoesPorData(LocalDate data) {
+        if (data == null)
+            throw new IllegalArgumentException("Data não pode ser nula");
+
+        LocalDate hoje = LocalDate.now();
+        LocalTime horaAtual = LocalTime.now();
+
+        return gradeRepository.listarTodas().stream()
+            .filter(g -> !g.getInicio().isAfter(data) && !g.getFim().isBefore(data))
+            .flatMap(g -> g.getSessoes().stream())
+            .filter(s -> data.isAfter(hoje) || s.getInicio().isAfter(horaAtual))
+            .collect(Collectors.toList());
+    }
+
     public List<Sessao> ordenarPorPopularidade(LocalDateTime agora, Map<UUID, Integer> ingressosPorSessao) {
         if (agora == null)
             throw new IllegalArgumentException("Horário atual não pode ser nulo");
@@ -73,6 +88,20 @@ public class ProgramacaoService {
         return listarSessoesDisponiveis(agora).stream()
             .sorted(Comparator.comparingInt(
                 (Sessao s) -> ingressosPorSessao.getOrDefault(s.getId(), 0)
+            ).reversed())
+            .collect(Collectors.toList());
+    }
+
+    public List<Sessao> ordenarPorPopularidade(LocalDateTime agora) {
+        if (agora == null)
+            throw new IllegalArgumentException("Horário atual não pode ser nulo");
+
+        List<Sessao> sessoes = listarSessoesDisponiveis(agora);
+        if (ingressoRepository == null) return sessoes;
+
+        return sessoes.stream()
+            .sorted(Comparator.comparingInt(
+                (Sessao s) -> ingressoRepository.buscarPorSessao(s).size()
             ).reversed())
             .collect(Collectors.toList());
     }

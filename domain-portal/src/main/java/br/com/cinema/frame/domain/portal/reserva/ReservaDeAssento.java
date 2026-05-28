@@ -40,6 +40,10 @@ public class ReservaDeAssento {
         return status == StatusReserva.RESERVADO;
     }
 
+    public boolean estaOcupado() {
+        return status == StatusReserva.RESERVADO || status == StatusReserva.CONFIRMADO;
+    }
+
     public void confirmar(LocalDateTime agora) {
         if (status == StatusReserva.CONFIRMADO) return; // já confirmado, idempotente
         if (status != StatusReserva.RESERVADO)

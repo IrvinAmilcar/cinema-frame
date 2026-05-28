@@ -32,6 +32,11 @@ public class FilmeJpa {
     @Column(nullable = false)
     private boolean ativo;
 
+    @Column(columnDefinition = "TEXT")
+    private String sinopse;
+
+    private double nota;
+
     protected FilmeJpa() {}
 
     public static FilmeJpa fromDomain(Filme f) {
@@ -43,20 +48,23 @@ public class FilmeJpa {
         e.genero = f.getGenero().name();
         e.trailerURL = f.getTrailerURL();
         e.ativo = f.isAtivo();
+        e.sinopse = f.getSinopse();
+        e.nota = f.getNota();
         return e;
     }
 
     public Filme toDomain() {
         return Filme.reconstituir(
-            id,
-            titulo,
+            id, titulo,
             Duration.ofSeconds(duracaoSegundos),
             ClassificacaoIndicativa.valueOf(classificacaoIndicativa),
             GeneroFilme.valueOf(genero),
-            trailerURL,
-            ativo
+            trailerURL, ativo, sinopse, nota
         );
     }
 
     public UUID getId() { return id; }
+    public String getTitulo() { return titulo; }
+    public String getGenero() { return genero; }
+    public boolean isAtivo() { return ativo; }
 }

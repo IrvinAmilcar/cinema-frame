@@ -105,8 +105,8 @@ public class PedidoService {
 
         Pedido pedido = buscarPedidoPorId(pedidoId);
 
-        // L5: valida classificação indicativa se data de nascimento fornecida
-        if (classificacaoService != null && dataNascimento != null) {
+        // L5: valida classificação indicativa — dataNascimento obrigatória
+        if (classificacaoService != null) {
             classificacaoService.validarCompra(dataNascimento,
                 pedido.getSessao().getFilme().getId());
         }
@@ -174,7 +174,7 @@ public class PedidoService {
             HistoricoDeCompras historico = historicoRepository
                 .buscarPorClienteId(pedido.getClienteId())
                 .orElse(new HistoricoDeCompras(pedido.getClienteId()));
-            historico.registrarGenero(pedido.getSessao().getFilme().getGenero());
+            historico.registrarFilme(pedido.getSessao().getFilme().getId(), pedido.getSessao().getFilme().getGenero());
             historicoRepository.salvar(historico);
         }
 
