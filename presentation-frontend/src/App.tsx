@@ -7,6 +7,8 @@ import BombonierePage from './pages/BombonierePage'
 import CompraPage from './pages/CompraPage'
 import ProgramacaoPage from './pages/ProgramacaoPage'
 import PortalHomePage from './pages/PortalHomePage'
+import CardapioPage from './pages/CardapioPage'
+import MeusIngressosPage from './pages/MeusIngressosPage'
 import AuthModal, { type ClienteLogado } from './components/AuthModal'
 
 type Modo = 'backoffice' | 'portal'
@@ -86,6 +88,8 @@ function Sidebar({ modo, onToggle, cliente, onOpenAuth, onLogout }:
             <NavLink to='/' end style={({ isActive }) => navStyle(isActive, cor)}>Início</NavLink>
             <NavLink to='/programacao' style={({ isActive }) => navStyle(isActive, cor)}>Programação</NavLink>
             <NavLink to='/compra' style={({ isActive }) => navStyle(isActive, cor)}>Comprar Ingresso</NavLink>
+            <NavLink to='/cardapio' style={({ isActive }) => navStyle(isActive, cor)}>Bomboniere</NavLink>
+            {cliente && <NavLink to='/meus-ingressos' style={({ isActive }) => navStyle(isActive, cor)}>Meus Ingressos</NavLink>}
             <NavLink to='/fidelidade' style={({ isActive }) => navStyle(isActive, cor)}>Fidelidade</NavLink>
           </>
         )}
@@ -172,7 +176,9 @@ export default function App() {
             <Route path='/caixa' element={<EmConstrucao nome='Fechamento de Caixa' />} />
             {/* Portal */}
             <Route path='/programacao' element={<ProgramacaoPage cliente={cliente} />} />
-            <Route path='/compra' element={<CompraPage />} />
+            <Route path='/compra' element={<CompraPage cliente={cliente} />} />
+            <Route path='/cardapio' element={<CardapioPage />} />
+            <Route path='/meus-ingressos' element={<MeusIngressosPage cliente={cliente} />} />
             <Route path='/fidelidade' element={<EmConstrucao nome='Fidelidade' />} />
           </Routes>
         </main>

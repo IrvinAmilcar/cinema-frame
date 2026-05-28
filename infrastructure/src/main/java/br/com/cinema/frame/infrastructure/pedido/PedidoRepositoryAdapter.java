@@ -5,6 +5,8 @@ import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
 import br.com.cinema.frame.domain.portal.pedido.Pedido;
 import br.com.cinema.frame.domain.portal.pedido.PedidoRepository;
+
+import java.time.LocalDate;
 import br.com.cinema.frame.infrastructure.grade.FilmeJpaRepository;
 import br.com.cinema.frame.infrastructure.grade.SessaoJpaRepository;
 import br.com.cinema.frame.infrastructure.sala.SalaJpaRepository;
@@ -39,8 +41,15 @@ public class PedidoRepositoryAdapter implements PedidoRepository {
     @Override
     @Transactional
     public void salvar(Pedido pedido) {
-        jpa.save(PedidoJpa.fromDomain(pedido));
-        // Sincroniza ingressos: apaga os antigos e re-insere com UUIDs originais
+        PedidoJpa entity = jpa.findById(pedido.getId()).orElseGet(() -> {
+            PedidoJpa novo = PedidoJpa.fromDomain(pedido);
+            return novo;
+        });
+        // Atualiza os campos mutáveis na entidade gerenciada pelo JPA
+        entity.setReservaId(pedido.getReservaId());
+        entity.setFinalizado(pedido.isFinalizado());
+        if (entity.getDataSessao() == null) entity.setDataSessao(LocalDate.now());
+        jpa.save(entity);
         ingressoJpa.deleteByPedidoId(pedido.getId());
         pedido.getIngressos().forEach(i ->
                 ingressoJpa.save(IngressoJpa.fromDomain(i, pedido.getId())));
@@ -55,6 +64,32 @@ public class PedidoRepositoryAdapter implements PedidoRepository {
                     .toList();
             return p.toDomain(sessao, ingressos);
         });
+    }
+
+    @Override
+    public List<Pedido> buscarFinalizadosPorClienteAPartirDe(UUID clienteId, LocalDate dataMinima) {
+        return jpa.findAtivosDoCliente(clienteId, dataMinima).stream()
+                .map(p -> {
+                    Sessao sessao = buscarSessao(p.getSessaoId());
+                    List<Ingresso> ingressos = ingressoJpa.findByPedidoId(p.getId()).stream()
+                            .map(i -> Ingresso.reconstituir(i.getId(), sessao, TipoIngresso.valueOf(i.getTipo())))
+                            .toList();
+                    return p.toDomain(sessao, ingressos);
+                })
+                .toList();
+    }
+
+    @Override
+    public List<Pedido> buscarFinalizadosPorCliente(UUID clienteId) {
+        return jpa.findByClienteIdAndFinalizadoTrue(clienteId).stream()
+                .map(p -> {
+                    Sessao sessao = buscarSessao(p.getSessaoId());
+                    List<Ingresso> ingressos = ingressoJpa.findByPedidoId(p.getId()).stream()
+                            .map(i -> Ingresso.reconstituir(i.getId(), sessao, TipoIngresso.valueOf(i.getTipo())))
+                            .toList();
+                    return p.toDomain(sessao, ingressos);
+                })
+                .toList();
     }
 
     @Override

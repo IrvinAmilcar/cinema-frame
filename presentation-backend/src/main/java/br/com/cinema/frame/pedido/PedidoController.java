@@ -8,6 +8,7 @@ import br.com.cinema.frame.domain.portal.pedido.StatusPagamento;
 import br.com.cinema.frame.domain.portal.promocao.*;
 import br.com.cinema.frame.domain.portal.reserva.ReservaDeAssento;
 import br.com.cinema.frame.domain.portal.reserva.ReservaService;
+import br.com.cinema.frame.domain.portal.pedido.PedidoRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,8 +25,8 @@ public class PedidoController {
     private final ReservaService reservaService;
     private final CupomRepository cupomRepository;
     private final BombonieresService bombonieresService;
+    private final PedidoRepository pedidoRepository;
 
-    // Strategy pattern: lista de estratégias de desconto disponíveis
     private final List<DescontoStrategy> estrategias = List.of(
             new DescontoLeve2Pague1(),
             new DescontoParceriaCartao(),
@@ -35,18 +36,22 @@ public class PedidoController {
     public PedidoController(PedidoService pedidoService,
                              ReservaService reservaService,
                              CupomRepository cupomRepository,
-                             BombonieresService bombonieresService) {
+                             BombonieresService bombonieresService,
+                             PedidoRepository pedidoRepository) {
         this.pedidoService = pedidoService;
         this.reservaService = reservaService;
         this.cupomRepository = cupomRepository;
         this.bombonieresService = bombonieresService;
+        this.pedidoRepository = pedidoRepository;
     }
 
     @PostMapping("/api/reserva")
     @ResponseStatus(HttpStatus.CREATED)
     public ReservaResponse reservar(@RequestBody ReservaRequest req) {
+        LocalDate dataOcorrencia = (req.data() != null && !req.data().isBlank())
+                ? LocalDate.parse(req.data()) : LocalDate.now();
         ReservaDeAssento reserva = reservaService.reservar(
-                req.sessaoId(), req.numeroAssento(), LocalDateTime.now());
+                req.sessaoId(), req.numeroAssento(), LocalDateTime.now(), dataOcorrencia);
         return ReservaResponse.from(reserva);
     }
 
@@ -93,8 +98,11 @@ public class PedidoController {
     }
 
     @GetMapping("/api/sessao/{sessaoId}/assentos-ocupados")
-    public List<Integer> listarAssentosOcupados(@PathVariable UUID sessaoId) {
-        return reservaService.listarAssentosOcupados(sessaoId, LocalDateTime.now());
+    public List<Integer> listarAssentosOcupados(@PathVariable UUID sessaoId,
+                                                 @RequestParam(required = false) String data) {
+        LocalDate dataOcorrencia = (data != null && !data.isBlank())
+                ? LocalDate.parse(data) : LocalDate.now();
+        return reservaService.listarAssentosOcupados(sessaoId, LocalDateTime.now(), dataOcorrencia);
     }
 
     @PatchMapping("/api/pedido/{id}/reserva")
@@ -125,4 +133,33 @@ public class PedidoController {
     }
 
     public record PedidoIniciadoResponse(UUID pedidoId) {}
+
+    public record IngressoClienteResponse(
+            UUID ingressoId, String qrCode, String filmeTitulo,
+            String dataSessao, String horarioInicio, String horarioFim,
+            int salaNumero, String tipoSala, String tipoIngresso
+    ) {}
+
+    @GetMapping("/api/cliente/{clienteId}/ingressos")
+    public List<IngressoClienteResponse> listarIngressos(@PathVariable UUID clienteId) {
+        LocalDate hoje = LocalDate.now();
+        return pedidoRepository.buscarFinalizadosPorClienteAPartirDe(clienteId, hoje).stream()
+                .flatMap(pedido -> pedido.getIngressos().stream().map(ingresso -> {
+                    var sessao = ingresso.getSessao();
+                    var filme  = sessao.getFilme();
+                    var sala   = sessao.getSala();
+                    return new IngressoClienteResponse(
+                            ingresso.getId(),
+                            ingresso.getId().toString(),
+                            filme.getTitulo(),
+                            hoje.toString(),
+                            sessao.getInicio().toString(),
+                            sessao.getFim().toString(),
+                            sala.getNumero(),
+                            sala.getTipo().name(),
+                            ingresso.getTipo().name()
+                    );
+                }))
+                .toList();
+    }
 }

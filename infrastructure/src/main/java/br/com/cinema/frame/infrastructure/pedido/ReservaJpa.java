@@ -5,6 +5,7 @@ import br.com.cinema.frame.domain.portal.reserva.ReservaDeAssento;
 import br.com.cinema.frame.domain.portal.reserva.StatusReserva;
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -19,6 +20,7 @@ public class ReservaJpa {
     private String status;
     private LocalDateTime criadaEm;
     private LocalDateTime expiracaoEm;
+    private LocalDate dataOcorrencia;
 
     protected ReservaJpa() {}
 
@@ -30,16 +32,18 @@ public class ReservaJpa {
         e.status = r.getStatus().name();
         e.criadaEm = r.getCriadaEm();
         e.expiracaoEm = r.getExpiracaoEm();
+        e.dataOcorrencia = r.getDataOcorrencia();
         return e;
     }
 
     public ReservaDeAssento toDomain(Sessao sessao) {
         return ReservaDeAssento.reconstituir(id, sessao, numeroAssento,
-                StatusReserva.valueOf(status), criadaEm, expiracaoEm);
+                StatusReserva.valueOf(status), criadaEm, expiracaoEm, dataOcorrencia);
     }
 
     public UUID getId() { return id; }
     public UUID getSessaoId() { return sessaoId; }
     public int getNumeroAssento() { return numeroAssento; }
     public String getStatus() { return status; }
+    public LocalDate getDataOcorrencia() { return dataOcorrencia; }
 }

@@ -25,6 +25,10 @@ public class ReservaService {
     }
 
     public ReservaDeAssento reservar(UUID sessaoId, int numeroAssento, LocalDateTime agora) {
+        return reservar(sessaoId, numeroAssento, agora, agora.toLocalDate());
+    }
+
+    public ReservaDeAssento reservar(UUID sessaoId, int numeroAssento, LocalDateTime agora, LocalDate dataOcorrencia) {
         if (sessaoId == null)
             throw new IllegalArgumentException("ID da sessão não pode ser nulo");
         if (agora == null)
@@ -35,12 +39,14 @@ public class ReservaService {
         liberarExpiradas(sessaoId, agora);
 
         boolean assentoOcupado = reservaRepository.buscarPorSessaoId(sessaoId).stream()
-            .anyMatch(r -> r.getNumeroAssento() == numeroAssento && r.estaOcupado());
+            .anyMatch(r -> r.getNumeroAssento() == numeroAssento
+                    && r.estaOcupado()
+                    && r.getDataOcorrencia().equals(dataOcorrencia));
 
         if (assentoOcupado)
             throw new IllegalStateException("Assento " + numeroAssento + " já está reservado para esta sessão");
 
-        ReservaDeAssento reserva = new ReservaDeAssento(sessao, numeroAssento, agora);
+        ReservaDeAssento reserva = new ReservaDeAssento(sessao, numeroAssento, agora, dataOcorrencia);
         reservaRepository.salvar(reserva);
         return reserva;
     }
@@ -59,9 +65,14 @@ public class ReservaService {
     }
 
     public List<Integer> listarAssentosOcupados(UUID sessaoId, LocalDateTime agora) {
+        return listarAssentosOcupados(sessaoId, agora, agora.toLocalDate());
+    }
+
+    public List<Integer> listarAssentosOcupados(UUID sessaoId, LocalDateTime agora, LocalDate dataOcorrencia) {
         liberarExpiradas(sessaoId, agora);
         return reservaRepository.buscarPorSessaoId(sessaoId).stream()
                 .filter(ReservaDeAssento::estaOcupado)
+                .filter(r -> r.getDataOcorrencia().equals(dataOcorrencia))
                 .map(ReservaDeAssento::getNumeroAssento)
                 .toList();
     }

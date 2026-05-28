@@ -18,6 +18,7 @@ public class Pedido {
     private final Sessao sessao;
     private final UUID clienteId;
     private UUID reservaId;
+    private boolean finalizado;
     private final List<Ingresso> ingressos;
     private final List<ProdutoDaBomboniere> produtos;
 
@@ -101,6 +102,7 @@ public class Pedido {
             voucher = new Voucher(id, produtos);
         }
 
+        this.finalizado = true;
         return new ResultadoDoPedido(qrCodes, voucher);
     }
 
@@ -108,6 +110,7 @@ public class Pedido {
     public Sessao getSessao() { return sessao; }
     public UUID getClienteId() { return clienteId; }
     public UUID getReservaId() { return reservaId; }
+    public boolean isFinalizado() { return finalizado; }
     public List<Ingresso> getIngressos() { return Collections.unmodifiableList(ingressos); }
     public List<ProdutoDaBomboniere> getProdutos() { return Collections.unmodifiableList(produtos); }
 }

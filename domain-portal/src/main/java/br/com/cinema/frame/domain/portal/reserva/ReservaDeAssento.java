@@ -2,6 +2,7 @@ package br.com.cinema.frame.domain.portal.reserva;
 
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -15,8 +16,13 @@ public class ReservaDeAssento {
     private StatusReserva status;
     private final LocalDateTime criadaEm;
     private final LocalDateTime expiracaoEm;
+    private final LocalDate dataOcorrencia;
 
     public ReservaDeAssento(Sessao sessao, int numeroAssento, LocalDateTime agora) {
+        this(sessao, numeroAssento, agora, agora.toLocalDate());
+    }
+
+    public ReservaDeAssento(Sessao sessao, int numeroAssento, LocalDateTime agora, LocalDate dataOcorrencia) {
         if (sessao == null)
             throw new IllegalArgumentException("Sessão não pode ser nula");
         if (numeroAssento <= 0)
@@ -30,6 +36,7 @@ public class ReservaDeAssento {
         this.status = StatusReserva.RESERVADO;
         this.criadaEm = agora;
         this.expiracaoEm = agora.plusMinutes(MINUTOS_EXPIRACAO);
+        this.dataOcorrencia = dataOcorrencia != null ? dataOcorrencia : agora.toLocalDate();
     }
 
     public boolean estaExpirada(LocalDateTime agora) {
@@ -71,19 +78,21 @@ public class ReservaDeAssento {
     }
 
     private ReservaDeAssento(UUID id, Sessao sessao, int numeroAssento,
-                              StatusReserva status, LocalDateTime criadaEm, LocalDateTime expiracaoEm) {
+                              StatusReserva status, LocalDateTime criadaEm,
+                              LocalDateTime expiracaoEm, LocalDate dataOcorrencia) {
         this.id = id;
         this.sessao = sessao;
         this.numeroAssento = numeroAssento;
         this.status = status;
         this.criadaEm = criadaEm;
         this.expiracaoEm = expiracaoEm;
+        this.dataOcorrencia = dataOcorrencia != null ? dataOcorrencia : criadaEm.toLocalDate();
     }
 
     public static ReservaDeAssento reconstituir(UUID id, Sessao sessao, int numeroAssento,
                                                  StatusReserva status, LocalDateTime criadaEm,
-                                                 LocalDateTime expiracaoEm) {
-        return new ReservaDeAssento(id, sessao, numeroAssento, status, criadaEm, expiracaoEm);
+                                                 LocalDateTime expiracaoEm, LocalDate dataOcorrencia) {
+        return new ReservaDeAssento(id, sessao, numeroAssento, status, criadaEm, expiracaoEm, dataOcorrencia);
     }
 
     public UUID getId() { return id; }
@@ -92,4 +101,5 @@ public class ReservaDeAssento {
     public StatusReserva getStatus() { return status; }
     public LocalDateTime getCriadaEm() { return criadaEm; }
     public LocalDateTime getExpiracaoEm() { return expiracaoEm; }
+    public LocalDate getDataOcorrencia() { return dataOcorrencia; }
 }

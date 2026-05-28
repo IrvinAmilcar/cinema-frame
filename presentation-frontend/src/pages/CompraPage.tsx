@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useMoviePoster } from '../hooks/useMoviePoster'
+import type { ClienteLogado } from '../components/AuthModal'
 
 const API = 'http://localhost:8080'
 
@@ -109,7 +110,7 @@ function numToLabel(n: number) {
   return `${row}${col}`
 }
 
-export default function CompraPage() {
+export default function CompraPage({ cliente }: { cliente: ClienteLogado | null }) {
   const [etapa, setEtapa] = useState<Etapa>('sessao')
   const [sessoes, setSessoes] = useState<SessaoDisponivel[]>([])
   const [sessao, setSessao] = useState<SessaoDisponivel | null>(null)
@@ -208,7 +209,7 @@ export default function CompraPage() {
       const res = await fetch(`${API}/api/pedido`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessaoId: s.id, clienteId: null }),
+        body: JSON.stringify({ sessaoId: s.id, clienteId: cliente?.clienteId ?? null }),
       })
       if (!res.ok) throw new Error()
       const data = await res.json()
@@ -226,7 +227,7 @@ export default function CompraPage() {
     if (!sessao) return
     setCarregando(true)
     try {
-      const res = await fetch(`${API}/api/sessao/${sessao.id}/assentos-ocupados`)
+      const res = await fetch(`${API}/api/sessao/${sessao.id}/assentos-ocupados?data=${dataSelecionada}`)
       const ocupados: number[] = res.ok ? await res.json() : []
       setAssentosOcupados(ocupados)
       setAssentosSelecionados([])
@@ -258,7 +259,7 @@ export default function CompraPage() {
         const res = await fetch(`${API}/api/reserva`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessaoId: sessao.id, numeroAssento: n }),
+          body: JSON.stringify({ sessaoId: sessao.id, numeroAssento: n, data: dataSelecionada }),
         })
         if (!res.ok) {
           setErro(`Assento ${numToLabel(n)} já foi reservado por outro usuário. Escolha novamente.`)
