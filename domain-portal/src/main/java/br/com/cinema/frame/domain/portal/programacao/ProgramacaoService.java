@@ -96,7 +96,13 @@ public class ProgramacaoService {
         if (agora == null)
             throw new IllegalArgumentException("Horário atual não pode ser nulo");
 
-        List<Sessao> sessoes = listarSessoesDisponiveis(agora);
+        return ordenarPorPopularidade(agora, listarSessoesDisponiveis(agora));
+    }
+
+    public List<Sessao> ordenarPorPopularidade(LocalDateTime agora, List<Sessao> sessoes) {
+        if (agora == null)
+            throw new IllegalArgumentException("Horário atual não pode ser nulo");
+        if (sessoes == null || sessoes.isEmpty()) return sessoes;
         if (ingressoRepository == null) return sessoes;
 
         return sessoes.stream()

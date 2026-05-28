@@ -64,15 +64,19 @@ public class ProgramacaoController {
         boolean ehHoje = dataFiltro.equals(LocalDate.now());
         boolean porPopularidade = "popularidade".equalsIgnoreCase(ordenar);
 
+        // Busca as sessões do dia (com ou sem recomendação)
         List<Sessao> sessoes;
-        if (porPopularidade && ehHoje) {
-            sessoes = programacaoService.ordenarPorPopularidade(agora);
-        } else if (ehHoje && clienteId != null) {
+        if (ehHoje && clienteId != null && !porPopularidade) {
             sessoes = programacaoDecorator.listarSessoesRecomendadas(agora, clienteId);
         } else if (ehHoje) {
             sessoes = programacaoService.listarSessoesDisponiveis(agora);
         } else {
             sessoes = programacaoService.listarSessoesPorData(dataFiltro);
+        }
+
+        // Ordenação por popularidade se pedida (funciona para qualquer data)
+        if (porPopularidade) {
+            sessoes = programacaoService.ordenarPorPopularidade(agora, sessoes);
         }
 
         if (genero != null && !genero.isBlank()) {
