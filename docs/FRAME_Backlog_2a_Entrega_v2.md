@@ -50,7 +50,11 @@ Os requisitos da 2.ª entrega são:
 | `NoOpMovimentacaoRepository` — placeholder até JPA de `MovimentacaoEstoque` ser implementado | ✅ Feito |
 | **F6 — Check-in** (Fabiana) — Observer (ocupação em tempo real) | ❌ Pendente (Fabiana) |
 | F3/F8 — Fidelidade + Fechamento de Caixa (Amanda) — Iterator + Template Method | ❌ Pendente (Amanda) |
-| F1/F2 — Compra de Ingresso + Explorar Programação (Julia) — Strategy + Decorator | ❌ Pendente (Julia) |
+| **F1 — Compra de Ingresso: JPA + REST + Strategy** — pedido, reserva, cupom, ingresso, QR Code, fluxo multi-etapa | ✅ Implementado (Julia) |
+| Padrão **Strategy** — `DescontoStrategy` + `DescontoLeve2Pague1` + `DescontoParceriaCartao` + `DescontoEstudante`; `MotorDePromocoes` recebe lista de estratégias e seleciona em runtime | ✅ Funcionando e validado |
+| **F2 — Explorar Programação: JPA + REST + Decorator** — histórico, favoritos, filmes sugeridos, recomendação personalizada | ✅ Implementado (Julia) |
+| Padrão **Decorator** — `ProgramacaoComRecomendacaoDecorator` envolve `ProgramacaoService` e adiciona recomendação sem alterar o serviço base | ✅ Funcionando e validado |
+| Use Cases no módulo `application` — `IniciarPedidoUseCase`, `AplicarCupomUseCase`, `FinalizarPedidoUseCase`, `ListarFilmesUseCase`, `FavoritarFilmeUseCase` | ✅ Implementado (Julia) |
 
 **Decisão de stack confirmada pelo time:**
 - Banco: **PostgreSQL 17.10 via Docker local** — cada membro tem seu próprio banco, sem compartilhar dados
@@ -646,46 +650,71 @@ Frontend: dashboard com tabela de sessões, faturamento projetado vs. realizado 
 
 ### Julia — F1 (Compra de Ingresso) + F2 (Explorar Programação)
 
-#### [F1] JPA — Pedido e Ingresso
+#### [F1] JPA — Pedido e Ingresso ✅ CONCLUÍDO
 
 | Entidade de domínio | Classe JPA | Repositório JPA | Adaptador |
 |---|---|---|---|
 | `Pedido` | `PedidoJpa` | `PedidoJpaRepository` | `PedidoRepositoryAdapter` |
 | `ReservaDeAssento` | `ReservaJpa` | `ReservaJpaRepository` | `ReservaRepositoryAdapter` |
 | `Cupom` | `CupomJpa` | `CupomJpaRepository` | `CupomRepositoryAdapter` |
-| `Ingresso` (portal) | `IngressoPortalJpa` | `IngressoPortalJpaRepository` | — |
+| `Ingresso` (portal) | `IngressoJpa` | `IngressoJpaRepository` | `IngressoRepositoryAdapter` |
 
-**Padrão Strategy — F1:** O `MotorDePromocoes` injeta a lista de `DescontoStrategy` disponíveis e seleciona a correta com base no `TipoPromocao` do cupom.
+**Padrão Strategy — F1:** O `MotorDePromocoes` recebe `List<DescontoStrategy>` via construtor e seleciona a estratégia correta em runtime pelo `TipoPromocao` do cupom. Implementações: `DescontoLeve2Pague1`, `DescontoParceriaCartao`, `DescontoEstudante`. Bean registrado em `PedidoConfig` e injetado no `PedidoController`.
 
-#### [F1] Web — Fluxo de Compra
+#### [F1] Web — Fluxo de Compra ✅ CONCLUÍDO
 
-- `GET /api/programacao/sessoes?data=YYYY-MM-DD` — sessões disponíveis
-- `POST /api/reserva` — reserva assento (10 min de expiração)
-- `POST /api/pedido` — inicia pedido
-- `POST /api/pedido/{id}/cupom` — aplica cupom com Strategy
-- `POST /api/pedido/{id}/finalizar` — gera QR Code + Voucher
+- `GET /api/programacao/sessoes?data=YYYY-MM-DD` — sessões disponíveis com preço dinâmico por tipo de sala
+- `POST /api/reserva` — reserva assento (10 min de expiração, filtrado por data de ocorrência)
+- `POST /api/pedido` — inicia pedido vinculado ao cliente
+- `POST /api/pedido/{id}/ingresso` — adiciona ingresso com validação de classificação etária
+- `POST /api/pedido/{id}/cupom` — aplica cupom via Strategy (`MotorDePromocoes`)
+- `POST /api/pedido/{id}/finalizar` — gera QR Code por ingresso + Voucher de bomboniere
 
-Frontend: fluxo multi-etapa com barra de progresso.
+Frontend (`CompraPage.tsx`): fluxo multi-etapa (sessão → ingresso → assento → bomboniere → cupom → confirmação → sucesso) com barra de progresso, mapa de assentos, imagens automáticas via TMDB.
+
+#### [F1] Use Cases — Compra ✅ CONCLUÍDO
+
+- `IniciarPedidoUseCase` — inicia pedido para uma sessão
+- `AplicarCupomUseCase` — aplica desconto via `MotorDePromocoes` (Strategy)
+- `FinalizarPedidoUseCase` — finaliza e gera QR Codes
 
 ---
 
-#### [F2] JPA — Programação e Recomendação
+#### [F2] JPA — Programação e Recomendação ✅ CONCLUÍDO
 
 | Entidade de domínio | Classe JPA | Repositório JPA | Adaptador |
 |---|---|---|---|
 | `HistoricoDeCompras` | `HistoricoJpa` | `HistoricoJpaRepository` | `HistoricoRepositoryAdapter` |
 | `FilmeFavoritado` | `FavoritoJpa` | `FavoritoJpaRepository` | `FavoritoRepositoryAdapter` |
-| `FilmeSugerido` | `FilmeSugeridoJpa` | `FilmeSugeridoJpaRepository` | — |
+| `FilmeSugerido` | — (derivado do catálogo ativo) | — | `FilmeSugeridoRepositoryAdapter` |
 
-**Padrão Decorator — F2:** `ProgramacaoComRecomendacaoDecorator` envolve `ProgramacaoServiceImpl` e adiciona ordenação por afinidade transparentemente.
+**Padrão Decorator — F2:** `ProgramacaoComRecomendacaoDecorator` envolve `ProgramacaoService` (base) e adiciona recomendação personalizada via `MotorDeRecomendacao` transparentemente. O controller usa o decorado quando há `clienteId` na requisição, ou o serviço base caso contrário.
 
-#### [F2] Web — Catálogo do Cliente
+#### [F2] Web — Catálogo do Cliente ✅ CONCLUÍDO
 
-- `GET /api/programacao/filmes?clienteId=&genero=&classificacao=` — lista com filtros + recomendação
-- `GET /api/programacao/filmes/{id}` — detalhes do filme com trailer
+- `GET /api/programacao/filmes?clienteId=&genero=&classificacao=&ordenar=` — lista com filtros, recomendação (Decorator) e ordenação por popularidade
+- `GET /api/programacao/filmes/{id}` — detalhes do filme com trailer e sessões do dia
 - `POST /api/notificacao/favoritar` — favorita filme e registra para notificação
+- `GET /api/notificacao/favoritos/{clienteId}` — lista filmes favoritados
+- `DELETE /api/notificacao/favoritos/{clienteId}/{filmeId}` — remove favorito
 
-Frontend: grid de filmes com filtros, badges de classificação e seção de recomendados.
+Frontend (`ProgramacaoPage.tsx`): grid de filmes com filtros de data, gênero e classificação, badges de classificação etária, seção "Para você" com recomendados, atualização automática de recomendações a cada 10s.
+
+#### [F2] Use Cases — Programação ✅ CONCLUÍDO
+
+- `ListarFilmesUseCase` — lista sessões por data (hoje ou futura)
+- `FavoritarFilmeUseCase` — favorita filme via `NotificacaoService`
+
+#### Integração externa — TMDB API ✅ IMPLEMENTADO
+
+Integração com a **The Movie Database API (TMDB)** para busca automática de imagens dos filmes cadastrados no sistema, sem necessidade de upload manual.
+
+- `src/lib/tmdb.ts` — função `fetchMovieImages(titulo)` que busca pôster (`w342`) e backdrop (`w1280`) pelo título do filme via `api.themoviedb.org/3/search/movie`
+- `src/hooks/useMoviePoster.ts` — hook React que expõe `posterUrl` e `backdropUrl` para qualquer componente
+- Cache automático em `localStorage` com TTL de 7 dias (evita chamadas repetidas)
+- Fallback para gradiente de cor caso o filme não seja encontrado
+- Token configurado via variável de ambiente `VITE_TMDB_TOKEN` (gitignored)
+- Integrado em: `ProgramacaoPage.tsx` (cards e destaque), `CompraPage.tsx` (lista de sessões e cabeçalho do fluxo), `PortalHomePage.tsx` (banner cinematográfico com backdrop)
 
 ---
 
