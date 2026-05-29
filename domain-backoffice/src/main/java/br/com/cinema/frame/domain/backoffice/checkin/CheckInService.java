@@ -5,20 +5,23 @@ import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
 import br.com.cinema.frame.domain.backoffice.rbac.Permissao;
 import br.com.cinema.frame.domain.backoffice.rbac.RbacService;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-public class CheckInService {
-
-    private static final int MINUTOS_ANTES_PERMITIDOS = 30;
+public class CheckInService {  // ← estava faltando isso
 
     private final IngressoRepository ingressoRepository;
     private final RegistroDeEntradaRepository registroRepository;
     private final RbacService rbacService;
+    private final List<CheckInObserver> observers;
 
     public CheckInService(IngressoRepository ingressoRepository,
                           RegistroDeEntradaRepository registroRepository,
-                          RbacService rbacService) {
+                          RbacService rbacService,
+                          List<CheckInObserver> observers) {
         if (ingressoRepository == null)
             throw new IllegalArgumentException("IngressoRepository não pode ser nulo");
         if (registroRepository == null)
@@ -29,42 +32,58 @@ public class CheckInService {
         this.ingressoRepository = ingressoRepository;
         this.registroRepository = registroRepository;
         this.rbacService = rbacService;
+        this.observers = observers != null ? observers : new ArrayList<>();
     }
 
     public RegistroDeEntrada realizar(UUID funcionarioId, UUID ingressoId, UUID sessaoId, LocalDateTime agora) {
-        if (funcionarioId == null)
-            throw new IllegalArgumentException("ID do funcionário não pode ser nulo");
-        if (ingressoId == null)
-            throw new IllegalArgumentException("ID do ingresso não pode ser nulo");
-        if (sessaoId == null)
-            throw new IllegalArgumentException("ID da sessão não pode ser nulo");
-        if (agora == null)
-            throw new IllegalArgumentException("Horário não pode ser nulo");
+        rbacService.verificar(funcionarioId, Permissao.REALIZAR_CHECKIN); // ← estava faltando isso
 
-        rbacService.verificar(funcionarioId, Permissao.REALIZAR_CHECKIN);
+        var ingressoOpt = ingressoRepository.buscarPorId(ingressoId);
 
-        Ingresso ingresso = ingressoRepository.buscarPorId(ingressoId)
-            .orElseThrow(() -> new IllegalArgumentException("QR Code inválido: ingresso não encontrado"));
+        if (ingressoOpt.isEmpty()) {
+            throw new IllegalArgumentException("QR Code inválido");
+        }
 
-        if (!ingresso.getSessao().getId().equals(sessaoId))
+        Ingresso ingresso = ingressoOpt.get();
+
+        if (!ingresso.getSessao().getId().equals(sessaoId)) {
             throw new IllegalStateException("Ingresso não pertence a esta sessão");
+        }
 
-        if (ingresso.isUtilizado())
-            throw new IllegalStateException("Ingresso já utilizado");
+        if (ingresso.isUtilizado()) {
+            throw new IllegalStateException("Tentativa de reutilização: Ingresso já utilizado");
+        }
 
-        LocalDateTime inicioSessao = agora.toLocalDate().atTime(ingresso.getSessao().getInicio());
-        LocalDateTime aberturaPortas = inicioSessao.minusMinutes(MINUTOS_ANTES_PERMITIDOS);
-        LocalDateTime fechamentoPortas = inicioSessao.plusMinutes(MINUTOS_ANTES_PERMITIDOS);
+        LocalDate dataHoje = agora.toLocalDate();
+        LocalDateTime fimSessao = dataHoje.atTime(ingresso.getSessao().getFim());
 
-        if (agora.isBefore(aberturaPortas) || agora.isAfter(fechamentoPortas))
-            throw new IllegalStateException("Fora do horário permitido de entrada");
+        
+LocalDateTime inicioSessao = dataHoje.atTime(ingresso.getSessao().getInicio());
+
+
+// janela permitida: até 30 minutos antes do início até o fim da sessão
+LocalDateTime aberturaPortas = inicioSessao.minusMinutes(30);
+
+if (agora.isBefore(aberturaPortas) || agora.isAfter(fimSessao)) {
+    throw new IllegalStateException("Check-in fora do horário permitido de entrada");
+}
 
         ingresso.marcarComoUtilizado();
         ingressoRepository.salvar(ingresso);
 
-        RegistroDeEntrada registro = new RegistroDeEntrada(ingressoId, sessaoId, agora);
-        registroRepository.salvar(registro);
+        RegistroDeEntrada sucesso = new RegistroDeEntrada(ingressoId, sessaoId, agora, true, null);
+        registroRepository.salvar(sucesso);
 
-        return registro;
+        for (CheckInObserver obs : observers) {
+            obs.onCheckInAprovado(sucesso);
+        }
+
+        return sucesso;
+    }
+
+    private RegistroDeEntrada registrarFalha(UUID ingressoId, UUID sessaoId, LocalDateTime agora, String motivo) {
+        RegistroDeEntrada falha = new RegistroDeEntrada(ingressoId, sessaoId, agora, false, motivo);
+        registroRepository.salvar(falha);
+        return falha;
     }
 }

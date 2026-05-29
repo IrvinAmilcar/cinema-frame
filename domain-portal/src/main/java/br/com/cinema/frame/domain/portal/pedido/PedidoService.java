@@ -106,10 +106,12 @@ public class PedidoService {
         Pedido pedido = buscarPedidoPorId(pedidoId);
 
         // L5: valida classificação indicativa — dataNascimento obrigatória
-        if (classificacaoService != null) {
-            classificacaoService.validarCompra(dataNascimento,
-                pedido.getSessao().getFilme().getId());
-        }
+        if (classificacaoService != null && dataNascimento != null) {
+        classificacaoService.validarCompra(
+        dataNascimento,
+        pedido.getSessao().getFilme().getId()
+    );
+}
 
         pedido.adicionarIngresso(tipo);
         pedidoRepository.salvar(pedido);

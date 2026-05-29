@@ -9,6 +9,7 @@ import ProgramacaoPage from './pages/ProgramacaoPage'
 import PortalHomePage from './pages/PortalHomePage'
 import CardapioPage from './pages/CardapioPage'
 import MeusIngressosPage from './pages/MeusIngressosPage'
+import { CheckInPage } from './pages/CheckInPage';
 import AuthModal, { type ClienteLogado } from './components/AuthModal'
 
 type Modo = 'backoffice' | 'portal'
@@ -172,7 +173,7 @@ export default function App() {
             <Route path='/salas' element={<SalasPage />} />
             <Route path='/grade' element={<GradePage />} />
             <Route path='/bomboniere' element={<BombonierePage />} />
-            <Route path='/checkin' element={<EmConstrucao nome='Check-in' />} />
+            <Route path='/checkin' element={<CheckInPage />} />
             <Route path='/caixa' element={<EmConstrucao nome='Fechamento de Caixa' />} />
             {/* Portal */}
             <Route path='/programacao' element={<ProgramacaoPage cliente={cliente} />} />

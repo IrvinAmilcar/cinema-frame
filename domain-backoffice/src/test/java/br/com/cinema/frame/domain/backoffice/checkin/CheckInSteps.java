@@ -23,6 +23,7 @@ import java.time.LocalTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,7 +32,13 @@ public class CheckInSteps {
     private IngressoRepository ingressoRepository = mock(IngressoRepository.class);
     private RegistroDeEntradaRepository registroRepository = mock(RegistroDeEntradaRepository.class);
     private RbacService rbacService = mock(RbacService.class);
-    private CheckInService checkInService = new CheckInService(ingressoRepository, registroRepository, rbacService);
+    private CheckInService checkInService =
+    new CheckInService(
+        ingressoRepository,
+        registroRepository,
+        rbacService,
+        java.util.Collections.emptyList()
+    );
 
     private final UUID funcionarioAutorizadoId = UUID.randomUUID();
     private final UUID funcionarioNaoAutorizadoId = UUID.randomUUID();

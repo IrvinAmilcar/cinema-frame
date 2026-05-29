@@ -41,7 +41,9 @@ public class IngressoRepositoryAdapter implements IngressoRepository {
 
     @Override
     public Optional<Ingresso> buscarPorId(UUID id) {
-        return jpa.findById(id).map(e -> e.toDomain(buscarSessao(e.getSessaoId())));
+        // MUDANÇA AQUI: Chamamos o findByIdWithLock no lugar do findById comum.
+        // Isso ativa o bloqueio do banco de dados na hora do Check-In!
+        return jpa.findByIdWithLock(id).map(e -> e.toDomain(buscarSessao(e.getSessaoId())));
     }
 
     @Override
