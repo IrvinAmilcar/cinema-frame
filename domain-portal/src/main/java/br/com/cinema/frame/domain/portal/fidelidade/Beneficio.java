@@ -45,4 +45,6 @@ public class Beneficio {
     public TipoBeneficio getTipo() { return tipo; }
     public int getPontosNecessarios() { return pontosNecessarios; }
     public boolean isCombinavel() { return combinavel; }
+    public Set<TipoBeneficio> getIncompativeis() { return incompativeis; }
+    public Set<DayOfWeek> getDiasPermitidos() { return diasPermitidos; }
 }

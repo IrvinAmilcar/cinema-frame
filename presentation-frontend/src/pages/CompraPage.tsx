@@ -47,6 +47,14 @@ async function extrairMensagemErro(res: Response): Promise<string> {
   }
 }
 
+function calcularPontosAGanhar(valor: number): number {
+  const base = Math.floor(valor)
+  if (valor >= 500) return Math.floor(base * 3.0)
+  if (valor >= 200) return Math.floor(base * 2.0)
+  if (valor >= 100) return Math.floor(base * 1.5)
+  return base
+}
+
 interface SessaoDisponivel {
   id: string
   filme: string
@@ -72,8 +80,8 @@ interface DadosPessoa {
   tipo: 'INTEIRA' | 'MEIA'
   dataNascimento: string
   tipoElegibilidade: TipoElegibilidade | ''
-  comprovante: string       // número do documento / carteira
-  arquivoSelecionado: string // nome do arquivo (PcD)
+  comprovante: string
+  arquivoSelecionado: string
 }
 
 function pessoaVazia(tipo: 'INTEIRA' | 'MEIA'): DadosPessoa {
@@ -133,11 +141,24 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
   const [tempoRestante, setTempoRestante] = useState(600)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // parte de fidelidade
+  const [saldoPontos, setSaldoPontos] = useState<number | null>(null)
+  const [usarPontos, setUsarPontos] = useState(false)
+  const [pontosGanhos, setPontosGanhos] = useState(0)
+
   const quantidade = qtdInteira + qtdMeia
   const precoInteira = sessao?.precoInteira ?? 0
   const precoMeia = sessao?.precoMeia ?? 0
   const subtotal = qtdInteira * precoInteira + qtdMeia * precoMeia
   const precoFinal = desconto ? desconto.valorFinal : subtotal
+  const totalBomboniere = carrinho.reduce((s, i) => s + i.produto.preco * i.qtd, 0)
+  const totalSemPontos = precoFinal + totalBomboniere
+
+  // 100 pontos = R$ 1,00
+  const descontoPontosReais = usarPontos && saldoPontos ? parseFloat((saldoPontos / 100).toFixed(2)) : 0
+  const totalFinal = Math.max(0, totalSemPontos - descontoPontosReais)
+  const pontosQueVaiGanhar = calcularPontosAGanhar(totalFinal)
+
   const etapaIdx = ETAPAS.indexOf(etapa)
 
   const ingressoResumo = [
@@ -145,7 +166,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
     qtdMeia > 0 ? `${qtdMeia}× Meia` : '',
   ].filter(Boolean).join(' + ')
 
-  // Reconstrói a lista de pessoas preservando dados já digitados
   useEffect(() => {
     setPessoas(prev => reconstruirPessoas(prev, qtdInteira, qtdMeia))
   }, [qtdInteira, qtdMeia])
@@ -215,6 +235,12 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
       const data = await res.json()
       setPedidoId(data.pedidoId)
       setSessao(s)
+      if (cliente?.clienteId) {
+        fetch(`${API}/api/fidelidade/${cliente.clienteId}/saldo`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d) setSaldoPontos(d.saldoAtivo) })
+          .catch(() => {})
+      }
       setEtapa('ingresso')
     } catch {
       setErro('Erro ao iniciar pedido. Tente novamente.')
@@ -277,7 +303,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
           })
         }
       }
-      // Carrega produtos da bomboniere ao avançar
       const resp = await fetch(`${API}/bomboniere/produtos`)
       const lista: ProdutoBomboniere[] = resp.ok
         ? (await resp.json()).filter((p: ProdutoBomboniere) => p.ativo)
@@ -301,8 +326,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
     })
   }
 
-  const totalBomboniere = carrinho.reduce((s, i) => s + i.produto.preco * i.qtd, 0)
-
   const aplicarCupom = async () => {
     if (!codigoCupom.trim() || !pedidoId) return
     setErroCupom('')
@@ -314,7 +337,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
       })
       if (!res.ok) { setErroCupom('Cupom inválido ou não encontrado.'); setDesconto(null); return }
       const resultado: DescontoResponse = await res.json()
-      // RN 10: se já há cupom não cumulativo aplicado, rejeita novo cupom
       if (desconto && !desconto.cumulativo) {
         setErroCupom('Cupom não cumulativo já aplicado. Não é possível combinar cupons.')
         return
@@ -328,7 +350,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
     setCarregando(true)
     setErro('')
     try {
-      // RN 3 + RN 4: uma requisição por pessoa, cada uma com seus próprios dados
       for (const pessoa of pessoas) {
         const possuiElegibilidade = pessoa.tipo === 'INTEIRA' || !!(
           (pessoa.tipoElegibilidade === 'ESTUDANTE' && pessoa.comprovante.trim()) ||
@@ -346,11 +367,10 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
           }),
         })
         if (!res.ok) {
-          setErro(await extrairMensagemErro(res) || 'Não foi possível adicionar o ingresso. Verifique os dados e tente novamente.')
+          setErro(await extrairMensagemErro(res) || 'Não foi possível adicionar o ingresso.')
           return
         }
       }
-      // Vende produtos da bomboniere (RN 7: estoque verificado atomicamente no backend)
       let voucherCodigo: string | null = null
       for (const item of carrinho) {
         const res = await fetch(`${API}/api/pedido/${pedidoId}/produto`, {
@@ -363,17 +383,26 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
           return
         }
         const data = await res.json()
-        voucherCodigo = data.voucher // mesmo código para todos os itens do mesmo pedido
+        voucherCodigo = data.voucher
       }
-      const res = await fetch(`${API}/api/pedido/${pedidoId}/finalizar`, { method: 'POST' })
+      // Finaliza o pedido passando o valor total com desconto de pontos aplicado
+      const res = await fetch(`${API}/api/pedido/${pedidoId}/finalizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          valorTotal: totalFinal,
+          usarPontos: usarPontos && saldoPontos !== null && saldoPontos > 0,
+          clienteId: cliente?.clienteId ?? null,
+        }),
+      })
       if (!res.ok) throw new Error()
-      // RN 11: backend retorna um QR Code por ingresso (UUID único de cada Ingresso)
       const { qrCodes: codigosDoBackend } = await res.json()
       setQrCodes(assentosSelecionados.map((n, i) => ({
         assento: numToLabel(n),
         codigo: codigosDoBackend[i] ?? `QR-ASSENTO-${numToLabel(n)}`,
       })))
       setVoucherQr(voucherCodigo)
+      setPontosGanhos(pontosQueVaiGanhar)
       setEtapa('sucesso')
     } catch {
       setErro('Erro ao finalizar a compra.')
@@ -389,6 +418,7 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
     setCarrinho([])
     setCodigoCupom(''); setDesconto(null); setErroCupom('')
     setQrCodes([]); setVoucherQr(null); setErro('')
+    setSaldoPontos(null); setUsarPontos(false); setPontosGanhos(0)
   }
 
   const totalAssentos = Math.min(sessao?.capacidade ?? 60, 96)
@@ -433,11 +463,10 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
         </div>
       )}
 
-      {/* ── ETAPA 2: Ingressos + dados por pessoa ── */}
+      {/* ── ETAPA 2: Ingressos ── */}
       {etapa === 'ingresso' && sessao && (
         <div>
           <SessaoCard sessao={sessao} />
-
           <h2 style={{ fontSize: 17, marginBottom: 16 }}>Quantidade de ingressos</h2>
           <div style={{ border: '1px solid #e0e0e0', borderRadius: 10, overflow: 'hidden', marginBottom: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: 'white' }}>
@@ -465,7 +494,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
             </div>
           </div>
 
-          {/* Dados por pessoa */}
           {pessoas.length > 0 && (
             <div style={{ marginBottom: 24 }}>
               <h2 style={{ fontSize: 17, marginBottom: 14 }}>Dados dos participantes</h2>
@@ -474,8 +502,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
                   <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 14, color: p.tipo === 'MEIA' ? COR : COR_PORTAL }}>
                     Ingresso {i + 1} — {p.tipo === 'INTEIRA' ? 'Inteira' : 'Meia-entrada'}
                   </div>
-
-                  {/* RN 4: data de nascimento por pessoa */}
                   <label style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 4 }}>
                     Data de nascimento <span style={{ color: '#c62828' }}>*</span>
                     {idadeMinima > 0 && <span style={{ color: '#888', fontWeight: 400 }}> — mínimo {idadeMinima} anos ({sessao!.classificacao})</span>}
@@ -485,26 +511,17 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
                     max={new Date().toISOString().split('T')[0]}
                     style={{ width: '100%', padding: '9px 12px', borderRadius: 7, border: `1px solid ${erroIdade(p) ? '#c62828' : '#ccc'}`, fontSize: 14, marginBottom: 4, boxSizing: 'border-box' as const }} />
                   {!p.dataNascimento ? (
-                    <p style={{ color: '#888', fontSize: 12, margin: '0 0 12px' }}>
-                      Informe a data de nascimento para continuar.
-                    </p>
+                    <p style={{ color: '#888', fontSize: 12, margin: '0 0 12px' }}>Informe a data de nascimento para continuar.</p>
                   ) : erroIdade(p) ? (
-                    <p style={{ color: '#c62828', fontSize: 12, margin: '0 0 12px', fontWeight: 500 }}>
-                      ✕ {erroIdade(p)}
-                    </p>
+                    <p style={{ color: '#c62828', fontSize: 12, margin: '0 0 12px', fontWeight: 500 }}>✕ {erroIdade(p)}</p>
                   ) : (
                     <p style={{ color: '#2e7d32', fontSize: 12, margin: '0 0 12px' }}>
-                      ✓ {calcularIdade(p.dataNascimento)} anos —{' '}
-                      {idadeMinima > 0 ? `permitido (mínimo ${idadeMinima} anos).` : 'livre para todos.'}
+                      ✓ {calcularIdade(p.dataNascimento)} anos — {idadeMinima > 0 ? `permitido (mínimo ${idadeMinima} anos).` : 'livre para todos.'}
                     </p>
                   )}
-
-                  {/* RN 3: comprovante de elegibilidade para meia-entrada */}
                   {p.tipo === 'MEIA' && (
                     <>
-                      <label style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 4 }}>
-                        Tipo de elegibilidade <span style={{ color: '#c62828' }}>*</span>
-                      </label>
+                      <label style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 4 }}>Tipo de elegibilidade <span style={{ color: '#c62828' }}>*</span></label>
                       <select value={p.tipoElegibilidade}
                         onChange={e => atualizarPessoa(i, { tipoElegibilidade: e.target.value as TipoElegibilidade, comprovante: '', arquivoSelecionado: '' })}
                         style={{ width: '100%', padding: '9px 12px', borderRadius: 7, border: '1px solid #ccc', fontSize: 14, marginBottom: 10, background: 'white', boxSizing: 'border-box' as const }}>
@@ -512,40 +529,29 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
                         <option value="IDOSO">Idoso (60+)</option>
                         <option value="PCD">Pessoa com Deficiência (PcD)</option>
                       </select>
-
                       {p.tipoElegibilidade === 'ESTUDANTE' && (
                         <>
-                          <label style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 4 }}>
-                            Número da carteira estudantil <span style={{ color: '#c62828' }}>*</span>
-                          </label>
+                          <label style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 4 }}>Número da carteira estudantil <span style={{ color: '#c62828' }}>*</span></label>
                           <input type="text" value={p.comprovante} placeholder="Ex: 2024-BR-12345678"
                             onChange={e => atualizarPessoa(i, { comprovante: e.target.value })}
                             style={{ width: '100%', padding: '9px 12px', borderRadius: 7, border: '1px solid #ccc', fontSize: 14, boxSizing: 'border-box' as const }} />
                         </>
                       )}
-
                       {p.tipoElegibilidade === 'IDOSO' && (
                         <>
-                          <label style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 4 }}>
-                            CPF do beneficiário <span style={{ color: '#c62828' }}>*</span>
-                          </label>
+                          <label style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 4 }}>CPF do beneficiário <span style={{ color: '#c62828' }}>*</span></label>
                           <input type="text" value={p.comprovante} placeholder="Ex: 000.000.000-00"
                             onChange={e => atualizarPessoa(i, { comprovante: e.target.value })}
                             style={{ width: '100%', padding: '9px 12px', borderRadius: 7, border: '1px solid #ccc', fontSize: 14, boxSizing: 'border-box' as const }} />
                         </>
                       )}
-
                       {p.tipoElegibilidade === 'PCD' && (
                         <>
-                          <label style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 4 }}>
-                            Laudo médico ou carteira PcD (PDF ou imagem) <span style={{ color: '#c62828' }}>*</span>
-                          </label>
+                          <label style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 4 }}>Laudo médico ou carteira PcD <span style={{ color: '#c62828' }}>*</span></label>
                           <input type="file" accept=".pdf,image/*"
                             onChange={e => atualizarPessoa(i, { arquivoSelecionado: e.target.files?.[0]?.name ?? '' })}
                             style={{ fontSize: 13, width: '100%' }} />
-                          {p.arquivoSelecionado && (
-                            <p style={{ fontSize: 12, color: '#2e7d32', marginTop: 4 }}>Arquivo: {p.arquivoSelecionado}</p>
-                          )}
+                          {p.arquivoSelecionado && <p style={{ fontSize: 12, color: '#2e7d32', marginTop: 4 }}>Arquivo: {p.arquivoSelecionado}</p>}
                         </>
                       )}
                     </>
@@ -555,7 +561,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
             </div>
           )}
 
-          {/* Resumo */}
           <div style={{ background: '#f5f5f5', borderRadius: 8, padding: '12px 16px', marginBottom: 24 }}>
             {quantidade === 0
               ? <p style={{ margin: 0, color: '#888', fontSize: 14 }}>Selecione ao menos 1 ingresso para continuar.</p>
@@ -564,7 +569,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
                   <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>Total: R$ {subtotal.toFixed(2)}</p>
                 </>}
           </div>
-
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <BtnVoltar onClick={reiniciar} />
             <BtnPrimario onClick={irParaAssentos} disabled={quantidade === 0 || !pessoasValidas || carregando}>
@@ -584,17 +588,14 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
               <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: 1 }}>{formatTimer(tempoRestante)}</div>
             </div>
           </div>
-
           <h2 style={{ fontSize: 17, marginBottom: 4 }}>Escolha seu{quantidade > 1 ? 's' : ''} assento{quantidade > 1 ? 's' : ''}</h2>
           <p style={{ color: '#666', fontSize: 13, marginBottom: 20 }}>
             Selecione {quantidade} assento{quantidade > 1 ? 's' : ''}. ({assentosSelecionados.length}/{quantidade} selecionado{assentosSelecionados.length !== 1 ? 's' : ''})
           </p>
-
           <div style={{ marginBottom: 6 }}>
             <div style={{ background: COR, height: 5, borderRadius: 3 }} />
             <p style={{ textAlign: 'center', fontSize: 12, color: '#888', margin: '4px 0 18px' }}>Tela</p>
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 24 }}>
             {Array.from({ length: rows }, (_, ri) => (
               <div key={ri} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -610,7 +611,8 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
                   return (
                     <button key={ci} onClick={() => toggleAssento(n)} disabled={ocupado || (cheio && !selecionado)} title={`${String.fromCharCode(65 + ri)}${ci + 1}`}
                       style={{
-                        flex: 1, aspectRatio: '1', borderRadius: 6, border: 'none', cursor: ocupado ? 'not-allowed' : cheio ? 'default' : 'pointer',
+                        flex: 1, aspectRatio: '1', borderRadius: 6, border: 'none',
+                        cursor: ocupado ? 'not-allowed' : cheio ? 'default' : 'pointer',
                         background: ocupado ? '#ccc' : selecionado ? COR : '#f0f0f0',
                         opacity: cheio && !selecionado && !ocupado ? 0.4 : 1,
                         fontSize: 9, color: selecionado ? 'white' : '#666',
@@ -623,13 +625,11 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
               </div>
             ))}
           </div>
-
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 24, fontSize: 12, color: '#555' }}>
             <Legenda cor="#f0f0f0" label="Disponível" />
             <Legenda cor={COR} label="Selecionado" />
             <Legenda cor="#ccc" label="Ocupado" />
           </div>
-
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <BtnVoltar onClick={() => setEtapa('ingresso')} />
             <BtnPrimario onClick={confirmarAssentos} disabled={assentosSelecionados.length < quantidade || carregando}>
@@ -644,8 +644,7 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
         <div>
           <SessaoCard sessao={sessao} extra={`${assentosSelecionados.map(numToLabel).join(', ')} · ${ingressoResumo}`} />
           <h2 style={{ fontSize: 17, marginBottom: 4 }}>Bomboniere <span style={{ fontWeight: 400, color: '#888', fontSize: 14 }}>(opcional)</span></h2>
-          <p style={{ color: '#666', fontSize: 13, marginBottom: 18 }}>Adicione produtos para retirar na entrada. O estoque é verificado automaticamente.</p>
-
+          <p style={{ color: '#666', fontSize: 13, marginBottom: 18 }}>Adicione produtos para retirar na entrada.</p>
           {produtos.length === 0
             ? <p style={{ color: '#aaa', fontSize: 14, marginBottom: 24 }}>Nenhum produto disponível no momento.</p>
             : (
@@ -670,7 +669,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
                 })}
               </div>
             )}
-
           {carrinho.length > 0 && (
             <div style={{ background: '#e3f2fd', border: '1px solid #90caf9', borderRadius: 8, padding: '10px 16px', marginBottom: 20 }}>
               <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: COR_PORTAL }}>
@@ -678,7 +676,6 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
               </p>
             </div>
           )}
-
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <BtnVoltar onClick={() => setEtapa('assento')} />
             <BtnPrimario onClick={() => setEtapa('cupom')}>Continuar</BtnPrimario>
@@ -686,7 +683,7 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
         </div>
       )}
 
-      {/* ── ETAPA 5: Cupom ── */}
+      {/* ── ETAPA 5: Cupom + Fidelidade ── */}
       {etapa === 'cupom' && sessao && (
         <div>
           <SessaoCard sessao={sessao} extra={`${assentosSelecionados.map(numToLabel).join(', ')} · ${ingressoResumo}`} />
@@ -704,10 +701,71 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
                 Desconto: R$ {desconto.valorDesconto.toFixed(2)} — Total: R$ {desconto.valorFinal.toFixed(2)}
               </p>
               {!desconto.cumulativo && (
-                <p style={{ margin: '4px 0 0', color: '#1b5e20', fontSize: 12 }}>
-                  Cupom não cumulativo — não pode ser combinado com outros cupons.
-                </p>
+                <p style={{ margin: '4px 0 0', color: '#1b5e20', fontSize: 12 }}>Cupom não cumulativo — não pode ser combinado com outros cupons.</p>
               )}
+            </div>
+          )}
+
+          {/* ── BLOCO FIDELIDADE ── aparece só se o cliente está logado e tem pontos */}
+          {cliente && saldoPontos !== null && saldoPontos > 0 && (
+            <div style={{
+              background: '#1a1a2e', borderRadius: 12, padding: '18px 20px',
+              marginTop: 20, color: 'white',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>⭐ Fidelidade FRAME</div>
+                  <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 700, marginBottom: 4 }}>
+                    Você ganhará nesta compra: {pontosQueVaiGanhar} pontos
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.65 }}>
+                    Saldo disponível: {saldoPontos} pontos (R$ {(saldoPontos / 100).toFixed(2)})
+                  </div>
+                </div>
+                {/* Toggle */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <div
+                    onClick={() => setUsarPontos(v => !v)}
+                    style={{
+                      width: 44, height: 24, borderRadius: 12,
+                      background: usarPontos ? '#f59e0b' : '#4b5563',
+                      position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
+                    }}>
+                    <div style={{
+                      position: 'absolute', top: 3,
+                      left: usarPontos ? 22 : 3,
+                      width: 18, height: 18, borderRadius: '50%',
+                      background: 'white', transition: 'left 0.2s',
+                    }} />
+                  </div>
+                  <span style={{ fontSize: 12, color: '#d1d5db', whiteSpace: 'nowrap' }}>Usar pontos nesta compra</span>
+                </div>
+              </div>
+              {usarPontos && (
+                <div style={{
+                  marginTop: 12, paddingTop: 12,
+                  borderTop: '1px solid rgba(255,255,255,0.1)',
+                  fontSize: 13, color: '#fbbf24',
+                }}>
+                  🎉 Desconto aplicado: - R$ {descontoPontosReais.toFixed(2)} ({saldoPontos} pontos usados)
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Se cliente está logado mas não tem pontos, mostra quantos vai ganhar */}
+          {cliente && (saldoPontos === null || saldoPontos === 0) && (
+            <div style={{
+              background: '#1a1a2e', borderRadius: 12, padding: '14px 18px',
+              marginTop: 20, color: 'white', display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <span style={{ fontSize: 20 }}>⭐</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13 }}>Fidelidade FRAME</div>
+                <div style={{ fontSize: 12, color: '#f59e0b', marginTop: 2 }}>
+                  Você ganhará {pontosQueVaiGanhar} pontos nesta compra!
+                </div>
+              </div>
             </div>
           )}
 
@@ -718,7 +776,7 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
         </div>
       )}
 
-      {/* ── ETAPA 5: Confirmação ── */}
+      {/* ── ETAPA 6: Confirmação ── */}
       {etapa === 'confirmacao' && sessao && (
         <div>
           <h2 style={{ fontSize: 17, marginBottom: 18 }}>Confirmar compra</h2>
@@ -733,11 +791,24 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
               <Row key={i.produto.id} label={`${i.produto.nome} ×${i.qtd}`} value={`R$ ${(i.produto.preco * i.qtd).toFixed(2)}`} />
             ))}
             {carrinho.length > 0 && <Row label="Subtotal bomboniere" value={`R$ ${totalBomboniere.toFixed(2)}`} />}
-            {desconto && <Row label="Desconto" value={`- R$ ${desconto.valorDesconto.toFixed(2)}`} green />}
+            {desconto && <Row label="Desconto cupom" value={`- R$ ${desconto.valorDesconto.toFixed(2)}`} green />}
+            {usarPontos && descontoPontosReais > 0 && (
+              <Row label={`Desconto pontos FRAME (${saldoPontos} pts)`} value={`- R$ ${descontoPontosReais.toFixed(2)}`} green />
+            )}
             <div style={{ borderTop: '1px solid #eee', paddingTop: 12, display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 600 }}>Total</span>
-              <span style={{ fontWeight: 700, fontSize: 18, color: COR_PORTAL }}>R$ {(precoFinal + totalBomboniere).toFixed(2)}</span>
+              <span style={{ fontWeight: 700, fontSize: 18, color: COR_PORTAL }}>R$ {totalFinal.toFixed(2)}</span>
             </div>
+            {/* Pontos que vai ganhar */}
+            {cliente && (
+              <div style={{
+                marginTop: 12, background: '#1a1a2e', borderRadius: 8,
+                padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ color: '#d1d5db', fontSize: 13 }}>⭐ Pontos que você vai ganhar</span>
+                <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: 14 }}>+{pontosQueVaiGanhar} pts</span>
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <BtnVoltar onClick={() => setEtapa('cupom')} />
@@ -748,16 +819,26 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
         </div>
       )}
 
-      {/* ── ETAPA 6: Sucesso ── */}
+      {/* ── ETAPA 7: Sucesso ── */}
       {etapa === 'sucesso' && (
         <div style={{ textAlign: 'center', padding: '32px 0' }}>
           <div style={{ fontSize: 48, marginBottom: 10 }}>✅</div>
           <h2 style={{ fontSize: 22, marginBottom: 4 }}>Compra realizada!</h2>
-          <p style={{ color: '#666', marginBottom: 28, fontSize: 14 }}>
+          <p style={{ color: '#666', marginBottom: 16, fontSize: 14 }}>
             Apresente o QR Code de cada assento na entrada do cinema.
           </p>
-
-          {/* QR codes dos ingressos */}
+          {/* Banner de pontos ganhos */}
+          {cliente && pontosGanhos > 0 && (
+            <div style={{
+              background: '#1a1a2e', borderRadius: 10, padding: '12px 20px',
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              marginBottom: 24, color: 'white',
+            }}>
+              <span style={{ fontSize: 22 }}>⭐</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#f59e0b' }}>+{pontosGanhos} pontos</span>
+              <span style={{ fontSize: 13, opacity: 0.7 }}>adicionados à sua conta</span>
+            </div>
+          )}
           <h3 style={{ fontSize: 15, color: '#555', marginBottom: 14 }}>Ingressos</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, justifyContent: 'center', marginBottom: 32 }}>
             {qrCodes.map(({ assento, codigo }) => (
@@ -768,24 +849,19 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
               </div>
             ))}
           </div>
-
-          {/* QR code da bomboniere */}
           {voucherQr && (
             <>
               <h3 style={{ fontSize: 15, color: '#555', marginBottom: 14 }}>Retirada na Bomboniere</h3>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
                 <div style={{ background: 'white', border: '2px solid #e0e0e0', borderRadius: 12, padding: '20px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontWeight: 700, fontSize: 15, color: COR_PORTAL }}>Voucher Bomboniere</span>
-                  <p style={{ margin: 0, fontSize: 12, color: '#888' }}>
-                    {carrinho.map(i => `${i.qtd}× ${i.produto.nome}`).join(' · ')}
-                  </p>
+                  <p style={{ margin: 0, fontSize: 12, color: '#888' }}>{carrinho.map(i => `${i.qtd}× ${i.produto.nome}`).join(' · ')}</p>
                   <QRCodeSVG value={voucherQr} size={160} level="H" includeMargin />
                   <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#aaa' }}>{voucherQr}</span>
                 </div>
               </div>
             </>
           )}
-
           <button onClick={reiniciar} style={{ background: COR_PORTAL, color: 'white', border: 'none', borderRadius: 8, padding: '12px 28px', cursor: 'pointer', fontWeight: 500, fontSize: 14 }}>
             Nova compra
           </button>
@@ -795,89 +871,52 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
   )
 }
 
-interface GrupoFilme {
-  filme: string
-  genero: string
-  classificacao: string
-  sessoes: SessaoDisponivel[]
-}
+// ── Componentes auxiliares (sem alteração) ──
+
+interface GrupoFilme { filme: string; genero: string; classificacao: string; sessoes: SessaoDisponivel[] }
 
 function agruparPorFilme(sessoes: SessaoDisponivel[]): GrupoFilme[] {
   const map = new Map<string, GrupoFilme>()
   for (const s of sessoes) {
-    if (!map.has(s.filme)) {
-      map.set(s.filme, { filme: s.filme, genero: s.genero, classificacao: s.classificacao, sessoes: [] })
-    }
+    if (!map.has(s.filme)) map.set(s.filme, { filme: s.filme, genero: s.genero, classificacao: s.classificacao, sessoes: [] })
     map.get(s.filme)!.sessoes.push(s)
   }
   return Array.from(map.values())
 }
 
 const CLASSIFICACAO_COR: Record<string, string> = {
-  LIVRE: '#2e7d32', DEZ: '#1565c0', DOZE: '#6a1b9a',
-  QUATORZE: '#e65100', DEZESSEIS: '#b71c1c', DEZOITO: '#212121',
+  LIVRE: '#2e7d32', DEZ: '#1565c0', DOZE: '#6a1b9a', QUATORZE: '#e65100', DEZESSEIS: '#b71c1c', DEZOITO: '#212121',
 }
 const CLASSIFICACAO_LABEL2: Record<string, string> = {
   LIVRE: 'L', DEZ: '10', DOZE: '12', QUATORZE: '14', DEZESSEIS: '16', DEZOITO: '18',
 }
-const TIPO_SALA_LABEL: Record<string, string> = {
-  PADRAO: 'Comum', TRES_D: '3D', IMAX: 'IMAX', VIP: 'VIP',
-}
-const TIPO_SALA_COR: Record<string, string> = {
-  PADRAO: '#546e7a', TRES_D: '#1565c0', IMAX: '#6a1b9a', VIP: '#b8860b',
-}
+const TIPO_SALA_LABEL: Record<string, string> = { PADRAO: 'Comum', TRES_D: '3D', IMAX: 'IMAX', VIP: 'VIP' }
+const TIPO_SALA_COR: Record<string, string> = { PADRAO: '#546e7a', TRES_D: '#1565c0', IMAX: '#6a1b9a', VIP: '#b8860b' }
 
-function FilmeComSessoes({ grupo, onSelecionar, carregando }: {
-  grupo: GrupoFilme; onSelecionar: (s: SessaoDisponivel) => void; carregando: boolean
-}) {
+function FilmeComSessoes({ grupo, onSelecionar, carregando }: { grupo: GrupoFilme; onSelecionar: (s: SessaoDisponivel) => void; carregando: boolean }) {
   const { posterUrl } = useMoviePoster(grupo.filme)
-
   return (
-    <div style={{
-      background: 'white', border: '1px solid #e8e8e8', borderRadius: 14,
-      marginBottom: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-      display: 'flex', alignItems: 'stretch',
-    }}>
-      {/* Poster */}
+    <div style={{ background: 'white', border: '1px solid #e8e8e8', borderRadius: 14, marginBottom: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'stretch' }}>
       <div style={{ width: 110, flexShrink: 0, position: 'relative', background: '#1a1a2e' }}>
-        {posterUrl
-          ? <img src={posterUrl} alt={grupo.filme} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, minHeight: 140 }}>🎬</div>
-        }
-        {/* Badge de classificação */}
-        <div style={{
-          position: 'absolute', top: 8, left: 8,
-          background: CLASSIFICACAO_COR[grupo.classificacao] ?? '#555',
-          color: 'white', fontSize: 11, fontWeight: 700,
-          padding: '2px 6px', borderRadius: 5,
-        }}>
+        {posterUrl ? <img src={posterUrl} alt={grupo.filme} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, minHeight: 140 }}>🎬</div>}
+        <div style={{ position: 'absolute', top: 8, left: 8, background: CLASSIFICACAO_COR[grupo.classificacao] ?? '#555', color: 'white', fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 5 }}>
           {CLASSIFICACAO_LABEL2[grupo.classificacao] ?? grupo.classificacao}
         </div>
       </div>
-
-      {/* Conteúdo */}
       <div style={{ flex: 1, padding: '18px 22px', borderLeft: '1px solid #f0f0f0' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 14 }}>
           <span style={{ fontWeight: 700, fontSize: 17, color: '#1a1a2e' }}>{grupo.filme}</span>
           <span style={{ fontSize: 13, color: '#999' }}>{grupo.genero.replace('_', ' ')}</span>
         </div>
-
-        {/* Botões de horário agrupados por tipo de sala */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
           {grupo.sessoes.map(s => {
             const cor = TIPO_SALA_COR[s.tipoSala] ?? COR_PORTAL
             const label = TIPO_SALA_LABEL[s.tipoSala] ?? s.tipoSala
             return (
               <button key={s.id} onClick={() => onSelecionar(s)} disabled={carregando}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  padding: '10px 18px', borderRadius: 10, cursor: carregando ? 'default' : 'pointer',
-                  border: `2px solid ${cor}`, background: 'white', color: cor,
-                  transition: 'all 0.15s', gap: 3,
-                }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px 18px', borderRadius: 10, cursor: carregando ? 'default' : 'pointer', border: `2px solid ${cor}`, background: 'white', color: cor, transition: 'all 0.15s', gap: 3 }}
                 onMouseEnter={e => { e.currentTarget.style.background = cor; e.currentTarget.style.color = 'white' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = cor }}
-              >
+                onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = cor }}>
                 <span style={{ fontSize: 15, fontWeight: 700 }}>{s.inicio}</span>
                 <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, opacity: 0.85 }}>{label}</span>
               </button>
@@ -896,20 +935,13 @@ function SessaoCard({ sessao, extra }: { sessao: { filme: string; inicio: string
   return (
     <div style={{ background: 'white', border: '1px solid #e0e0e0', borderRadius: 10, display: 'flex', alignItems: 'center', marginBottom: 20, overflow: 'hidden' }}>
       <div style={{ width: 56, height: 72, flexShrink: 0, background: '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-        {posterUrl
-          ? <img src={posterUrl} alt={sessao.filme} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : '🎬'}
+        {posterUrl ? <img src={posterUrl} alt={sessao.filme} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🎬'}
       </div>
       <div style={{ padding: '12px 16px', flex: 1 }}>
         <div style={{ fontWeight: 600, fontSize: 15 }}>{sessao.filme}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
           <span style={{ color: '#666', fontSize: 13 }}>{sessao.inicio}{extra ? ` · ${extra}` : ''}</span>
-          {label && (
-            <span style={{
-              background: `${cor}18`, color: cor,
-              fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
-            }}>{label}</span>
-          )}
+          {label && <span style={{ background: `${cor}18`, color: cor, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>{label}</span>}
         </div>
       </div>
     </div>
@@ -934,11 +966,7 @@ function BtnQtd({ onClick, children }: { onClick: () => void; children: React.Re
 }
 
 function BtnVoltar({ onClick }: { onClick: () => void }) {
-  return (
-    <button onClick={onClick} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #ccc', background: 'white', cursor: 'pointer', fontSize: 14 }}>
-      Voltar
-    </button>
-  )
+  return <button onClick={onClick} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #ccc', background: 'white', cursor: 'pointer', fontSize: 14 }}>Voltar</button>
 }
 
 function BtnPrimario({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) {

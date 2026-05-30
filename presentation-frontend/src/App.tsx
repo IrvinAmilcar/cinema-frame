@@ -11,6 +11,7 @@ import CardapioPage from './pages/CardapioPage'
 import MeusIngressosPage from './pages/MeusIngressosPage'
 import { CheckInPage } from './pages/CheckInPage';
 import AuthModal, { type ClienteLogado } from './components/AuthModal'
+import FidelidadePage from './pages/FidelidadePage'
 
 type Modo = 'backoffice' | 'portal'
 
@@ -180,7 +181,7 @@ export default function App() {
             <Route path='/compra' element={<CompraPage cliente={cliente} />} />
             <Route path='/cardapio' element={<CardapioPage />} />
             <Route path='/meus-ingressos' element={<MeusIngressosPage cliente={cliente} />} />
-            <Route path='/fidelidade' element={<EmConstrucao nome='Fidelidade' />} />
+            <Route path='/fidelidade' element={<FidelidadePage cliente={cliente} />} />
           </Routes>
         </main>
       </div>

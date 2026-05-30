@@ -1,22 +1,33 @@
 package br.com.cinema.frame.pedido;
 
-import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
-import br.com.cinema.frame.domain.portal.pedido.Pedido;
-import br.com.cinema.frame.domain.portal.pedido.PedidoService;
-import br.com.cinema.frame.domain.portal.pedido.ResultadoDoPedido;
-import br.com.cinema.frame.domain.portal.pedido.StatusPagamento;
-import br.com.cinema.frame.domain.portal.promocao.*;
-import br.com.cinema.frame.domain.portal.reserva.ReservaDeAssento;
-import br.com.cinema.frame.domain.portal.reserva.ReservaService;
-import br.com.cinema.frame.domain.portal.pedido.PedidoRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
+import br.com.cinema.frame.domain.portal.pedido.Pedido;
+import br.com.cinema.frame.domain.portal.pedido.PedidoRepository;
+import br.com.cinema.frame.domain.portal.pedido.PedidoService;
+import br.com.cinema.frame.domain.portal.pedido.ResultadoDoPedido;
+import br.com.cinema.frame.domain.portal.pedido.StatusPagamento;
+import br.com.cinema.frame.domain.portal.promocao.AplicacaoDeDesconto;
+import br.com.cinema.frame.domain.portal.promocao.Cupom;
+import br.com.cinema.frame.domain.portal.promocao.CupomRepository;
+import br.com.cinema.frame.domain.portal.promocao.MotorDePromocoes;
+import br.com.cinema.frame.domain.portal.reserva.ReservaDeAssento;
+import br.com.cinema.frame.domain.portal.reserva.ReservaService;
 
 @RestController
 public class PedidoController {
@@ -69,7 +80,6 @@ public class PedidoController {
         }
         int qtd = (req.quantidade() != null && req.quantidade() > 0) ? req.quantidade() : 1;
         for (int i = 0; i < qtd; i++) {
-            // RN 3: passa elegibilidade real; RN 4: passa data de nascimento para validar classificação
             pedidoService.adicionarIngresso(id, req.tipo(), req.possuiElegibilidade(), dataNasc);
         }
     }
@@ -79,8 +89,6 @@ public class PedidoController {
                                           @RequestBody AplicarCupomRequest req) {
         Cupom cupom = cupomRepository.buscarPorCodigo(req.codigo())
                 .orElseThrow(() -> new IllegalArgumentException("Cupom não encontrado: " + req.codigo()));
-
-        // Delega ao MotorDePromocoes que usa o padrão Strategy internamente
         AplicacaoDeDesconto desconto = motorDePromocoes.aplicar(
                 cupom, req.valorTotal(), req.quantidadeIngressos(), LocalDate.now());
         return DescontoResponse.from(desconto, cupom.isCumulativo());
@@ -102,32 +110,32 @@ public class PedidoController {
     @PostMapping("/api/pedido/{id}/produto")
     public VoucherResponse adicionarProduto(@PathVariable UUID id,
                                              @RequestBody AdicionarProdutoRequest req) {
-        // RN 7: vende imediatamente (verifica e debita estoque atomicamente)
-        // Produtos não são persistidos no PedidoJpa, então o voucher é gerado aqui
         int qtd = Math.max(1, req.quantidade());
-        for (int i = 0; i < qtd; i++) {
-            bombonieresService.vender(req.produtoId());
-        }
-        // Código determinístico: VCH-{pedidoId} — mesmo algoritmo do domínio Voucher
+        for (int i = 0; i < qtd; i++) bombonieresService.vender(req.produtoId());
         return new VoucherResponse("VCH-" + id.toString().toUpperCase());
     }
 
     public record VoucherResponse(String voucher) {}
 
     @PostMapping("/api/pedido/{id}/finalizar")
-    public ResultadoPedidoResponse finalizar(@PathVariable UUID id) {
+    public ResultadoPedidoResponse finalizar(@PathVariable UUID id,
+                                              @RequestBody(required = false) FinalizarPedidoRequest req) {
+        double valorTotal = (req != null && req.valorTotal() != null && req.valorTotal() > 0)
+                ? req.valorTotal() : 0.0;
+        boolean usarPontos = req != null && Boolean.TRUE.equals(req.usarPontos());
+
         ResultadoDoPedido resultado = pedidoService.finalizar(
-                id, StatusPagamento.APROVADO, 0.0, LocalDateTime.now());
+                id, StatusPagamento.APROVADO, valorTotal, LocalDateTime.now(), usarPontos);
         return ResultadoPedidoResponse.from(resultado);
     }
 
+    public record FinalizarPedidoRequest(Double valorTotal, Boolean usarPontos, UUID clienteId) {}
     public record PedidoIniciadoResponse(UUID pedidoId) {}
 
     public record IngressoClienteResponse(
             UUID ingressoId, String qrCode, String filmeTitulo,
             String dataSessao, String horarioInicio, String horarioFim,
-            int salaNumero, String tipoSala, String tipoIngresso
-    ) {}
+            int salaNumero, String tipoSala, String tipoIngresso) {}
 
     @GetMapping("/api/cliente/{clienteId}/ingressos")
     public List<IngressoClienteResponse> listarIngressos(@PathVariable UUID clienteId) {
@@ -138,16 +146,10 @@ public class PedidoController {
                     var filme  = sessao.getFilme();
                     var sala   = sessao.getSala();
                     return new IngressoClienteResponse(
-                            ingresso.getId(),
-                            ingresso.getId().toString(),
-                            filme.getTitulo(),
-                            hoje.toString(),
-                            sessao.getInicio().toString(),
-                            sessao.getFim().toString(),
-                            sala.getNumero(),
-                            sala.getTipo().name(),
-                            ingresso.getTipo().name()
-                    );
+                            ingresso.getId(), ingresso.getId().toString(),
+                            filme.getTitulo(), hoje.toString(),
+                            sessao.getInicio().toString(), sessao.getFim().toString(),
+                            sala.getNumero(), sala.getTipo().name(), ingresso.getTipo().name());
                 }))
                 .toList();
     }

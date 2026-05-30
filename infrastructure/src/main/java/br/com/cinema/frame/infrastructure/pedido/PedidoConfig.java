@@ -1,24 +1,26 @@
 package br.com.cinema.frame.infrastructure.pedido;
 
+import java.util.List;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoDeCompraService;
 import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
 import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicaoRepository;
 import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
+import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeService;
 import br.com.cinema.frame.domain.portal.pedido.PedidoRepository;
 import br.com.cinema.frame.domain.portal.pedido.PedidoService;
 import br.com.cinema.frame.domain.portal.programacao.ProgramacaoService;
-import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeComprasRepository;
 import br.com.cinema.frame.domain.portal.promocao.DescontoEstudante;
 import br.com.cinema.frame.domain.portal.promocao.DescontoLeve2Pague1;
 import br.com.cinema.frame.domain.portal.promocao.DescontoParceriaCartao;
 import br.com.cinema.frame.domain.portal.promocao.MotorDePromocoes;
+import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeComprasRepository;
 import br.com.cinema.frame.domain.portal.reserva.ReservaRepository;
 import br.com.cinema.frame.domain.portal.reserva.ReservaService;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 @Configuration
 public class PedidoConfig {
@@ -55,9 +57,11 @@ public class PedidoConfig {
                                 BombonieresService bombonieresService,
                                 ReservaService reservaService,
                                 IngressoRepository ingressoRepository,
+                                FidelidadeService fidelidadeService,
                                 HistoricoDeComprasRepository historicoRepository,
                                 ClassificacaoDeCompraService classificacaoDeCompraService) {
         return new PedidoService(pedidoRepository, gradeRepository, bombonieresService,
-                ingressoRepository, null, historicoRepository, classificacaoDeCompraService, reservaService);
+                ingressoRepository, fidelidadeService, historicoRepository,
+                classificacaoDeCompraService, reservaService);
     }
 }

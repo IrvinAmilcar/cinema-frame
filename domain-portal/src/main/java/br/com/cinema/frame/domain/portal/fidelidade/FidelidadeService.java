@@ -11,12 +11,12 @@ import br.com.cinema.frame.domain.shared.cliente.ClienteId;
 
 public class FidelidadeService {
 
-    private static final int PONTOS_POR_REAL = 1; // 1 ponto por real
+    private static final int PONTOS_POR_REAL = 1;
 
     private final FidelidadeRepository fidelidadeRepository;
     private final BeneficioRepository beneficioRepository;
-    private final ClienteRepository clienteRepository;           
-    private final RegistroResgateRepository resgateRepository;  
+    private final ClienteRepository clienteRepository;
+    private final RegistroResgateRepository resgateRepository;
 
     public FidelidadeService(FidelidadeRepository fidelidadeRepository,
                              BeneficioRepository beneficioRepository,
@@ -41,19 +41,30 @@ public class FidelidadeService {
                 .orElse(new PontosCliente(clienteId));
 
         int pontosBase = (int) Math.floor(valorGasto * PONTOS_POR_REAL);
-
         int pontosComBonus = PontosCliente.calcularPontosComBonus(valorGasto, pontosBase);
 
         boolean ehAniversario = clienteRepository.buscarAniversarioPorCliente(new ClienteId(clienteId))
                 .map(aniversario -> aniversario.equals(MonthDay.from(hoje)))
                 .orElse(false);
-        if (ehAniversario) {
-            pontosComBonus = pontosComBonus * 2;
-        }
+        if (ehAniversario) pontosComBonus = pontosComBonus * 2;
 
         LocalDate validade = hoje.plusMonths(12);
         pontos.acumularPontos(pontosComBonus, validade, hoje);
+        fidelidadeRepository.salvar(pontos);
+    }
 
+    public void usarPontosNaCompra(UUID clienteId, LocalDate hoje) {
+        if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
+        if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
+
+        PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
+                .orElseThrow(() -> new IllegalStateException("Cliente não possui conta de fidelidade"));
+
+        pontos.expirarPontosVencidos(hoje);
+        int saldo = pontos.getSaldoAtivo();
+        if (saldo <= 0) return;
+
+        pontos.debitarPontosDeCompra(saldo, hoje);
         fidelidadeRepository.salvar(pontos);
     }
 
@@ -66,8 +77,14 @@ public class FidelidadeService {
 
         pontos.expirarPontosVencidos(hoje);
         fidelidadeRepository.salvar(pontos);
-
         return pontos.getSaldoAtivo();
+    }
+
+    public List<LancamentoPontos> consultarExtrato(UUID clienteId) {
+        if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
+        PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
+                .orElseThrow(() -> new IllegalStateException("Cliente não possui conta de fidelidade"));
+        return pontos.getLancamentos();
     }
 
     public List<Beneficio> verificarBeneficios(UUID clienteId, LocalDate hoje) {
@@ -97,35 +114,26 @@ public class FidelidadeService {
         Beneficio beneficio = beneficioRepository.buscarPorId(beneficioId)
                 .orElseThrow(() -> new IllegalArgumentException("Benefício não encontrado"));
 
-        if (!beneficio.disponivelNoDia(hoje.getDayOfWeek())) {
+        if (!beneficio.disponivelNoDia(hoje.getDayOfWeek()))
             throw new IllegalStateException("Benefício não disponível neste dia da semana");
-        }
 
         pontos.expirarPontosVencidos(hoje);
 
-        if (pontos.getSaldoAtivo() < beneficio.getPontosNecessarios()) {
+        if (pontos.getSaldoAtivo() < beneficio.getPontosNecessarios())
             throw new IllegalStateException("Pontos insuficientes para resgatar o benefício");
-        }
 
         List<RegistroResgate> resgatesHoje = resgateRepository.buscarPorClienteEMes(
                 clienteId, hoje.getMonthValue(), hoje.getYear()
-        ).stream()
-                .filter(r -> r.getData().equals(hoje))
-                .toList();
+        ).stream().filter(r -> r.getData().equals(hoje)).toList();
 
         for (RegistroResgate registro : resgatesHoje) {
-            Beneficio jaResgatado = beneficioRepository.buscarPorId(registro.getBeneficioId())
-                    .orElse(null);
-            if (jaResgatado != null && beneficio.incompativelCom(jaResgatado)) {
-                throw new IllegalStateException(
-                    "Benefício incompatível com '" + jaResgatado.getNome() + "' já resgatado hoje"
-                );
-            }
+            Beneficio jaResgatado = beneficioRepository.buscarPorId(registro.getBeneficioId()).orElse(null);
+            if (jaResgatado != null && beneficio.incompativelCom(jaResgatado))
+                throw new IllegalStateException("Benefício incompatível com '" + jaResgatado.getNome() + "' já resgatado hoje");
         }
 
         pontos.debitarPontos(beneficio.getPontosNecessarios(), beneficioId, hoje);
         fidelidadeRepository.salvar(pontos);
-
         resgateRepository.salvar(clienteId, new RegistroResgate(beneficioId, beneficio.getPontosNecessarios(), hoje));
     }
 
