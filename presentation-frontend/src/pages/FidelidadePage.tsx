@@ -24,6 +24,7 @@ interface Resgate {
   beneficioId: string
   pontosDebitados: number
   data: string
+  descricao?: string
 }
 
 interface Props {
@@ -35,6 +36,27 @@ const TIPO_LABEL: Record<string, { emoji: string; desc: string }> = {
   DESCONTO_PERCENTUAL:{ emoji: '💰', desc: 'Desconto percentual no ingresso' },
   UPGRADE_ASSENTO:    { emoji: '⬆️', desc: 'Upgrade de assento sem custo' },
   PIPOCA_GRATIS:      { emoji: '🍿', desc: 'Pipoca média grátis na bomboniere' },
+}
+
+function formatarData(iso: string): string {
+  try {
+    const [ano, mes, dia] = iso.split('-')
+    return `${dia}/${mes}/${ano}`
+  } catch { return iso }
+}
+
+function parsearDescricao(descricao: string): { titulo: string; detalhes: string } {
+  if (!descricao) return { titulo: 'Compra de ingresso', detalhes: '' }
+  const sepIdx = descricao.indexOf(' — ')
+  if (sepIdx === -1) return { titulo: descricao, detalhes: '' }
+  const resto = descricao.slice(sepIdx + 3)
+  const partes = resto.split(' · ')
+  const filme = partes[0] ?? ''
+  const extras = partes.slice(1).join(' · ') 
+  return {
+    titulo: 'Compra de ingresso — ' + filme,
+    detalhes: extras,
+  }
 }
 
 export default function FidelidadePage({ cliente }: Props) {
@@ -120,9 +142,13 @@ export default function FidelidadePage({ cliente }: Props) {
       tipo: 'saida' as const,
       data: r.data,
       pts: r.pontosDebitados,
-      descricao: 'Pontos usados em resgate',
+      descricao: r.descricao ?? 'Pontos usados em resgate',
     })),
-  ].sort((a, b) => b.data.localeCompare(a.data))
+  ].sort((a, b) => {
+    const dataDiff = b.data.localeCompare(a.data)
+    if (dataDiff !== 0) return dataDiff
+    return a.descricao.localeCompare(b.descricao)
+  })
 
   return (
     <div style={{ maxWidth: 860 }}>
@@ -133,7 +159,7 @@ export default function FidelidadePage({ cliente }: Props) {
       }}>
         <div style={{ position: 'absolute', right: -20, top: -20, fontSize: 120, opacity: 0.07 }}>⭐</div>
         <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 4 }}>{cliente.nome}</div>
-        <div style={{ fontSize: 12, opacity: 0.65, marginBottom: 16 }}>{cliente.email ?? ''}</div>
+        <div style={{ fontSize: 12, opacity: 0.65, marginBottom: 16 }}>{(cliente as any).email ?? ''}</div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <span style={{ fontSize: 20, color: AMARELO }}>⭐</span>
           <span style={{ fontSize: 40, fontWeight: 800 }}>
@@ -177,13 +203,13 @@ export default function FidelidadePage({ cliente }: Props) {
           marginLeft: 'auto', padding: '6px 12px', borderRadius: 6,
           border: '1px solid #e5e7eb', background: 'white', color: '#666',
           fontSize: 12, cursor: 'pointer', alignSelf: 'center',
-        }}>
-          🔄
-        </button>
+        }}>🔄</button>
       </div>
 
+      {/* Aba: Extrato */}
       {aba === 'extrato' && (
         <div>
+          {/* Card saldo */}
           <div style={{
             background: '#1a1a2e', borderRadius: 12, padding: '20px 24px',
             marginBottom: 20, color: 'white',
@@ -204,38 +230,47 @@ export default function FidelidadePage({ cliente }: Props) {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {linhasExtrato.map((l, i) => (
-                <div key={i} style={{
-                  background: 'white', padding: '14px 16px',
-                  borderRadius: i === 0 ? '10px 10px 0 0' : i === linhasExtrato.length - 1 ? '0 0 10px 10px' : 0,
-                  borderBottom: i < linhasExtrato.length - 1 ? '1px solid #f3f4f6' : 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  boxShadow: i === 0 ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                }}>
-                  <div>
-                    <div style={{ fontWeight: 500, fontSize: 14, color: '#1a1a2e' }}>
-                      {l.descricao}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
-                      {l.data}
-                      {l.tipo === 'entrada' && (l as any).status === 'EXPIRADO' && (
-                        <span style={{ marginLeft: 8, color: '#ef4444', fontWeight: 600 }}>· Expirado</span>
-                      )}
-                    </div>
-                  </div>
-                  <span style={{
-                    fontWeight: 700, fontSize: 15,
-                    color: l.tipo === 'entrada' ? '#16a34a' : '#ef4444',
+              {linhasExtrato.map((l, i) => {
+                const { titulo, detalhes } = parsearDescricao(l.descricao)
+                const isFirst = i === 0
+                const isLast = i === linhasExtrato.length - 1
+                return (
+                  <div key={i} style={{
+                    background: 'white', padding: '14px 16px',
+                    borderRadius: isFirst && isLast ? 10 : isFirst ? '10px 10px 0 0' : isLast ? '0 0 10px 10px' : 0,
+                    borderBottom: !isLast ? '1px solid #f3f4f6' : 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    boxShadow: isFirst ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
                   }}>
-                    {l.tipo === 'entrada' ? '+' : '-'}{l.pts} pts
-                  </span>
-                </div>
-              ))}
+                    <div>
+                      <div style={{ fontWeight: 500, fontSize: 14, color: '#1a1a2e' }}>
+                        {titulo}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 3 }}>
+                        {formatarData(l.data)}
+                        {detalhes && (
+                          <span style={{ marginLeft: 6, color: '#6b7280' }}>· {detalhes}</span>
+                        )}
+                        {l.tipo === 'entrada' && (l as any).status === 'EXPIRADO' && (
+                          <span style={{ marginLeft: 8, color: '#ef4444', fontWeight: 600 }}>· Expirado</span>
+                        )}
+                      </div>
+                    </div>
+                    <span style={{
+                      fontWeight: 700, fontSize: 15,
+                      color: l.tipo === 'entrada' ? '#16a34a' : '#ef4444',
+                    }}>
+                      {l.tipo === 'entrada' ? '+' : '-'}{l.pts} pts
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
       )}
 
+      {/* Aba: Recompensas */}
       {aba === 'recompensas' && (
         <div>
           <div style={{

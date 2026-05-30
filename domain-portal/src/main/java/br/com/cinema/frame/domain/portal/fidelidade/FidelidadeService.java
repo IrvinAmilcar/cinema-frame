@@ -33,10 +33,15 @@ public class FidelidadeService {
     }
 
     public void acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje) {
-        acumularPontos(clienteId, valorGasto, hoje, null);
+        acumularPontos(clienteId, valorGasto, hoje, null, null, 0);
     }
 
     public void acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje, String tituloFilme) {
+        acumularPontos(clienteId, valorGasto, hoje, tituloFilme, null, 0);
+    }
+
+    public void acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje,
+                                String tituloFilme, String horario, int salaNumero) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         if (valorGasto <= 0) throw new IllegalArgumentException("Valor gasto deve ser positivo");
         if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
@@ -52,9 +57,15 @@ public class FidelidadeService {
                 .orElse(false);
         if (ehAniversario) pontosComBonus = pontosComBonus * 2;
 
-        String descricao = tituloFilme != null && !tituloFilme.isBlank()
-                ? "Compra de ingresso — " + tituloFilme
-                : "Compra de ingresso";
+        String descricao;
+        if (tituloFilme != null && !tituloFilme.isBlank()) {
+            StringBuilder sb = new StringBuilder("Compra de ingresso — ").append(tituloFilme);
+            if (horario != null && !horario.isBlank()) sb.append(" · ").append(horario);
+            if (salaNumero > 0) sb.append(" · Sala ").append(salaNumero);
+            descricao = sb.toString();
+        } else {
+            descricao = "Compra de ingresso";
+        }
 
         LocalDate validade = hoje.plusMonths(12);
         pontos.acumularPontos(pontosComBonus, validade, hoje, descricao);
