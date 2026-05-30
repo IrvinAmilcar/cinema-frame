@@ -23,6 +23,7 @@ import br.com.cinema.frame.domain.portal.fidelidade.RegistroResgate;
 @RequestMapping("/api/fidelidade")
 public class FidelidadeController {
 
+    // UUID zero = marcador de "pontos usados em compra"
     private static final UUID MARCADOR_COMPRA = new UUID(0L, 0L);
 
     private final FidelidadeService fidelidadeService;
@@ -59,7 +60,7 @@ public class FidelidadeController {
                         l.getPontosOriginais(), l.getSaldo(),
                         l.getValidade().toString(), l.getDataCriacao().toString(),
                         l.isExpirado() ? "EXPIRADO" : "ATIVO",
-                        "Compra de ingresso"))
+                        l.getDescricao()))
                 .toList();
         return ResponseEntity.ok(response);
     }

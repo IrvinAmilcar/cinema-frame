@@ -145,15 +145,18 @@ public class PedidoService {
         if (fidelidadeService != null && pedido.getClienteId() != null && agora != null) {
             LocalDate hoje = agora.toLocalDate();
 
+            // 1. Debita os pontos ANTES de acumular (se o cliente escolheu usar)
             if (usarPontos) {
                 try {
                     fidelidadeService.usarPontosNaCompra(pedido.getClienteId(), hoje);
                 } catch (Exception ignored) {
+                    // cliente sem conta de fidelidade ainda — ignora silenciosamente
                 }
             }
 
+            // 2. Acumula pontos do valor pago
             if (valorTotal != null && valorTotal > 0) {
-                fidelidadeService.acumularPontos(pedido.getClienteId(), valorTotal, hoje);
+                fidelidadeService.acumularPontos(pedido.getClienteId(), valorTotal, hoje, pedido.getSessao().getFilme().getTitulo());
             }
         }
 

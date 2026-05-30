@@ -49,6 +49,10 @@ public class PontosCliente {
     }
 
     public void acumularPontos(int pontos, LocalDate validade, LocalDate hoje) {
+        acumularPontos(pontos, validade, hoje, "Compra de ingresso");
+    }
+
+    public void acumularPontos(int pontos, LocalDate validade, LocalDate hoje, String descricao) {
         if (pontos <= 0) throw new IllegalArgumentException("Pontos devem ser positivos");
         if (validade == null) throw new IllegalArgumentException("Validade é obrigatória");
         if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
@@ -59,7 +63,7 @@ public class PontosCliente {
             throw new IllegalStateException("Limite mensal de " + LIMITE_ACUMULO_MENSAL + " pontos atingido para este mês");
 
         int pontosAcumulaveis = Math.min(pontos, disponivelNoMes);
-        lancamentos.add(new LancamentoPontos(pontosAcumulaveis, validade, hoje));
+        lancamentos.add(new LancamentoPontos(pontosAcumulaveis, validade, hoje, descricao));
         saldoAtivo += pontosAcumulaveis;
     }
 
@@ -72,7 +76,6 @@ public class PontosCliente {
         }
     }
 
-    // valida limite de 3/mês 
     public void debitarPontos(int pontos, UUID beneficioId, LocalDate hoje) {
         if (pontos <= 0) throw new IllegalArgumentException("Pontos a debitar devem ser positivos");
         if (saldoAtivo < pontos) throw new IllegalStateException("Saldo insuficiente de pontos");
@@ -91,11 +94,9 @@ public class PontosCliente {
         historicoResgates.add(new RegistroResgate(beneficioId, pontos, hoje));
     }
 
-    // sem limite de 3/mês 
     public void debitarPontosDeCompra(int pontos, LocalDate hoje) {
         if (pontos <= 0) throw new IllegalArgumentException("Pontos a debitar devem ser positivos");
         if (saldoAtivo < pontos) throw new IllegalStateException("Saldo insuficiente de pontos");
-
         debitarFIFO(pontos);
         saldoAtivo -= pontos;
         historicoResgates.add(new RegistroResgate(new UUID(0L, 0L), pontos, hoje));

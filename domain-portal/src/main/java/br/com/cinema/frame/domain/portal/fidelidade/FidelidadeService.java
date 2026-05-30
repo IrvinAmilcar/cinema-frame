@@ -33,6 +33,10 @@ public class FidelidadeService {
     }
 
     public void acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje) {
+        acumularPontos(clienteId, valorGasto, hoje, null);
+    }
+
+    public void acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje, String tituloFilme) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         if (valorGasto <= 0) throw new IllegalArgumentException("Valor gasto deve ser positivo");
         if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
@@ -48,8 +52,12 @@ public class FidelidadeService {
                 .orElse(false);
         if (ehAniversario) pontosComBonus = pontosComBonus * 2;
 
+        String descricao = tituloFilme != null && !tituloFilme.isBlank()
+                ? "Compra de ingresso — " + tituloFilme
+                : "Compra de ingresso";
+
         LocalDate validade = hoje.plusMonths(12);
-        pontos.acumularPontos(pontosComBonus, validade, hoje);
+        pontos.acumularPontos(pontosComBonus, validade, hoje, descricao);
         fidelidadeRepository.salvar(pontos);
     }
 
