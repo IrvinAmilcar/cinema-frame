@@ -59,7 +59,7 @@ public class PontosCliente {
 
         int jaAcumuladoNoMes = calcularPontosAcumuladosNoMes(hoje.getMonthValue(), hoje.getYear());
         int disponivelNoMes = LIMITE_ACUMULO_MENSAL - jaAcumuladoNoMes;
-        if (disponivelNoMes <= 0) return false; // limite atingido, não lança exceção
+        if (disponivelNoMes <= 0) return false;
 
         int pontosAcumulaveis = Math.min(pontos, disponivelNoMes);
         lancamentos.add(new LancamentoPontos(pontosAcumulaveis, validade, hoje, descricao));
@@ -100,6 +100,13 @@ public class PontosCliente {
         debitarFIFO(pontos);
         saldoAtivo -= pontos;
         historicoResgates.add(new RegistroResgate(new UUID(0L, 0L), pontos, hoje));
+    }
+
+    public void debitarPontosSemHistorico(int pontos) {
+        if (pontos <= 0) throw new IllegalArgumentException("Pontos a debitar devem ser positivos");
+        if (saldoAtivo < pontos) throw new IllegalStateException("Saldo insuficiente de pontos");
+        debitarFIFO(pontos);
+        saldoAtivo -= pontos;
     }
 
     private void debitarFIFO(int pontos) {

@@ -203,7 +203,7 @@ public class FidelidadeService implements FidelidadeServiceInterface {
             throw new IllegalStateException("Pontos insuficientes. Necessário: " + pontosNecessarios
                     + " pts, disponível: " + pontos.getSaldoAtivo() + " pts");
 
-        pontos.debitarPontosDeCompra(pontosNecessarios, hoje);
+        pontos.debitarPontosSemHistorico(pontosNecessarios);
         fidelidadeRepository.salvar(pontos);
 
         String voucher = "VCH-FIDELIDADE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
