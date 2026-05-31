@@ -145,7 +145,9 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
   const [saldoPontos, setSaldoPontos] = useState<number | null>(null)
   const [usarPontos, setUsarPontos] = useState(false)
   const [pontosGanhos, setPontosGanhos] = useState(0)
+  // estados de fidelidade
   const [avisoLimite, setAvisoLimite] = useState(false)
+  const [limiteMensalAtingido, setLimiteMensalAtingido] = useState(false)
 
   const quantidade = qtdInteira + qtdMeia
   const precoInteira = sessao?.precoInteira ?? 0
@@ -233,10 +235,18 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
       setPedidoId(data.pedidoId)
       setSessao(s)
       if (cliente?.clienteId) {
-        fetch(`${API}/api/fidelidade/${cliente.clienteId}/saldo`)
-          .then(r => r.ok ? r.json() : null)
-          .then(d => { if (d) setSaldoPontos(d.saldoAtivo) })
-          .catch(() => {})
+        const mesAtual = new Date().toISOString().slice(0, 7) // YYYY-MM
+        Promise.all([
+          fetch(`${API}/api/fidelidade/${cliente.clienteId}/saldo`).then(r => r.ok ? r.json() : null),
+          fetch(`${API}/api/fidelidade/${cliente.clienteId}/extrato`).then(r => r.ok ? r.json() : []),
+        ]).then(([saldoData, extrato]) => {
+          if (saldoData) setSaldoPontos(saldoData.saldoAtivo)
+          // Calcula pontos acumulados no mês atual
+          const pontosNoMes = (extrato as any[]).filter((l: any) =>
+            l.dataCriacao?.startsWith(mesAtual)
+          ).reduce((sum: number, l: any) => sum + (l.pontosOriginais ?? 0), 0)
+          setLimiteMensalAtingido(pontosNoMes >= 10000)
+        }).catch(() => {})
       }
       setEtapa('ingresso')
     } catch {
@@ -392,6 +402,7 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
         }),
       })
       if (!res.ok) throw new Error()
+      // ── MUDANÇA 2: ler limitePontosAtingido da resposta ──
       const respData = await res.json()
       const codigosDoBackend = respData.qrCodes
       if (respData.limitePontosAtingido) setAvisoLimite(true)
@@ -418,6 +429,7 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
     setQrCodes([]); setVoucherQr(null); setErro('')
     setSaldoPontos(null); setUsarPontos(false); setPontosGanhos(0)
     setAvisoLimite(false)
+    setLimiteMensalAtingido(false)
   }
 
   const totalAssentos = Math.min(sessao?.capacidade ?? 60, 96)
@@ -696,14 +708,28 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
               )}
             </div>
           )}
+          {/* Aviso de limite mensal atingido */}
+          {cliente && limiteMensalAtingido && (
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 16px', marginTop: 20, display: 'flex', alignItems: 'center', gap: 10, color: '#92400e' }}>
+              <span style={{ fontSize: 18 }}>⚠️</span>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>Limite mensal de pontos atingido</div>
+                <div style={{ fontSize: 12, marginTop: 2 }}>
+                  Você já acumulou 10.000 pontos este mês. Nenhum ponto será acumulado nesta compra.
+                </div>
+              </div>
+            </div>
+          )}
           {cliente && saldoPontos !== null && saldoPontos > 0 && (
             <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '18px 20px', marginTop: 20, color: 'white' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>⭐ Fidelidade FRAME</div>
-                  <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 700, marginBottom: 4 }}>
-                    Você ganhará nesta compra: {pontosQueVaiGanhar} pontos
-                  </div>
+                  {!limiteMensalAtingido && (
+                    <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 700, marginBottom: 4 }}>
+                      Você ganhará nesta compra: {pontosQueVaiGanhar} pontos
+                    </div>
+                  )}
                   <div style={{ fontSize: 12, opacity: 0.65 }}>
                     Saldo disponível: {saldoPontos} pontos (R$ {(saldoPontos / 100).toFixed(2)})
                   </div>
@@ -729,7 +755,9 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
               <div>
                 <div style={{ fontWeight: 700, fontSize: 13 }}>Fidelidade FRAME</div>
                 <div style={{ fontSize: 12, color: '#f59e0b', marginTop: 2 }}>
-                  Você ganhará {pontosQueVaiGanhar} pontos nesta compra!
+                  {limiteMensalAtingido
+                    ? 'Limite mensal atingido — nenhum ponto será acumulado.'
+                    : `Você ganhará ${pontosQueVaiGanhar} pontos nesta compra!`}
                 </div>
               </div>
             </div>
@@ -763,7 +791,7 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
               <span style={{ fontWeight: 600 }}>Total</span>
               <span style={{ fontWeight: 700, fontSize: 18, color: COR_PORTAL }}>R$ {totalFinal.toFixed(2)}</span>
             </div>
-            {cliente && (
+            {cliente && !limiteMensalAtingido && (
               <div style={{ marginTop: 12, background: '#1a1a2e', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#d1d5db', fontSize: 13 }}>⭐ Pontos que você vai ganhar</span>
                 <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: 14 }}>+{pontosQueVaiGanhar} pts</span>
@@ -786,6 +814,7 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
           <p style={{ color: '#666', marginBottom: 16, fontSize: 14 }}>
             Apresente o QR Code de cada assento na entrada do cinema.
           </p>
+          {/* Banner de pontos ganhos */}
           {cliente && pontosGanhos > 0 && (
             <div style={{ background: '#1a1a2e', borderRadius: 10, padding: '12px 20px', display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 16, color: 'white' }}>
               <span style={{ fontSize: 22 }}>⭐</span>
@@ -793,14 +822,7 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
               <span style={{ fontSize: 13, opacity: 0.7 }}>adicionados à sua conta</span>
             </div>
           )}
-          {avisoLimite && (
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 20px', marginBottom: 16, display: 'inline-flex', alignItems: 'center', gap: 10, color: '#92400e' }}>
-              <span style={{ fontSize: 18 }}>⚠️</span>
-              <span style={{ fontSize: 13 }}>
-                Limite mensal de pontos atingido. Nenhum ponto foi acumulado nesta compra.
-              </span>
-            </div>
-          )}
+
           <h3 style={{ fontSize: 15, color: '#555', marginBottom: 14 }}>Ingressos</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, justifyContent: 'center', marginBottom: 32 }}>
             {qrCodes.map(({ assento, codigo }) => (
@@ -945,3 +967,4 @@ function Row({ label, value, green }: { label: string; value: string; green?: bo
     </div>
   )
 }
+
