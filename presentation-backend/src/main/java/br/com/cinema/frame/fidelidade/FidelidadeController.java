@@ -1,6 +1,7 @@
 package br.com.cinema.frame.fidelidade;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import br.com.cinema.frame.domain.portal.fidelidade.RegistroResgate;
 public class FidelidadeController {
 
     private static final UUID MARCADOR_COMPRA = new UUID(0L, 0L);
+    private static final DateTimeFormatter FMT_HORA = DateTimeFormatter.ofPattern("HH:mm");
 
     private final FidelidadeService fidelidadeService;
 
@@ -97,27 +99,17 @@ public class FidelidadeController {
         for (ProdutoDaBomboniere p : produtos) {
             int pontosNecessarios = (int) Math.ceil(p.getPreco() / 2.0 * 100);
             recompensas.add(new RecompensaResponse(
-                    p.getId(),
-                    p.getNome(),
-                    "PRODUTO_BOMBONIERE",
-                    pontosNecessarios,
-                    p.getCategoria().name(),
-                    p.getPreco(),
-                    saldo >= pontosNecessarios
-            ));
+                    p.getId(), p.getNome(), "PRODUTO_BOMBONIERE",
+                    pontosNecessarios, p.getCategoria().name(), p.getPreco(),
+                    saldo >= pontosNecessarios));
         }
 
         List<Beneficio> beneficios = fidelidadeService.verificarBeneficios(clienteId, hoje);
         for (Beneficio b : beneficios) {
             recompensas.add(new RecompensaResponse(
-                    b.getId(),
-                    b.getNome(),
-                    b.getTipo().name(),
-                    b.getPontosNecessarios(),
-                    null,
-                    null,
-                    saldo >= b.getPontosNecessarios()
-            ));
+                    b.getId(), b.getNome(), b.getTipo().name(),
+                    b.getPontosNecessarios(), null, null,
+                    saldo >= b.getPontosNecessarios()));
         }
 
         return ResponseEntity.ok(recompensas);
@@ -140,23 +132,33 @@ public class FidelidadeController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
         LocalDate hoje = data != null ? data : LocalDate.now();
         String voucher = fidelidadeService.resgatarProdutoBomboniere(clienteId, produtoId, hoje);
-        return ResponseEntity.ok(Map.of(
-                "status", "Produto resgatado com sucesso!",
-                "voucher", voucher
-        ));
+        return ResponseEntity.ok(Map.of("status", "Produto resgatado com sucesso!", "voucher", voucher));
     }
 
     @GetMapping("/{clienteId}/historico")
     public ResponseEntity<List<ResgateResponse>> consultarHistorico(@PathVariable UUID clienteId) {
         List<RegistroResgate> resgates = fidelidadeService.consultarHistoricoResgates(clienteId);
         List<ResgateResponse> response = resgates.stream()
-                .map(r -> new ResgateResponse(
-                        r.getBeneficioId(),
-                        r.getPontosDebitados(),
-                        r.getData().toString(),
-                        MARCADOR_COMPRA.equals(r.getBeneficioId())
-                                ? "Pontos usados na compra"
-                                : "Resgate de recompensa"))
+                .map(r -> {
+                    String horario = r.getDataHora().format(FMT_HORA);
+
+                    String descricao = MARCADOR_COMPRA.equals(r.getBeneficioId())
+                            ? "Pontos usados na compra"
+                            : "Resgate de recompensa";
+
+                    String nomeBeneficio = MARCADOR_COMPRA.equals(r.getBeneficioId())
+                            ? null
+                            : r.getNomeBeneficio();
+
+                    return new ResgateResponse(
+                            r.getBeneficioId(),
+                            r.getPontosDebitados(),
+                            r.getData().toString(),  
+                            horario,                 
+                            descricao,
+                            nomeBeneficio            
+                    );
+                })
                 .toList();
         return ResponseEntity.ok(response);
     }
@@ -167,5 +169,7 @@ public class FidelidadeController {
                               String categoria, Double preco) {}
     record RecompensaResponse(UUID id, String nome, String tipo, int pontosNecessarios,
                                String categoria, Double preco, boolean disponivel) {}
-    record ResgateResponse(UUID beneficioId, int pontosDebitados, String data, String descricao) {}
+
+    record ResgateResponse(UUID beneficioId, int pontosDebitados, String data,
+                            String horario, String descricao, String nomeBeneficio) {}
 }

@@ -28,7 +28,9 @@ interface Resgate {
   beneficioId: string
   pontosDebitados: number
   data: string
+  horario?: string        
   descricao?: string
+  nomeBeneficio?: string  
 }
 
 interface Props {
@@ -165,7 +167,7 @@ export default function FidelidadePage({ cliente }: Props) {
 
   type LinhaExtrato =
     | { tipo: 'entrada'; data: string; pts: number; descricao: string; status: string }
-    | { tipo: 'saida'; data: string; pts: number; descricao: string }
+    | { tipo: 'saida'; data: string; pts: number; descricao: string; horario?: string; nomeBeneficio?: string }
 
   const linhasExtrato: LinhaExtrato[] = [
     ...lancamentos.map(l => ({
@@ -180,6 +182,8 @@ export default function FidelidadePage({ cliente }: Props) {
       data: r.data,
       pts: r.pontosDebitados,
       descricao: r.descricao ?? 'Pontos usados em resgate',
+      horario: r.horario,           
+      nomeBeneficio: r.nomeBeneficio, 
     })),
   ].sort((a, b) => {
     const dataDiff = b.data.localeCompare(a.data)
@@ -297,6 +301,9 @@ export default function FidelidadePage({ cliente }: Props) {
                 const { titulo, detalhes } = parsearDescricao(l.descricao)
                 const isFirst = i === 0
                 const isLast = i === linhasExtrato.length - 1
+                const ehSaida = l.tipo === 'saida'
+                const saida = ehSaida ? (l as Extract<LinhaExtrato, { tipo: 'saida' }>) : null
+
                 return (
                   <div key={i} style={{
                     background: 'white', padding: '14px 16px',
@@ -308,15 +315,32 @@ export default function FidelidadePage({ cliente }: Props) {
                     <div>
                       <div style={{ fontWeight: 500, fontSize: 14, color: '#1a1a2e' }}>{titulo}</div>
                       <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 3 }}>
+                        {/* Data */}
                         {formatarData(l.data)}
-                        {detalhes && <span style={{ marginLeft: 6, color: '#6b7280' }}>· {detalhes}</span>}
-                        {l.tipo === 'entrada' && (l as any).status === 'EXPIRADO' && (
+
+                        {/* Horário — só exibe se não for 00:00 (resgates antigos sem hora real) */}
+                        {saida?.horario && saida.horario !== '00:00' && (
+                          <span style={{ marginLeft: 6 }}>· {saida.horario}</span>
+                        )}
+
+                        {/* Nome do produto/benefício — cinza como os demais detalhes */}
+                        {saida?.nomeBeneficio && (
+                          <span style={{ marginLeft: 6 }}>· {saida.nomeBeneficio}</span>
+                        )}
+
+                        {/* Detalhes de compras (sala, horário da sessão) */}
+                        {!ehSaida && detalhes && (
+                          <span style={{ marginLeft: 6, color: '#6b7280' }}>· {detalhes}</span>
+                        )}
+
+                        {/* Badge expirado */}
+                        {!ehSaida && (l as any).status === 'EXPIRADO' && (
                           <span style={{ marginLeft: 8, color: '#ef4444', fontWeight: 600 }}>· Expirado</span>
                         )}
                       </div>
                     </div>
-                    <span style={{ fontWeight: 700, fontSize: 15, color: l.tipo === 'entrada' ? '#16a34a' : '#ef4444' }}>
-                      {l.tipo === 'entrada' ? '+' : '-'}{l.pts} pts
+                    <span style={{ fontWeight: 700, fontSize: 15, color: ehSaida ? '#ef4444' : '#16a34a' }}>
+                      {ehSaida ? '-' : '+'}{l.pts} pts
                     </span>
                   </div>
                 )
@@ -434,3 +458,4 @@ export default function FidelidadePage({ cliente }: Props) {
     </div>
   )
 }
+

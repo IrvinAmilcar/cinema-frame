@@ -2,6 +2,7 @@ package br.com.cinema.frame.domain.portal.fidelidade;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.MonthDay;
 import java.util.List;
 import java.util.UUID;
@@ -89,7 +90,9 @@ public class FidelidadeService {
         if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
 
         PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
-                .orElseThrow(() -> new IllegalStateException("Cliente não possui conta de fidelidade"));
+                .orElse(null);
+
+        if (pontos == null) return;
 
         pontos.expirarPontosVencidos(hoje);
         int saldo = pontos.getSaldoAtivo();
@@ -104,7 +107,7 @@ public class FidelidadeService {
         if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
 
         PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
-                .orElseThrow(() -> new IllegalStateException("Cliente não possui conta de fidelidade"));
+                .orElse(new PontosCliente(clienteId));
 
         pontos.expirarPontosVencidos(hoje);
         fidelidadeRepository.salvar(pontos);
@@ -113,8 +116,10 @@ public class FidelidadeService {
 
     public List<LancamentoPontos> consultarExtrato(UUID clienteId) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
+
         PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
-                .orElseThrow(() -> new IllegalStateException("Cliente não possui conta de fidelidade"));
+                .orElse(new PontosCliente(clienteId));
+
         return pontos.getLancamentos();
     }
 
@@ -122,7 +127,7 @@ public class FidelidadeService {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
 
         PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
-                .orElseThrow(() -> new IllegalStateException("Cliente não possui conta de fidelidade"));
+                .orElse(new PontosCliente(clienteId));
 
         pontos.expirarPontosVencidos(hoje);
         fidelidadeRepository.salvar(pontos);
@@ -165,9 +170,13 @@ public class FidelidadeService {
 
         pontos.debitarPontos(beneficio.getPontosNecessarios(), beneficioId, hoje);
         fidelidadeRepository.salvar(pontos);
-        resgateRepository.salvar(clienteId, new RegistroResgate(beneficioId, beneficio.getPontosNecessarios(), hoje));
+        resgateRepository.salvar(clienteId, new RegistroResgate(
+            beneficioId,
+            beneficio.getPontosNecessarios(),
+            LocalDateTime.now(),
+            beneficio.getNome()
+        ));
     }
-
 
     public String resgatarProdutoBomboniere(UUID clienteId, UUID produtoId, LocalDate hoje) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
@@ -194,8 +203,12 @@ public class FidelidadeService {
 
         String voucher = "VCH-FIDELIDADE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
-        resgateRepository.salvar(clienteId, new RegistroResgate(produtoId, pontosNecessarios, hoje));
-
+        resgateRepository.salvar(clienteId, new RegistroResgate(
+            produtoId,
+            pontosNecessarios,
+            LocalDateTime.now(),
+            produto.getNome()
+        ));
         return voucher;
     }
 

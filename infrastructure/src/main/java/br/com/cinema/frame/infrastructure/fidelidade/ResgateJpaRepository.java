@@ -12,7 +12,7 @@ public interface ResgateJpaRepository extends JpaRepository<ResgateJpa, UUID> {
     List<ResgateJpa> findByClienteId(UUID clienteId);
 
     @Query("SELECT r FROM ResgateJpa r WHERE r.clienteId = :clienteId " +
-           "AND FUNCTION('MONTH', r.data) = :mes AND FUNCTION('YEAR', r.data) = :ano")
+           "AND FUNCTION('MONTH', r.dataHora) = :mes AND FUNCTION('YEAR', r.dataHora) = :ano")
     List<ResgateJpa> findByClienteIdAndMesAno(
             @Param("clienteId") UUID clienteId,
             @Param("mes") int mes,
