@@ -10,7 +10,7 @@ import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoDeCompra
 import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
 import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicaoRepository;
 import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
-import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeService;
+import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeServiceInterface;
 import br.com.cinema.frame.domain.portal.pedido.PedidoRepository;
 import br.com.cinema.frame.domain.portal.pedido.PedidoService;
 import br.com.cinema.frame.domain.portal.programacao.ProgramacaoService;
@@ -57,7 +57,7 @@ public class PedidoConfig {
                                 BombonieresService bombonieresService,
                                 ReservaService reservaService,
                                 IngressoRepository ingressoRepository,
-                                FidelidadeService fidelidadeService,
+                                FidelidadeServiceInterface fidelidadeService,
                                 HistoricoDeComprasRepository historicoRepository,
                                 ClassificacaoDeCompraService classificacaoDeCompraService) {
         return new PedidoService(pedidoRepository, gradeRepository, bombonieresService,

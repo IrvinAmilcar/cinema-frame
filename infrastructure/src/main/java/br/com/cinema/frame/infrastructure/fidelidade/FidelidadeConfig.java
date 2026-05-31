@@ -8,19 +8,27 @@ import br.com.cinema.frame.domain.portal.cliente.ClienteRepository;
 import br.com.cinema.frame.domain.portal.fidelidade.BeneficioRepository;
 import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeRepository;
 import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeService;
+import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeServiceInterface;
+import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeServiceProxy;
 import br.com.cinema.frame.domain.portal.fidelidade.RegistroResgateRepository;
 
 @Configuration
 public class FidelidadeConfig {
 
     @Bean
-    public FidelidadeService fidelidadeService(
+    public FidelidadeServiceInterface fidelidadeService(
             FidelidadeRepository fidelidadeRepository,
             BeneficioRepository beneficioRepository,
             ClienteRepository clienteRepository,
             RegistroResgateRepository resgateRepository,
             BombonieresService bombonieresService) {
-        return new FidelidadeService(fidelidadeRepository, beneficioRepository,
+
+        // Serviço real — contém toda a lógica de negócio
+        FidelidadeService real = new FidelidadeService(
+                fidelidadeRepository, beneficioRepository,
                 clienteRepository, resgateRepository, bombonieresService);
+
+        // Proxy envolve o real — intercepta chamadas e garante conta antes de delegar
+        return new FidelidadeServiceProxy(real, clienteRepository, fidelidadeRepository);
     }
 }

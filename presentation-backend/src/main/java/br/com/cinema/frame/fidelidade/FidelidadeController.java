@@ -18,9 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
 import br.com.cinema.frame.domain.portal.fidelidade.Beneficio;
-import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeService;
+import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeServiceInterface;
 import br.com.cinema.frame.domain.portal.fidelidade.LancamentoPontos;
 import br.com.cinema.frame.domain.portal.fidelidade.RegistroResgate;
+import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 
 @RestController
 @RequestMapping("/api/fidelidade")
@@ -29,9 +30,9 @@ public class FidelidadeController {
     private static final UUID MARCADOR_COMPRA = new UUID(0L, 0L);
     private static final DateTimeFormatter FMT_HORA = DateTimeFormatter.ofPattern("HH:mm");
 
-    private final FidelidadeService fidelidadeService;
+    private final FidelidadeServiceInterface fidelidadeService;
 
-    public FidelidadeController(FidelidadeService fidelidadeService) {
+    public FidelidadeController(FidelidadeServiceInterface fidelidadeService) {
         this.fidelidadeService = fidelidadeService;
     }
 

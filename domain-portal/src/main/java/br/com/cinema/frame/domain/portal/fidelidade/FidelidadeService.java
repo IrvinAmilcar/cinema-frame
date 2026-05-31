@@ -11,7 +11,7 @@ import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.portal.cliente.ClienteRepository;
 import br.com.cinema.frame.domain.shared.cliente.ClienteId;
 
-public class FidelidadeService {
+public class FidelidadeService implements FidelidadeServiceInterface {
 
     private static final int PONTOS_POR_REAL = 1;
 
@@ -44,16 +44,19 @@ public class FidelidadeService {
         this.bombonieresService = bombonieresService;
     }
 
+    @Override
     public boolean acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje) {
         return acumularPontos(clienteId, valorGasto, hoje, null, null, 0);
     }
 
+    @Override
     public boolean acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje, String tituloFilme) {
         return acumularPontos(clienteId, valorGasto, hoje, tituloFilme, null, 0);
     }
 
+    @Override
     public boolean acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje,
-                                String tituloFilme, String horario, int salaNumero) {
+                                   String tituloFilme, String horario, int salaNumero) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         if (valorGasto <= 0) throw new IllegalArgumentException("Valor gasto deve ser positivo");
         if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
@@ -85,13 +88,13 @@ public class FidelidadeService {
         return acumulou;
     }
 
+    @Override
     public void usarPontosNaCompra(UUID clienteId, LocalDate hoje) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
 
         PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
                 .orElse(null);
-
         if (pontos == null) return;
 
         pontos.expirarPontosVencidos(hoje);
@@ -102,6 +105,7 @@ public class FidelidadeService {
         fidelidadeRepository.salvar(pontos);
     }
 
+    @Override
     public int consultarSaldo(UUID clienteId, LocalDate hoje) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
@@ -114,6 +118,7 @@ public class FidelidadeService {
         return pontos.getSaldoAtivo();
     }
 
+    @Override
     public List<LancamentoPontos> consultarExtrato(UUID clienteId) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
 
@@ -123,6 +128,7 @@ public class FidelidadeService {
         return pontos.getLancamentos();
     }
 
+    @Override
     public List<Beneficio> verificarBeneficios(UUID clienteId, LocalDate hoje) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
 
@@ -139,6 +145,7 @@ public class FidelidadeService {
                 .toList();
     }
 
+    @Override
     public void resgatarBeneficio(UUID clienteId, UUID beneficioId, LocalDate hoje) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         if (beneficioId == null) throw new IllegalArgumentException("BeneficioId é obrigatório");
@@ -171,13 +178,11 @@ public class FidelidadeService {
         pontos.debitarPontos(beneficio.getPontosNecessarios(), beneficioId, hoje);
         fidelidadeRepository.salvar(pontos);
         resgateRepository.salvar(clienteId, new RegistroResgate(
-            beneficioId,
-            beneficio.getPontosNecessarios(),
-            LocalDateTime.now(),
-            beneficio.getNome()
-        ));
+                beneficioId, beneficio.getPontosNecessarios(),
+                LocalDateTime.now(), beneficio.getNome()));
     }
 
+    @Override
     public String resgatarProdutoBomboniere(UUID clienteId, UUID produtoId, LocalDate hoje) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         if (produtoId == null) throw new IllegalArgumentException("ProdutoId é obrigatório");
@@ -204,14 +209,12 @@ public class FidelidadeService {
         String voucher = "VCH-FIDELIDADE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         resgateRepository.salvar(clienteId, new RegistroResgate(
-            produtoId,
-            pontosNecessarios,
-            LocalDateTime.now(),
-            produto.getNome()
-        ));
+                produtoId, pontosNecessarios,
+                LocalDateTime.now(), produto.getNome()));
         return voucher;
     }
 
+    @Override
     public List<RegistroResgate> consultarHistoricoResgates(UUID clienteId) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         return resgateRepository.buscarPorCliente(clienteId);

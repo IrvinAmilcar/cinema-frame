@@ -1,5 +1,9 @@
 package br.com.cinema.frame.domain.portal.pedido;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoDeCompraService;
@@ -7,14 +11,10 @@ import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicaoRepository;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.IngressoRepository;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
-import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeService;
+import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeServiceInterface;
 import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeCompras;
 import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeComprasRepository;
 import br.com.cinema.frame.domain.portal.reserva.ReservaService;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class PedidoService {
 
@@ -22,7 +22,7 @@ public class PedidoService {
     private final GradeDeExibicaoRepository gradeRepository;
     private final BombonieresService bombonieresService;
     private final IngressoRepository ingressoRepository;
-    private final FidelidadeService fidelidadeService;
+    private final FidelidadeServiceInterface fidelidadeService;
     private final HistoricoDeComprasRepository historicoRepository;
     private final ClassificacaoDeCompraService classificacaoService;
     private final ReservaService reservaService;
@@ -37,7 +37,7 @@ public class PedidoService {
                          GradeDeExibicaoRepository gradeRepository,
                          BombonieresService bombonieresService,
                          IngressoRepository ingressoRepository,
-                         FidelidadeService fidelidadeService,
+                         FidelidadeServiceInterface fidelidadeService,
                          HistoricoDeComprasRepository historicoRepository,
                          ClassificacaoDeCompraService classificacaoService,
                          ReservaService reservaService) {
