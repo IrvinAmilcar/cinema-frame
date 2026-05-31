@@ -6,6 +6,11 @@ import java.util.UUID;
 
 import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 
+/**
+ * Contrato do serviço de fidelidade.
+ * Permite o padrão Proxy: FidelidadeService implementa a lógica real,
+ * FidelidadeServiceProxy intercepta as chamadas antes de delegar.
+ */
 public interface FidelidadeServiceInterface {
 
     boolean acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje);
@@ -28,6 +33,8 @@ public interface FidelidadeServiceInterface {
     String resgatarProdutoBomboniere(UUID clienteId, UUID produtoId, LocalDate hoje);
 
     List<RegistroResgate> consultarHistoricoResgates(UUID clienteId);
+
+    List<Beneficio> listarTodosBeneficios(UUID clienteId, LocalDate hoje);
 
     BombonieresService getBombonieresService();
 }

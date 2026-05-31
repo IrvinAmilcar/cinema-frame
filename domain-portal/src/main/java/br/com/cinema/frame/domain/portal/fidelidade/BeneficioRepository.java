@@ -7,4 +7,5 @@ import java.util.UUID;
 public interface BeneficioRepository {
     Optional<Beneficio> buscarPorId(UUID id);
     List<Beneficio> listarTodos();
+    void salvar(Beneficio beneficio);
 }

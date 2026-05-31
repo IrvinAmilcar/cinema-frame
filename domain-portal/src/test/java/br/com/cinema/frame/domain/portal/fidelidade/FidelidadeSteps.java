@@ -90,10 +90,10 @@ public class FidelidadeSteps {
         when(beneficioRepository.listarTodos()).thenAnswer(inv -> new ArrayList<>(beneficiosPorId.values()));
     }
 
-    @Dado("que existe um benefício {string} do tipo DESCONTO_PERCENTUAL exigindo {int} pontos disponível apenas às segundas-feiras")
-    public void queExisteBeneficioSegunda(String nome, int pontos) {
+    @Dado("que existe um benefício {string} do tipo COMBO_PIPOCA_REFRIGERANTE exigindo {int} pontos disponível apenas às segundas-feiras")
+    public void queExisteBeneficioComboSegunda(String nome, int pontos) {
         UUID id = UUID.nameUUIDFromBytes(nome.getBytes());
-        Beneficio b = new Beneficio(id, nome, TipoBeneficio.DESCONTO_PERCENTUAL, pontos, true, Set.of(), Set.of(DayOfWeek.MONDAY));
+        Beneficio b = new Beneficio(id, nome, TipoBeneficio.COMBO_PIPOCA_REFRIGERANTE, pontos, true, Set.of(), Set.of(DayOfWeek.MONDAY));
         beneficiosPorNome.put(nome, b);
         beneficiosPorId.put(id, b);
         when(beneficioRepository.buscarPorId(id)).thenReturn(Optional.of(b));
@@ -111,10 +111,10 @@ public class FidelidadeSteps {
         when(beneficioRepository.listarTodos()).thenAnswer(inv -> new ArrayList<>(beneficiosPorId.values()));
     }
 
-    @Dado("que existe um benefício {string} do tipo UPGRADE_ASSENTO exigindo {int} pontos combinável disponível todos os dias")
-    public void queExisteBeneficioUpgradeCombinavel(String nome, int pontos) {
+    @Dado("que existe um benefício {string} do tipo COMBO_BALA_PIPOCA exigindo {int} pontos combinável disponível todos os dias")
+    public void queExisteBeneficioComboBalaCombinavel(String nome, int pontos) {
         UUID id = UUID.nameUUIDFromBytes(nome.getBytes());
-        Beneficio b = new Beneficio(id, nome, TipoBeneficio.UPGRADE_ASSENTO, pontos, true, Set.of(), Set.of());
+        Beneficio b = new Beneficio(id, nome, TipoBeneficio.COMBO_BALA_PIPOCA, pontos, true, Set.of(), Set.of());
         beneficiosPorNome.put(nome, b);
         beneficiosPorId.put(id, b);
         when(beneficioRepository.buscarPorId(id)).thenReturn(Optional.of(b));

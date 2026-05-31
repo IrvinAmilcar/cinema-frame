@@ -21,7 +21,6 @@ import br.com.cinema.frame.domain.portal.fidelidade.Beneficio;
 import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeServiceInterface;
 import br.com.cinema.frame.domain.portal.fidelidade.LancamentoPontos;
 import br.com.cinema.frame.domain.portal.fidelidade.RegistroResgate;
-import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 
 @RestController
 @RequestMapping("/api/fidelidade")
@@ -74,7 +73,7 @@ public class FidelidadeController {
             @PathVariable UUID clienteId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
         LocalDate hoje = data != null ? data : LocalDate.now();
-        List<Beneficio> beneficios = fidelidadeService.verificarBeneficios(clienteId, hoje);
+        List<Beneficio> beneficios = fidelidadeService.listarTodosBeneficios(clienteId, hoje);
         List<BeneficioResponse> response = beneficios.stream()
                 .map(b -> new BeneficioResponse(b.getId(), b.getNome(), b.getTipo().name(),
                         b.getPontosNecessarios(), null, null))
@@ -105,7 +104,7 @@ public class FidelidadeController {
                     saldo >= pontosNecessarios));
         }
 
-        List<Beneficio> beneficios = fidelidadeService.verificarBeneficios(clienteId, hoje);
+        List<Beneficio> beneficios = fidelidadeService.listarTodosBeneficios(clienteId, hoje);
         for (Beneficio b : beneficios) {
             recompensas.add(new RecompensaResponse(
                     b.getId(), b.getNome(), b.getTipo().name(),
@@ -141,12 +140,15 @@ public class FidelidadeController {
         List<RegistroResgate> resgates = fidelidadeService.consultarHistoricoResgates(clienteId);
         List<ResgateResponse> response = resgates.stream()
                 .map(r -> {
+                    // Horário formatado (HH:mm) — disponível pois agora dataHora é LocalDateTime
                     String horario = r.getDataHora().format(FMT_HORA);
 
+                    // Descrição: para resgates antigos sem nome, usa fallback genérico
                     String descricao = MARCADOR_COMPRA.equals(r.getBeneficioId())
                             ? "Pontos usados na compra"
                             : "Resgate de recompensa";
 
+                    // Nome do produto/benefício resgatado
                     String nomeBeneficio = MARCADOR_COMPRA.equals(r.getBeneficioId())
                             ? null
                             : r.getNomeBeneficio();
@@ -154,10 +156,10 @@ public class FidelidadeController {
                     return new ResgateResponse(
                             r.getBeneficioId(),
                             r.getPontosDebitados(),
-                            r.getData().toString(),  
-                            horario,                 
+                            r.getData().toString(),   // data no formato yyyy-MM-dd (como antes)
+                            horario,                  // NOVO — "17:09"
                             descricao,
-                            nomeBeneficio            
+                            nomeBeneficio             // NOVO — "Ingresso Grátis" / "Pipoca Grande"
                     );
                 })
                 .toList();
@@ -171,6 +173,7 @@ public class FidelidadeController {
     record RecompensaResponse(UUID id, String nome, String tipo, int pontosNecessarios,
                                String categoria, Double preco, boolean disponivel) {}
 
+    /** horario e nomeBeneficio são os campos novos */
     record ResgateResponse(UUID beneficioId, int pontosDebitados, String data,
                             String horario, String descricao, String nomeBeneficio) {}
 }

@@ -11,6 +11,11 @@ import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.portal.cliente.ClienteRepository;
 import br.com.cinema.frame.domain.shared.cliente.ClienteId;
 
+/**
+ * Serviço real de fidelidade — implementa FidelidadeServiceInterface.
+ * É instanciado pelo FidelidadeConfig e envolvido pelo FidelidadeServiceProxy.
+ * Não é exposto diretamente como bean Spring — o proxy é que é injetado.
+ */
 public class FidelidadeService implements FidelidadeServiceInterface {
 
     private static final int PONTOS_POR_REAL = 1;
@@ -128,6 +133,16 @@ public class FidelidadeService implements FidelidadeServiceInterface {
         return pontos.getLancamentos();
     }
 
+
+    @Override
+    public List<Beneficio> listarTodosBeneficios(UUID clienteId, LocalDate hoje) {
+        // Retorna todos os benefícios disponíveis no dia, independente do saldo
+        // O frontend usa disponivel=true/false para habilitar/desabilitar o botão
+        return beneficioRepository.listarTodos().stream()
+                .filter(b -> b.disponivelNoDia(hoje.getDayOfWeek()))
+                .toList();
+    }
+
     @Override
     public List<Beneficio> verificarBeneficios(UUID clienteId, LocalDate hoje) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
@@ -203,7 +218,7 @@ public class FidelidadeService implements FidelidadeServiceInterface {
             throw new IllegalStateException("Pontos insuficientes. Necessário: " + pontosNecessarios
                     + " pts, disponível: " + pontos.getSaldoAtivo() + " pts");
 
-        pontos.debitarPontosSemHistorico(pontosNecessarios);
+        pontos.debitarPontosDeCompra(pontosNecessarios, hoje);
         fidelidadeRepository.salvar(pontos);
 
         String voucher = "VCH-FIDELIDADE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();

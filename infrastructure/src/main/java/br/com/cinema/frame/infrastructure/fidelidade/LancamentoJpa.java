@@ -45,6 +45,19 @@ public class LancamentoJpa {
         return jpa;
     }
 
+    /** Atualiza campos mutáveis a partir do domínio (saldo e expirado podem mudar) */
+    public void atualizarDe(LancamentoPontos domain) {
+        this.saldo = domain.getSaldo();
+        this.expirado = domain.isExpirado();
+    }
+
+    /** Chave de negócio para identificar o mesmo lançamento sem UUID */
+    public boolean correspondeA(LancamentoPontos domain) {
+        return this.pontosOriginais == domain.getPontosOriginais()
+                && this.dataCriacao.equals(domain.getDataCriacao())
+                && this.descricao != null && this.descricao.equals(domain.getDescricao());
+    }
+
     public LancamentoPontos toDomain() {
         LancamentoPontos l = new LancamentoPontos(pontosOriginais, validade, dataCriacao,
                 descricao != null ? descricao : "Compra de ingresso");
@@ -54,6 +67,7 @@ public class LancamentoJpa {
         return l;
     }
 
+    public UUID getId() { return id; }
     public int getSaldo() { return saldo; }
     public int getPontosOriginais() { return pontosOriginais; }
     public LocalDate getValidade() { return validade; }

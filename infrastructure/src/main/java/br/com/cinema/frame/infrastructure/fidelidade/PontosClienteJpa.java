@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import br.com.cinema.frame.domain.portal.fidelidade.LancamentoPontos;
 import br.com.cinema.frame.domain.portal.fidelidade.PontosCliente;
-import br.com.cinema.frame.domain.portal.fidelidade.RegistroResgate;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -26,40 +25,51 @@ public class PontosClienteJpa {
     @OneToMany(mappedBy = "pontosCliente", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<LancamentoJpa> lancamentos = new ArrayList<>();
 
-    @OneToMany(mappedBy = "pontosCliente", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<ResgateJpa> historicoResgates = new ArrayList<>();
-
     public PontosClienteJpa() {}
 
-    public static PontosClienteJpa fromDomain(PontosCliente domain) {
-        PontosClienteJpa jpa = new PontosClienteJpa();
-        jpa.clienteId = domain.getClienteId();
-        jpa.saldoAtivo = domain.getSaldoAtivo();
+    /**
+     * Atualiza este JPA a partir do domínio fazendo MERGE dos lançamentos —
+     * reutiliza objetos já gerenciados pelo Hibernate para evitar conflito de contexto.
+     */
+    public void atualizarDe(PontosCliente domain) {
+        this.clienteId = domain.getClienteId();
+        this.saldoAtivo = domain.getSaldoAtivo();
 
-        for (LancamentoPontos l : domain.getLancamentos()) {
-            jpa.lancamentos.add(LancamentoJpa.fromDomain(l, jpa));
-        }
-        for (RegistroResgate r : domain.getHistoricoResgates()) {
-            jpa.historicoResgates.add(ResgateJpa.fromDomainComPontos(r, jpa));
+        List<LancamentoPontos> domainLancamentos = domain.getLancamentos();
+        List<LancamentoJpa> atualizados = new ArrayList<>();
+
+        for (LancamentoPontos dl : domainLancamentos) {
+            // Tenta encontrar o JPA correspondente já gerenciado
+            LancamentoJpa existente = lancamentos.stream()
+                    .filter(jpa -> jpa.correspondeA(dl))
+                    .findFirst()
+                    .orElse(null);
+
+            if (existente != null) {
+                existente.atualizarDe(dl);
+                atualizados.add(existente);
+            } else {
+                atualizados.add(LancamentoJpa.fromDomain(dl, this));
+            }
         }
 
-        return jpa;
+        // Remove os que não estão mais no domínio e adiciona os novos
+        lancamentos.retainAll(atualizados);
+        for (LancamentoJpa l : atualizados) {
+            if (!lancamentos.contains(l)) {
+                lancamentos.add(l);
+            }
+        }
     }
 
     public PontosCliente toDomain() {
         List<LancamentoPontos> domainLancamentos = lancamentos.stream()
                 .map(LancamentoJpa::toDomain)
                 .toList();
-
-        List<RegistroResgate> domainResgates = historicoResgates.stream()
-                .map(ResgateJpa::toDomain)
-                .toList();
-
-        return PontosCliente.reconstituir(clienteId, saldoAtivo, domainLancamentos, domainResgates);
+        return PontosCliente.reconstituir(clienteId, saldoAtivo, domainLancamentos, List.of());
     }
 
     public UUID getClienteId() { return clienteId; }
     public int getSaldoAtivo() { return saldoAtivo; }
     public List<LancamentoJpa> getLancamentos() { return lancamentos; }
-    public List<ResgateJpa> getHistoricoResgates() { return historicoResgates; }
 }

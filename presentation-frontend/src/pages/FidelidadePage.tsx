@@ -46,8 +46,9 @@ interface Props {
 
 const TIPO_EMOJI: Record<string, string> = {
   INGRESSO_GRATIS: '🎟️',
-  DESCONTO_PERCENTUAL: '💰',
-  UPGRADE_ASSENTO: '⬆️',
+  DOIS_INGRESSOS_GRATIS: '🎟️',
+  COMBO_PIPOCA_REFRIGERANTE: '🍿',
+  COMBO_BALA_PIPOCA: '🍬',
   PIPOCA_GRATIS: '🍿',
   PRODUTO_BOMBONIERE: '🛍️',
   COMBO: '🍿',
@@ -140,31 +141,44 @@ export default function FidelidadePage({ cliente }: Props) {
     }
   }, [cliente?.clienteId])
 
-  const resgatarBeneficio = async (id: string) => {
+  const resgatarBeneficio = async (id: string, nomeBeneficio: string) => {
     if (!cliente) return
-    const hoje = new Date().toISOString().split('T')[0]
+    const hoje = new Date().toISOString().split("T")[0]
     try {
       const res = await fetch(
         `/api/fidelidade/${cliente.clienteId}/resgatar/${id}?data=${hoje}`,
-        { method: 'POST' }
+        { method: "POST" }
       )
       if (res.ok) {
-        mostrarMsg('Recompensa resgatada com sucesso!', 'ok')
+        const agora = new Date()
+        const codigo = `VCH-BENEFICIO-${id.substring(0, 8).toUpperCase()}-${Date.now()}`
+        const novoVoucher: VoucherSalvo = {
+          nome: nomeBeneficio,
+          codigo,
+          data: agora.toISOString().split("T")[0],
+          horario: agora.toTimeString().slice(0, 5),
+        }
+        salvarVoucher(cliente.clienteId, novoVoucher)
+        setVouchers(carregarVouchers(cliente.clienteId))
+        mostrarMsg(
+          `Recompensa resgatada! Vá para a aba de Produtos Resgatados para acessar o QR Code.`,
+          "ok"
+        )
         carregar()
       } else {
         const err = await res.json().catch(() => ({}))
-        mostrarMsg(err.message || 'Não foi possível resgatar.', 'erro')
+        mostrarMsg(err.message || "Não foi possível resgatar.", "erro")
       }
-    } catch { mostrarMsg('Erro de conexão.', 'erro') }
+    } catch { mostrarMsg("Erro de conexão.", "erro") }
   }
 
   const resgatarProduto = async (recompensa: Recompensa) => {
     if (!cliente) return
-    const hoje = new Date().toISOString().split('T')[0]
+    const hoje = new Date().toISOString().split("T")[0]
     try {
       const res = await fetch(
         `/api/fidelidade/${cliente.clienteId}/resgatar-produto/${recompensa.id}?data=${hoje}`,
-        { method: 'POST' }
+        { method: "POST" }
       )
       if (res.ok) {
         const data = await res.json()
@@ -172,26 +186,26 @@ export default function FidelidadePage({ cliente }: Props) {
         const novoVoucher: VoucherSalvo = {
           nome: recompensa.nome,
           codigo: data.voucher,
-          data: agora.toISOString().split('T')[0],
+          data: agora.toISOString().split("T")[0],
           horario: agora.toTimeString().slice(0, 5),
         }
         salvarVoucher(cliente.clienteId, novoVoucher)
         setVouchers(carregarVouchers(cliente.clienteId))
         mostrarMsg(
           `Recompensa resgatada! Vá para a aba de Produtos Resgatados para acessar o QR Code.`,
-          'ok'
+          "ok"
         )
         carregar()
       } else {
         const err = await res.json().catch(() => ({}))
-        mostrarMsg(err.message || 'Não foi possível resgatar.', 'erro')
+        mostrarMsg(err.message || "Não foi possível resgatar.", "erro")
       }
-    } catch { mostrarMsg('Erro de conexão.', 'erro') }
+    } catch { mostrarMsg("Erro de conexão.", "erro") }
   }
 
   const resgatar = (r: Recompensa) => {
-    if (r.tipo === 'PRODUTO_BOMBONIERE') resgatarProduto(r)
-    else resgatarBeneficio(r.id)
+    if (r.tipo === "PRODUTO_BOMBONIERE") resgatarProduto(r)
+    else resgatarBeneficio(r.id, r.nome)
   }
 
   if (!cliente) {
@@ -378,7 +392,7 @@ export default function FidelidadePage({ cliente }: Props) {
             padding: '12px 16px', marginBottom: 24, fontSize: 13, color: '#92400e',
           }}>
             <strong>Seus pontos: {saldo ?? 0} pts</strong>
-            {' · '}100 pontos = R$ 1,00 · Produtos da bomboniere custam metade do preço em pontos.
+            {' · '}Produtos da bomboniere custam metade do preço em pontos.
           </div>
 
           {produtosBomboniere.length > 0 && (
@@ -570,5 +584,6 @@ export default function FidelidadePage({ cliente }: Props) {
     </div>
   )
 }
+
 
 

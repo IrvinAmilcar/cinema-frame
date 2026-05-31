@@ -29,4 +29,9 @@ public class BeneficioRepositoryAdapter implements BeneficioRepository {
                 .map(BeneficioJpa::toDomain)
                 .toList();
     }
+
+    @Override
+    public void salvar(Beneficio beneficio) {
+        jpa.save(BeneficioJpa.fromDomain(beneficio));
+    }
 }

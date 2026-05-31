@@ -7,7 +7,7 @@ Funcionalidade: Sistema de Fidelidade e Benefícios
   Contexto:
     Dado que existe um cliente com id "cliente-001"
     E que existe um benefício "Ingresso Grátis" do tipo INGRESSO_GRATIS exigindo 100 pontos disponível todos os dias
-    E que existe um benefício "Desconto Segunda" do tipo DESCONTO_PERCENTUAL exigindo 50 pontos disponível apenas às segundas-feiras
+    E que existe um benefício "Combo Segunda" do tipo COMBO_PIPOCA_REFRIGERANTE exigindo 50 pontos disponível apenas às segundas-feiras
 
   Cenário: Acumular pontos após uma compra
     Quando o cliente "cliente-001" realiza uma compra de R$ 50,00 em "2025-06-01"
@@ -26,7 +26,7 @@ Funcionalidade: Sistema de Fidelidade e Benefícios
   Cenário: Benefício com restrição de dia não aparece no dia errado
     Dado que o cliente "cliente-001" possui 100 pontos acumulados em "2025-06-03" com validade "2026-06-03"
     Quando o cliente "cliente-001" consulta os benefícios disponíveis em "2025-06-03"
-    Então o benefício "Desconto Segunda" não deve estar na lista de disponíveis
+    Então o benefício "Combo Segunda" não deve estar na lista de disponíveis
 
   Cenário: Resgatar benefício com saldo suficiente
     Dado que o cliente "cliente-001" possui 100 pontos acumulados em "2025-06-01" com validade "2026-06-01"
@@ -94,10 +94,10 @@ Funcionalidade: Sistema de Fidelidade e Benefícios
     Então deve ocorrer o erro "Benefício incompatível com"
 
   Cenário: Permitir resgate de benefício compatível no mesmo dia
-    Dado que existe um benefício "Upgrade Assento" do tipo UPGRADE_ASSENTO exigindo 40 pontos combinável disponível todos os dias
+    Dado que existe um benefício "Combo Bala Pipoca" do tipo COMBO_BALA_PIPOCA exigindo 40 pontos combinável disponível todos os dias
     E que o cliente "cliente-001" possui 200 pontos acumulados em "2025-06-01" com validade "2026-06-01"
     E que o cliente "cliente-001" já resgatou o benefício "Ingresso Grátis" em "2025-06-01"
-    Quando o cliente "cliente-001" resgata o benefício "Upgrade Assento" em "2025-06-01"
+    Quando o cliente "cliente-001" resgata o benefício "Combo Bala Pipoca" em "2025-06-01"
     Então o saldo de pontos do cliente "cliente-001" em "2025-06-01" deve ser 60
 
   Cenário: Aplicar multiplicador 1.5x para compras acima de R$100

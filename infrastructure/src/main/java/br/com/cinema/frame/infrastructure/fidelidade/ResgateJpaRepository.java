@@ -11,8 +11,10 @@ public interface ResgateJpaRepository extends JpaRepository<ResgateJpa, UUID> {
 
     List<ResgateJpa> findByClienteId(UUID clienteId);
 
+    // FUNCTION('MONTH',...) não funciona no PostgreSQL — usar EXTRACT
     @Query("SELECT r FROM ResgateJpa r WHERE r.clienteId = :clienteId " +
-           "AND FUNCTION('MONTH', r.dataHora) = :mes AND FUNCTION('YEAR', r.dataHora) = :ano")
+           "AND EXTRACT(MONTH FROM r.dataHora) = :mes " +
+           "AND EXTRACT(YEAR FROM r.dataHora) = :ano")
     List<ResgateJpa> findByClienteIdAndMesAno(
             @Param("clienteId") UUID clienteId,
             @Param("mes") int mes,
