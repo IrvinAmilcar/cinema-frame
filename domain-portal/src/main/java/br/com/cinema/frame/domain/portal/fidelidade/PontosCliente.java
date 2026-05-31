@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public class PontosCliente {
 
-    private static final int LIMITE_ACUMULO_MENSAL = 500;
+    private static final int LIMITE_ACUMULO_MENSAL = 10000;
     private static final double VALOR_BONUS_NIVEL1 = 100.0;
     private static final double VALOR_BONUS_NIVEL2 = 200.0;
     private static final double VALOR_BONUS_NIVEL3 = 500.0;
@@ -48,23 +48,23 @@ public class PontosCliente {
                 .sum();
     }
 
-    public void acumularPontos(int pontos, LocalDate validade, LocalDate hoje) {
-        acumularPontos(pontos, validade, hoje, "Compra de ingresso");
+    public boolean acumularPontos(int pontos, LocalDate validade, LocalDate hoje) {
+        return acumularPontos(pontos, validade, hoje, "Compra de ingresso");
     }
 
-    public void acumularPontos(int pontos, LocalDate validade, LocalDate hoje, String descricao) {
+    public boolean acumularPontos(int pontos, LocalDate validade, LocalDate hoje, String descricao) {
         if (pontos <= 0) throw new IllegalArgumentException("Pontos devem ser positivos");
         if (validade == null) throw new IllegalArgumentException("Validade é obrigatória");
         if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
 
         int jaAcumuladoNoMes = calcularPontosAcumuladosNoMes(hoje.getMonthValue(), hoje.getYear());
         int disponivelNoMes = LIMITE_ACUMULO_MENSAL - jaAcumuladoNoMes;
-        if (disponivelNoMes <= 0)
-            throw new IllegalStateException("Limite mensal de " + LIMITE_ACUMULO_MENSAL + " pontos atingido para este mês");
+        if (disponivelNoMes <= 0) return false; // limite atingido, não lança exceção
 
         int pontosAcumulaveis = Math.min(pontos, disponivelNoMes);
         lancamentos.add(new LancamentoPontos(pontosAcumulaveis, validade, hoje, descricao));
         saldoAtivo += pontosAcumulaveis;
+        return true;
     }
 
     public void expirarPontosVencidos(LocalDate hoje) {

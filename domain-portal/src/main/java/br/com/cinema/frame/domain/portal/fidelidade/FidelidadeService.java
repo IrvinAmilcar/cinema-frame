@@ -6,6 +6,7 @@ import java.time.MonthDay;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.portal.cliente.ClienteRepository;
 import br.com.cinema.frame.domain.shared.cliente.ClienteId;
 
@@ -17,11 +18,20 @@ public class FidelidadeService {
     private final BeneficioRepository beneficioRepository;
     private final ClienteRepository clienteRepository;
     private final RegistroResgateRepository resgateRepository;
+    private final BombonieresService bombonieresService;
 
     public FidelidadeService(FidelidadeRepository fidelidadeRepository,
                              BeneficioRepository beneficioRepository,
                              ClienteRepository clienteRepository,
                              RegistroResgateRepository resgateRepository) {
+        this(fidelidadeRepository, beneficioRepository, clienteRepository, resgateRepository, null);
+    }
+
+    public FidelidadeService(FidelidadeRepository fidelidadeRepository,
+                             BeneficioRepository beneficioRepository,
+                             ClienteRepository clienteRepository,
+                             RegistroResgateRepository resgateRepository,
+                             BombonieresService bombonieresService) {
         if (fidelidadeRepository == null) throw new IllegalArgumentException("FidelidadeRepository é obrigatório");
         if (beneficioRepository == null) throw new IllegalArgumentException("BeneficioRepository é obrigatório");
         if (clienteRepository == null) throw new IllegalArgumentException("ClienteRepository é obrigatório");
@@ -30,17 +40,18 @@ public class FidelidadeService {
         this.beneficioRepository = beneficioRepository;
         this.clienteRepository = clienteRepository;
         this.resgateRepository = resgateRepository;
+        this.bombonieresService = bombonieresService;
     }
 
-    public void acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje) {
-        acumularPontos(clienteId, valorGasto, hoje, null, null, 0);
+    public boolean acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje) {
+        return acumularPontos(clienteId, valorGasto, hoje, null, null, 0);
     }
 
-    public void acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje, String tituloFilme) {
-        acumularPontos(clienteId, valorGasto, hoje, tituloFilme, null, 0);
+    public boolean acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje, String tituloFilme) {
+        return acumularPontos(clienteId, valorGasto, hoje, tituloFilme, null, 0);
     }
 
-    public void acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje,
+    public boolean acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje,
                                 String tituloFilme, String horario, int salaNumero) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         if (valorGasto <= 0) throw new IllegalArgumentException("Valor gasto deve ser positivo");
@@ -68,8 +79,9 @@ public class FidelidadeService {
         }
 
         LocalDate validade = hoje.plusMonths(12);
-        pontos.acumularPontos(pontosComBonus, validade, hoje, descricao);
+        boolean acumulou = pontos.acumularPontos(pontosComBonus, validade, hoje, descricao);
         fidelidadeRepository.salvar(pontos);
+        return acumulou;
     }
 
     public void usarPontosNaCompra(UUID clienteId, LocalDate hoje) {
@@ -156,8 +168,43 @@ public class FidelidadeService {
         resgateRepository.salvar(clienteId, new RegistroResgate(beneficioId, beneficio.getPontosNecessarios(), hoje));
     }
 
+
+    public String resgatarProdutoBomboniere(UUID clienteId, UUID produtoId, LocalDate hoje) {
+        if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
+        if (produtoId == null) throw new IllegalArgumentException("ProdutoId é obrigatório");
+        if (hoje == null) throw new IllegalArgumentException("Data é obrigatória");
+
+        PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
+                .orElseThrow(() -> new IllegalStateException("Cliente não possui conta de fidelidade"));
+
+        var produto = bombonieresService.buscarProdutoPorId(produtoId);
+        if (!produto.isAtivo())
+            throw new IllegalStateException("Produto indisponível: " + produto.getNome());
+
+        int pontosNecessarios = (int) Math.ceil(produto.getPreco() / 2.0 * 100);
+
+        pontos.expirarPontosVencidos(hoje);
+
+        if (pontos.getSaldoAtivo() < pontosNecessarios)
+            throw new IllegalStateException("Pontos insuficientes. Necessário: " + pontosNecessarios
+                    + " pts, disponível: " + pontos.getSaldoAtivo() + " pts");
+
+        pontos.debitarPontosDeCompra(pontosNecessarios, hoje);
+        fidelidadeRepository.salvar(pontos);
+
+        String voucher = "VCH-FIDELIDADE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        resgateRepository.salvar(clienteId, new RegistroResgate(produtoId, pontosNecessarios, hoje));
+
+        return voucher;
+    }
+
     public List<RegistroResgate> consultarHistoricoResgates(UUID clienteId) {
         if (clienteId == null) throw new IllegalArgumentException("ClienteId é obrigatório");
         return resgateRepository.buscarPorCliente(clienteId);
+    }
+
+    public BombonieresService getBombonieresService() {
+        return bombonieresService;
     }
 }

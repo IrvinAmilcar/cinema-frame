@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 import type { ClienteLogado } from '../components/AuthModal'
 
 const COR = '#1565C0'
@@ -13,11 +14,14 @@ interface Lancamento {
   descricao?: string
 }
 
-interface Beneficio {
+interface Recompensa {
   id: string
   nome: string
   tipo: string
   pontosNecessarios: number
+  categoria?: string
+  preco?: number
+  disponivel: boolean
 }
 
 interface Resgate {
@@ -31,11 +35,23 @@ interface Props {
   cliente: ClienteLogado | null
 }
 
-const TIPO_LABEL: Record<string, { emoji: string; desc: string }> = {
-  INGRESSO_GRATIS:    { emoji: '🎟️', desc: 'Ingresso grátis na próxima compra' },
-  DESCONTO_PERCENTUAL:{ emoji: '💰', desc: 'Desconto percentual no ingresso' },
-  UPGRADE_ASSENTO:    { emoji: '⬆️', desc: 'Upgrade de assento sem custo' },
-  PIPOCA_GRATIS:      { emoji: '🍿', desc: 'Pipoca média grátis na bomboniere' },
+const TIPO_EMOJI: Record<string, string> = {
+  INGRESSO_GRATIS: '🎟️',
+  DESCONTO_PERCENTUAL: '💰',
+  UPGRADE_ASSENTO: '⬆️',
+  PIPOCA_GRATIS: '🍿',
+  PRODUTO_BOMBONIERE: '🛍️',
+  COMBO: '🍿',
+  BEBIDA: '🥤',
+  DOCES: '🍬',
+  SALGADOS: '🥨',
+}
+
+const CATEGORIA_EMOJI: Record<string, string> = {
+  COMBO: '🍿',
+  BEBIDA: '🥤',
+  DOCES: '🍬',
+  SALGADOS: '🥨',
 }
 
 function formatarData(iso: string): string {
@@ -52,25 +68,23 @@ function parsearDescricao(descricao: string): { titulo: string; detalhes: string
   const resto = descricao.slice(sepIdx + 3)
   const partes = resto.split(' · ')
   const filme = partes[0] ?? ''
-  const extras = partes.slice(1).join(' · ') 
-  return {
-    titulo: 'Compra de ingresso — ' + filme,
-    detalhes: extras,
-  }
+  const extras = partes.slice(1).join(' · ')
+  return { titulo: 'Compra de ingresso — ' + filme, detalhes: extras }
 }
 
 export default function FidelidadePage({ cliente }: Props) {
   const [saldo, setSaldo] = useState<number | null>(null)
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
-  const [beneficios, setBeneficios] = useState<Beneficio[]>([])
+  const [recompensas, setRecompensas] = useState<Recompensa[]>([])
   const [historico, setHistorico] = useState<Resgate[]>([])
   const [aba, setAba] = useState<'extrato' | 'recompensas'>('extrato')
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState<{ texto: string; tipo: 'ok' | 'erro' } | null>(null)
+  const [voucher, setVoucher] = useState<{ nome: string; codigo: string } | null>(null)
 
   const mostrarMsg = (texto: string, tipo: 'ok' | 'erro') => {
     setMsg({ texto, tipo })
-    setTimeout(() => setMsg(null), 4000)
+    setTimeout(() => setMsg(null), 5000)
   }
 
   const carregar = async () => {
@@ -78,15 +92,15 @@ export default function FidelidadePage({ cliente }: Props) {
     setLoading(true)
     const hoje = new Date().toISOString().split('T')[0]
     try {
-      const [rSaldo, rExt, rBen, rHist] = await Promise.all([
+      const [rSaldo, rExt, rRec, rHist] = await Promise.all([
         fetch(`/api/fidelidade/${cliente.clienteId}/saldo`),
         fetch(`/api/fidelidade/${cliente.clienteId}/extrato`),
-        fetch(`/api/fidelidade/${cliente.clienteId}/beneficios?data=${hoje}`),
+        fetch(`/api/fidelidade/${cliente.clienteId}/recompensas?data=${hoje}`),
         fetch(`/api/fidelidade/${cliente.clienteId}/historico`),
       ])
       if (rSaldo.ok) { const d = await rSaldo.json(); setSaldo(d.saldoAtivo) }
       if (rExt.ok) setLancamentos(await rExt.json())
-      if (rBen.ok) setBeneficios(await rBen.json())
+      if (rRec.ok) setRecompensas(await rRec.json())
       if (rHist.ok) setHistorico(await rHist.json())
     } catch {
       mostrarMsg('Erro ao carregar dados de fidelidade.', 'erro')
@@ -97,12 +111,12 @@ export default function FidelidadePage({ cliente }: Props) {
 
   useEffect(() => { carregar() }, [cliente?.clienteId])
 
-  const resgatar = async (beneficioId: string) => {
+  const resgatarBeneficio = async (id: string) => {
     if (!cliente) return
     const hoje = new Date().toISOString().split('T')[0]
     try {
       const res = await fetch(
-        `/api/fidelidade/${cliente.clienteId}/resgatar/${beneficioId}?data=${hoje}`,
+        `/api/fidelidade/${cliente.clienteId}/resgatar/${id}?data=${hoje}`,
         { method: 'POST' }
       )
       if (res.ok) {
@@ -112,9 +126,32 @@ export default function FidelidadePage({ cliente }: Props) {
         const err = await res.json().catch(() => ({}))
         mostrarMsg(err.message || 'Não foi possível resgatar.', 'erro')
       }
-    } catch {
-      mostrarMsg('Erro de conexão.', 'erro')
-    }
+    } catch { mostrarMsg('Erro de conexão.', 'erro') }
+  }
+
+  const resgatarProduto = async (recompensa: Recompensa) => {
+    if (!cliente) return
+    const hoje = new Date().toISOString().split('T')[0]
+    try {
+      const res = await fetch(
+        `/api/fidelidade/${cliente.clienteId}/resgatar-produto/${recompensa.id}?data=${hoje}`,
+        { method: 'POST' }
+      )
+      if (res.ok) {
+        const data = await res.json()
+        setVoucher({ nome: recompensa.nome, codigo: data.voucher })
+        mostrarMsg(`${recompensa.nome} resgatado! Apresente o voucher na bomboniere.`, 'ok')
+        carregar()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        mostrarMsg(err.message || 'Não foi possível resgatar.', 'erro')
+      }
+    } catch { mostrarMsg('Erro de conexão.', 'erro') }
+  }
+
+  const resgatar = (r: Recompensa) => {
+    if (r.tipo === 'PRODUTO_BOMBONIERE') resgatarProduto(r)
+    else resgatarBeneficio(r.id)
   }
 
   if (!cliente) {
@@ -128,7 +165,7 @@ export default function FidelidadePage({ cliente }: Props) {
 
   type LinhaExtrato =
     | { tipo: 'entrada'; data: string; pts: number; descricao: string; status: string }
-    | { tipo: 'saida';   data: string; pts: number; descricao: string }
+    | { tipo: 'saida'; data: string; pts: number; descricao: string }
 
   const linhasExtrato: LinhaExtrato[] = [
     ...lancamentos.map(l => ({
@@ -150,6 +187,9 @@ export default function FidelidadePage({ cliente }: Props) {
     return a.descricao.localeCompare(b.descricao)
   })
 
+  const produtosBomboniere = recompensas.filter(r => r.tipo === 'PRODUTO_BOMBONIERE')
+  const beneficiosCadastrados = recompensas.filter(r => r.tipo !== 'PRODUTO_BOMBONIERE')
+
   return (
     <div style={{ maxWidth: 860 }}>
       {/* Header com saldo */}
@@ -162,9 +202,7 @@ export default function FidelidadePage({ cliente }: Props) {
         <div style={{ fontSize: 12, opacity: 0.65, marginBottom: 16 }}>{(cliente as any).email ?? ''}</div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <span style={{ fontSize: 20, color: AMARELO }}>⭐</span>
-          <span style={{ fontSize: 40, fontWeight: 800 }}>
-            {loading ? '...' : (saldo ?? 0)}
-          </span>
+          <span style={{ fontSize: 40, fontWeight: 800 }}>{loading ? '...' : (saldo ?? 0)}</span>
           <span style={{ fontSize: 16, opacity: 0.8 }}>pontos disponíveis</span>
         </div>
         <div style={{ fontSize: 12, opacity: 0.6, marginTop: 6 }}>
@@ -182,6 +220,32 @@ export default function FidelidadePage({ cliente }: Props) {
           fontWeight: 500, fontSize: 14,
         }}>
           {msg.tipo === 'ok' ? '✅ ' : '❌ '}{msg.texto}
+        </div>
+      )}
+
+      {/* Voucher QR Code */}
+      {voucher && (
+        <div style={{
+          background: 'white', border: `2px solid ${COR}`, borderRadius: 14,
+          padding: '20px 24px', marginBottom: 20, textAlign: 'center',
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 16, color: COR, marginBottom: 4 }}>
+            🎁 Voucher — {voucher.nome}
+          </div>
+          <p style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
+            Apresente este QR Code na bomboniere para retirar seu produto.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <QRCodeSVG value={voucher.codigo} size={160} level="H" includeMargin />
+          </div>
+          <div style={{ fontFamily: 'monospace', fontSize: 13, color: '#555', marginBottom: 12 }}>
+            {voucher.codigo}
+          </div>
+          <button onClick={() => setVoucher(null)}
+            style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid #ccc',
+              background: 'white', cursor: 'pointer', fontSize: 13, color: '#666' }}>
+            Fechar
+          </button>
         </div>
       )}
 
@@ -209,7 +273,6 @@ export default function FidelidadePage({ cliente }: Props) {
       {/* Aba: Extrato */}
       {aba === 'extrato' && (
         <div>
-          {/* Card saldo */}
           <div style={{
             background: '#1a1a2e', borderRadius: 12, padding: '20px 24px',
             marginBottom: 20, color: 'white',
@@ -243,23 +306,16 @@ export default function FidelidadePage({ cliente }: Props) {
                     boxShadow: isFirst ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
                   }}>
                     <div>
-                      <div style={{ fontWeight: 500, fontSize: 14, color: '#1a1a2e' }}>
-                        {titulo}
-                      </div>
+                      <div style={{ fontWeight: 500, fontSize: 14, color: '#1a1a2e' }}>{titulo}</div>
                       <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 3 }}>
                         {formatarData(l.data)}
-                        {detalhes && (
-                          <span style={{ marginLeft: 6, color: '#6b7280' }}>· {detalhes}</span>
-                        )}
+                        {detalhes && <span style={{ marginLeft: 6, color: '#6b7280' }}>· {detalhes}</span>}
                         {l.tipo === 'entrada' && (l as any).status === 'EXPIRADO' && (
                           <span style={{ marginLeft: 8, color: '#ef4444', fontWeight: 600 }}>· Expirado</span>
                         )}
                       </div>
                     </div>
-                    <span style={{
-                      fontWeight: 700, fontSize: 15,
-                      color: l.tipo === 'entrada' ? '#16a34a' : '#ef4444',
-                    }}>
+                    <span style={{ fontWeight: 700, fontSize: 15, color: l.tipo === 'entrada' ? '#16a34a' : '#ef4444' }}>
                       {l.tipo === 'entrada' ? '+' : '-'}{l.pts} pts
                     </span>
                   </div>
@@ -275,60 +331,102 @@ export default function FidelidadePage({ cliente }: Props) {
         <div>
           <div style={{
             background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10,
-            padding: '12px 16px', marginBottom: 20, fontSize: 13, color: '#92400e',
+            padding: '12px 16px', marginBottom: 24, fontSize: 13, color: '#92400e',
           }}>
-            <strong>Seus pontos disponíveis: {saldo ?? 0} pts</strong>
-            {' · '}Recompensas disponíveis hoje de acordo com seu saldo e dia da semana.
+            <strong>Seus pontos: {saldo ?? 0} pts</strong>
+            {' · '}100 pontos = R$ 1,00 · Produtos da bomboniere custam metade do preço em pontos.
           </div>
 
-          {beneficios.length === 0 ? (
+          {/* Produtos da Bomboniere */}
+          {produtosBomboniere.length > 0 && (
+            <div style={{ marginBottom: 28 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e', marginBottom: 14 }}>
+                🍿 Bomboniere
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {produtosBomboniere.map(r => {
+                  const emoji = CATEGORIA_EMOJI[r.categoria ?? ''] ?? '🛍️'
+                  return (
+                    <div key={r.id} style={{
+                      background: 'white', borderRadius: 12, padding: '16px',
+                      border: `1px solid ${r.disponivel ? '#e5e7eb' : '#f3f4f6'}`,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      opacity: r.disponivel ? 1 : 0.6,
+                    }}>
+                      <div style={{ fontSize: 32, marginBottom: 8 }}>{emoji}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e', marginBottom: 2 }}>
+                        {r.nome}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: AMARELO }}>
+                          <span>⭐</span>
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{r.pontosNecessarios} pts</span>
+                        </div>
+                        <button onClick={() => resgatar(r)} disabled={!r.disponivel}
+                          style={{
+                            padding: '7px 14px', borderRadius: 8, border: 'none',
+                            background: r.disponivel ? COR : '#e5e7eb',
+                            color: r.disponivel ? 'white' : '#9ca3af',
+                            fontWeight: 600, fontSize: 12,
+                            cursor: r.disponivel ? 'pointer' : 'default',
+                          }}>
+                          {r.disponivel ? 'Resgatar' : 'Pts insuficientes'}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Benefícios Cadastrados */}
+          {beneficiosCadastrados.length > 0 && (
+            <div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e', marginBottom: 14 }}>
+                🎁 Benefícios Exclusivos
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {beneficiosCadastrados.map(r => {
+                  const emoji = TIPO_EMOJI[r.tipo] ?? '🎁'
+                  return (
+                    <div key={r.id} style={{
+                      background: 'white', borderRadius: 12, padding: '16px',
+                      border: `1px solid ${r.disponivel ? '#e5e7eb' : '#f3f4f6'}`,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      opacity: r.disponivel ? 1 : 0.6,
+                    }}>
+                      <div style={{ fontSize: 32, marginBottom: 8 }}>{emoji}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e', marginBottom: 12 }}>
+                        {r.nome}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: AMARELO }}>
+                          <span>⭐</span>
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{r.pontosNecessarios} pts</span>
+                        </div>
+                        <button onClick={() => resgatar(r)} disabled={!r.disponivel}
+                          style={{
+                            padding: '7px 14px', borderRadius: 8, border: 'none',
+                            background: r.disponivel ? COR : '#e5e7eb',
+                            color: r.disponivel ? 'white' : '#9ca3af',
+                            fontWeight: 600, fontSize: 12,
+                            cursor: r.disponivel ? 'pointer' : 'default',
+                          }}>
+                          {r.disponivel ? 'Resgatar' : 'Pts insuficientes'}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {produtosBomboniere.length === 0 && beneficiosCadastrados.length === 0 && (
             <div style={{ textAlign: 'center', color: '#aaa', padding: 48 }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>🎁</div>
-              <p style={{ fontSize: 14 }}>
-                Nenhuma recompensa disponível no momento.<br />
-                Acumule mais pontos comprando ingressos!
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              {beneficios.map(b => {
-                const info = TIPO_LABEL[b.tipo] ?? { emoji: '🎁', desc: b.tipo }
-                const podeResgatar = (saldo ?? 0) >= b.pontosNecessarios
-                return (
-                  <div key={b.id} style={{
-                    background: 'white', borderRadius: 14, padding: '20px',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                    opacity: podeResgatar ? 1 : 0.6,
-                  }}>
-                    <div style={{ fontSize: 36, marginBottom: 10 }}>{info.emoji}</div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e', marginBottom: 4 }}>
-                      {b.nome}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#888', marginBottom: 14 }}>
-                      {info.desc}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: AMARELO }}>
-                        <span>⭐</span>
-                        <span style={{ fontWeight: 700, fontSize: 14 }}>{b.pontosNecessarios}</span>
-                      </div>
-                      <button
-                        onClick={() => resgatar(b.id)}
-                        disabled={!podeResgatar}
-                        style={{
-                          padding: '7px 16px', borderRadius: 8, border: 'none',
-                          background: podeResgatar ? COR : '#e5e7eb',
-                          color: podeResgatar ? 'white' : '#9ca3af',
-                          fontWeight: 600, fontSize: 13,
-                          cursor: podeResgatar ? 'pointer' : 'default',
-                        }}>
-                        {podeResgatar ? 'Resgatar' : 'Pontos insuficientes'}
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
+              <p style={{ fontSize: 14 }}>Nenhuma recompensa disponível no momento.</p>
             </div>
           )}
         </div>

@@ -1,9 +1,5 @@
 package br.com.cinema.frame.domain.portal.pedido;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
 import br.com.cinema.frame.domain.backoffice.classificacao.ClassificacaoDeCompraService;
@@ -15,6 +11,10 @@ import br.com.cinema.frame.domain.portal.fidelidade.FidelidadeService;
 import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeCompras;
 import br.com.cinema.frame.domain.portal.recomendacao.HistoricoDeComprasRepository;
 import br.com.cinema.frame.domain.portal.reserva.ReservaService;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class PedidoService {
 
@@ -153,10 +153,11 @@ public class PedidoService {
             }
 
             if (valorTotal != null && valorTotal > 0) {
-                fidelidadeService.acumularPontos(pedido.getClienteId(), valorTotal, hoje,
+                boolean acumulou = fidelidadeService.acumularPontos(pedido.getClienteId(), valorTotal, hoje,
                         pedido.getSessao().getFilme().getTitulo(),
                         pedido.getSessao().getInicio().toString(),
                         pedido.getSessao().getSala().getNumero());
+                resultado.setLimitePontosAtingido(!acumulou);
             }
         }
 
