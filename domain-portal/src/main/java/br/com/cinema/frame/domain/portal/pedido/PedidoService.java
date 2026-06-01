@@ -83,6 +83,12 @@ public class PedidoService {
     public void adicionarIngresso(UUID pedidoId, TipoIngresso tipo,
                                    boolean possuiElegibilidade, LocalDate dataNascimento) {
         if (pedidoId == null) throw new IllegalArgumentException("ID do pedido não pode ser nulo");
+        
+        // NOVA LÓGICA: Verifica meia-entrada
+        if (tipo == TipoIngresso.MEIA && !possuiElegibilidade) {
+            throw new IllegalStateException("Elegibilidade não comprovada para meia-entrada");
+        }
+
         Pedido pedido = buscarPedidoPorId(pedidoId);
         if (classificacaoService != null && dataNascimento != null) {
             classificacaoService.validarCompra(dataNascimento, pedido.getSessao().getFilme().getId());
@@ -123,7 +129,7 @@ public class PedidoService {
     }
 
     private ResultadoDoPedido finalizarInterno(UUID pedidoId, Double valorTotal,
-                                                LocalDateTime agora, boolean usarPontos) {
+                                               LocalDateTime agora, boolean usarPontos) {
         if (pedidoId == null) throw new IllegalArgumentException("ID do pedido não pode ser nulo");
 
         Pedido pedido = buscarPedidoPorId(pedidoId);

@@ -3,6 +3,7 @@ package br.com.cinema.frame.infrastructure.grade;
 import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicao;
 import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicaoRepository;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
+import br.com.cinema.frame.infrastructure.pedido.PedidoJpaRepository;
 import br.com.cinema.frame.infrastructure.sala.SalaJpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,22 +20,34 @@ public class GradeDeExibicaoRepositoryAdapter implements GradeDeExibicaoReposito
     private final SessaoJpaRepository sessaoJpa;
     private final FilmeJpaRepository filmeJpa;
     private final SalaJpaRepository salaJpa;
+    private final PedidoJpaRepository pedidoJpa;
 
     public GradeDeExibicaoRepositoryAdapter(GradeJpaRepository gradeJpa,
                                             SessaoJpaRepository sessaoJpa,
                                             FilmeJpaRepository filmeJpa,
-                                            SalaJpaRepository salaJpa) {
+                                            SalaJpaRepository salaJpa,
+                                            PedidoJpaRepository pedidoJpa) {
         this.gradeJpa = gradeJpa;
         this.sessaoJpa = sessaoJpa;
         this.filmeJpa = filmeJpa;
         this.salaJpa = salaJpa;
+        this.pedidoJpa = pedidoJpa;
     }
 
     @Override
     @Transactional
     public void salvar(GradeDeExibicao grade) {
         gradeJpa.save(GradeJpa.fromDomain(grade));
-        sessaoJpa.deleteByGradeId(grade.getId());
+
+        List<UUID> idsNovos = grade.getSessoes().stream()
+                .map(Sessao::getId)
+                .toList();
+
+        sessaoJpa.findByGradeId(grade.getId()).stream()
+                .filter(s -> !idsNovos.contains(s.getId()))
+                .filter(s -> !pedidoJpa.existsBySessaoId(s.getId()))
+                .forEach(s -> sessaoJpa.deleteById(s.getId()));
+
         for (Sessao s : grade.getSessoes()) {
             sessaoJpa.save(SessaoJpa.fromDomain(grade.getId(), s));
         }

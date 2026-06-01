@@ -19,6 +19,7 @@ import br.com.cinema.frame.domain.shared.cliente.ClienteId;
 public class FidelidadeService implements FidelidadeServiceInterface {
 
     private static final int PONTOS_POR_REAL = 1;
+    private static final int LIMITE_PONTOS_MENSAL = 500; // Limite adicionado
 
     private final FidelidadeRepository fidelidadeRepository;
     private final BeneficioRepository beneficioRepository;
@@ -69,6 +70,17 @@ public class FidelidadeService implements FidelidadeServiceInterface {
         PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
                 .orElse(new PontosCliente(clienteId));
 
+        // NOVA LÓGICA: Verificar limite mensal de 500 pontos
+        int pontosAcumuladosNoMes = pontos.getLancamentos().stream()
+                .filter(l -> l.getDataCriacao().getMonthValue() == hoje.getMonthValue() && l.getDataCriacao().getYear() == hoje.getYear())
+                .filter(l -> l.getPontosOriginais() > 0) // Pega só os acúmulos (valores positivos)
+                .mapToInt(LancamentoPontos::getPontosOriginais)
+                .sum();
+
+        if (pontosAcumuladosNoMes >= LIMITE_PONTOS_MENSAL) {
+            throw new IllegalStateException("Limite mensal de 500 pontos atingido para este mês");
+        }
+
         int pontosBase = (int) Math.floor(valorGasto * PONTOS_POR_REAL);
         int pontosComBonus = PontosCliente.calcularPontosComBonus(valorGasto, pontosBase);
 
@@ -76,6 +88,11 @@ public class FidelidadeService implements FidelidadeServiceInterface {
                 .map(aniversario -> aniversario.equals(MonthDay.from(hoje)))
                 .orElse(false);
         if (ehAniversario) pontosComBonus = pontosComBonus * 2;
+
+        // Se o que ele for ganhar passar do limite, ele ganha apenas a diferença até bater 500
+        if (pontosAcumuladosNoMes + pontosComBonus > LIMITE_PONTOS_MENSAL) {
+            pontosComBonus = LIMITE_PONTOS_MENSAL - pontosAcumuladosNoMes;
+        }
 
         String descricao;
         if (tituloFilme != null && !tituloFilme.isBlank()) {
@@ -136,8 +153,6 @@ public class FidelidadeService implements FidelidadeServiceInterface {
 
     @Override
     public List<Beneficio> listarTodosBeneficios(UUID clienteId, LocalDate hoje) {
-        // Retorna todos os benefícios disponíveis no dia, independente do saldo
-        // O frontend usa disponivel=true/false para habilitar/desabilitar o botão
         return beneficioRepository.listarTodos().stream()
                 .filter(b -> b.disponivelNoDia(hoje.getDayOfWeek()))
                 .toList();

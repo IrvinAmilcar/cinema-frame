@@ -13,4 +13,6 @@ public interface PedidoJpaRepository extends JpaRepository<PedidoJpa, UUID> {
 
     @Query("SELECT p FROM PedidoJpa p WHERE p.clienteId = :clienteId AND p.finalizado = true AND (p.dataSessao IS NULL OR p.dataSessao >= :data)")
     List<PedidoJpa> findAtivosDoCliente(@Param("clienteId") UUID clienteId, @Param("data") LocalDate data);
+      boolean existsBySessaoId(UUID sessaoId);
+      
 }

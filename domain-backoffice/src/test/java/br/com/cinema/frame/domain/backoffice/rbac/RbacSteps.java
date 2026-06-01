@@ -20,7 +20,8 @@ public class RbacSteps {
 
     @Dado("que existe um funcionário cadastrado {string} com o role {string}")
     public void existeFuncionarioCadastradoComRole(String nome, String role) {
-        funcionario = new Funcionario(nome, RoleFuncionario.valueOf(role));
+        funcionario = new Funcionario(nome, "teste@cinema.com.br", RoleFuncionario.valueOf(role));
+        
         when(funcionarioRepository.buscarPorId(funcionario.getId()))
             .thenReturn(Optional.of(funcionario));
     }

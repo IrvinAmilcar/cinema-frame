@@ -143,3 +143,65 @@ removerItemReceita: async (produtoId: string, insumoId: string): Promise<void> =
     return res.text();
   }
 };
+
+// ==========================
+// USUÁRIOS E PERMISSÕES (RBAC)
+// ==========================
+
+export interface FuncionarioResponse {
+  id: string;
+  nome: string;
+  email: string;
+  role: string;
+  ativo: boolean;
+  permissoes: string[];
+}
+
+export interface FuncionarioRequest {
+  nome: string;
+  email: string;
+  role: string;
+  ativo: boolean;
+  permissoes: string[];
+}
+
+export const apiUsuarios = {
+  listarTodos: async (): Promise<FuncionarioResponse[]> => {
+    const res = await fetch(`${API_URL}/funcionarios`);
+    if (!res.ok) throw new Error('Erro ao buscar funcionários');
+    return res.json();
+  },
+  
+  buscarPorId: async (id: string): Promise<FuncionarioResponse> => {
+    const res = await fetch(`${API_URL}/funcionarios/${id}`);
+    if (!res.ok) throw new Error('Erro ao buscar funcionário');
+    return res.json();
+  },
+  
+  cadastrar: async (dados: FuncionarioRequest): Promise<FuncionarioResponse> => {
+    const res = await fetch(`${API_URL}/funcionarios`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    });
+    if (!res.ok) throw new Error('Erro ao cadastrar funcionário');
+    return res.json();
+  },
+  
+  atualizar: async (id: string, dados: FuncionarioRequest): Promise<FuncionarioResponse> => {
+    const res = await fetch(`${API_URL}/funcionarios/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    });
+    if (!res.ok) throw new Error('Erro ao atualizar funcionário');
+    return res.json();
+  },
+  
+  excluir: async (id: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/funcionarios/${id}`, { 
+      method: 'DELETE' 
+    });
+    if (!res.ok) throw new Error('Erro ao excluir funcionário');
+  }
+};

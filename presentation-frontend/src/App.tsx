@@ -12,6 +12,7 @@ import MeusIngressosPage from './pages/MeusIngressosPage'
 import { CheckInPage } from './pages/CheckInPage';
 import AuthModal, { type ClienteLogado } from './components/AuthModal'
 import FidelidadePage from './pages/FidelidadePage'
+import UsuariosPage from './pages/UsuariosPage';
 
 type Modo = 'backoffice' | 'portal'
 
@@ -84,6 +85,7 @@ function Sidebar({ modo, onToggle, cliente, onOpenAuth, onLogout }:
             <NavLink to='/bomboniere' style={({ isActive }) => navStyle(isActive, cor)}>Bomboniere</NavLink>
             <NavLink to='/checkin' style={({ isActive }) => navStyle(isActive, cor)}>Check-in</NavLink>
             <NavLink to='/caixa' style={({ isActive }) => navStyle(isActive, cor)}>Fechamento de Caixa</NavLink>
+            <NavLink to='/usuarios' style={({ isActive }) => navStyle(isActive, cor)}>Usuários</NavLink>
           </>
         ) : (
           <>
@@ -176,6 +178,8 @@ export default function App() {
             <Route path='/bomboniere' element={<BombonierePage />} />
             <Route path='/checkin' element={<CheckInPage />} />
             <Route path='/caixa' element={<EmConstrucao nome='Fechamento de Caixa' />} />
+            <Route path='/usuarios' element={<UsuariosPage />} />
+
             {/* Portal */}
             <Route path='/programacao' element={<ProgramacaoPage cliente={cliente} />} />
             <Route path='/compra' element={<CompraPage cliente={cliente} />} />

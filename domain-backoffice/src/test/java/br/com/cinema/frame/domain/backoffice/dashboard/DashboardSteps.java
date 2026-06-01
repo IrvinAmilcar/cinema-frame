@@ -15,12 +15,15 @@ import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+// Importações do Mockito
+import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DashboardSteps {
@@ -50,8 +53,12 @@ public class DashboardSteps {
         public void remover(UUID id) {}
     };
 
-    private final DashboardDeOcupacao dashboard =
-        new DashboardDeOcupacao(ingressoRepositoryFake, new PrecificacaoService());
+    // CRIANDO O MOCK DO SERVIÇO DE PREÇO
+    private final PrecificacaoService precificacaoServiceMock = mock(PrecificacaoService.class);
+
+    // INJETANDO O MOCK NO DASHBOARD
+    private final DashboardDeOcupacao dashboard = 
+        new DashboardDeOcupacao(ingressoRepositoryFake, precificacaoServiceMock);
 
     @Dado("que existe uma sessão na sala padrão com capacidade para {int} pessoas")
     public void existeSessaoNaSala(int capacidade) {
@@ -59,6 +66,10 @@ public class DashboardSteps {
             ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         Sala sala = new Sala(1, capacidade, TipoSala.PADRAO);
         sessao = new Sessao(filme, sala, LocalTime.of(20, 0));
+
+        // ENSINA O MOCK A SEMPRE DEVOLVER 20.0
+        when(precificacaoServiceMock.calcularPreco(any(Sessao.class), any(LocalDate.class)))
+            .thenReturn(20.0);
     }
 
     @Dado("foram vendidos {int} ingressos para essa sessão")
@@ -73,6 +84,10 @@ public class DashboardSteps {
             ClassificacaoIndicativa.LIVRE, GeneroFilme.COMEDIA);
         Sala sala = new Sala(2, capacidade, TipoSala.PADRAO);
         outraSessao = new Sessao(filme, sala, LocalTime.of(20, 0));
+
+        // ENSINA O MOCK A SEMPRE DEVOLVER 20.0
+        when(precificacaoServiceMock.calcularPreco(any(Sessao.class), any(LocalDate.class)))
+            .thenReturn(20.0);
     }
 
     @Dado("foram vendidos {int} ingressos para essa outra sessão")

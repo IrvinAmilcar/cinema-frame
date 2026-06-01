@@ -477,7 +477,9 @@ export function CheckInPage() {
   const [mensagemNegado, setMensagemNegado] = useState('');
   const [historico, setHistorico] = useState<Historico>({ total: 0, aprovados: 0, negados: 0 });
 
-  const funcionarioId = "987e6543-e21b-12d3-a456-426614174000";
+  const [funcionarios, setFuncionarios] = useState<{id: string, nome: string}[]>([]);
+  const [funcionarioId, setFuncionarioId] = useState<string | null>(null);
+
 
   useEffect(() => {
     const carregarSessoes = async () => {
@@ -492,6 +494,12 @@ export function CheckInPage() {
     };
     carregarSessoes();
   }, []);
+
+  useEffect(() => {
+  fetch('http://localhost:8080/funcionarios')
+    .then(r => r.json())
+    .then(data => setFuncionarios(data.filter((f: any) => f.ativo)));
+}, []);
 
   const carregarHistorico = async (sessaoId: string) => {
     try {
@@ -547,6 +555,31 @@ const handleValidar = async (e: FormEvent) => {
     setCodigoIngresso('');
   }
 };
+
+
+if (!funcionarioId) {
+  return (
+    <>
+      <style>{styles}</style>
+      <div className="checkin-root">
+        <div className="sessao-page">
+          <div className="sessao-header">
+            <div className="qr-icon">👤</div>
+            <h1>Quem está operando?</h1>
+            <p>Selecione seu nome para continuar</p>
+          </div>
+          <div className="sessao-lista">
+            {funcionarios.map(f => (
+              <button key={f.id} className="sessao-card" onClick={() => setFuncionarioId(f.id)}>
+                <div className="sessao-card-titulo">{f.nome}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
   // ── Tela de seleção de sessão ──
   if (!sessaoSelecionada) {
