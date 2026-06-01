@@ -166,7 +166,7 @@ export default function App() {
           onOpenAuth={() => setShowAuth(true)}
           onLogout={handleLogout}
         />
-        <main style={{ flex: 1, padding: '1.5rem', backgroundColor: '#FAFAFA' }}>
+        <main style={{ flex: 1, padding: '1.5rem', backgroundColor: '#FAFAFA' , overflow: 'hidden' }}>
           <Routes>
             <Route path='/' element={<Home modo={modo} cliente={cliente} />} />
             {/* Backoffice */}

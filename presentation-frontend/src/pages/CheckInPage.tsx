@@ -17,12 +17,13 @@ interface Historico {
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+.checkin-root * { box-sizing: border-box; margin: 0; padding: 0; }
 
   .checkin-root {
     font-family: 'DM Sans', sans-serif;
     background: #f4f4f5;
-    min-height: 100vh;
+    min-height: 100%;
+     margin: -1.5rem;
   }
 
   /* ── Seleção de Sessão ── */
@@ -114,7 +115,7 @@ const styles = `
   /* ── Layout principal do Check-in ── */
   .checkin-layout {
     display: flex;
-    min-height: 100vh;
+    min-height: 100%;
   }
 
   /* Coluna esquerda */
