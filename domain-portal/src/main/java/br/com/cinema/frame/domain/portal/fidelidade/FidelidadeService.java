@@ -11,15 +11,10 @@ import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.portal.cliente.ClienteRepository;
 import br.com.cinema.frame.domain.shared.cliente.ClienteId;
 
-/**
- * Serviço real de fidelidade — implementa FidelidadeServiceInterface.
- * É instanciado pelo FidelidadeConfig e envolvido pelo FidelidadeServiceProxy.
- * Não é exposto diretamente como bean Spring — o proxy é que é injetado.
- */
+
 public class FidelidadeService implements FidelidadeServiceInterface {
 
     private static final int PONTOS_POR_REAL = 1;
-    private static final int LIMITE_PONTOS_MENSAL = 500; // Limite adicionado
 
     private final FidelidadeRepository fidelidadeRepository;
     private final BeneficioRepository beneficioRepository;
@@ -70,17 +65,6 @@ public class FidelidadeService implements FidelidadeServiceInterface {
         PontosCliente pontos = fidelidadeRepository.buscarPorCliente(clienteId)
                 .orElse(new PontosCliente(clienteId));
 
-        // NOVA LÓGICA: Verificar limite mensal de 500 pontos
-        int pontosAcumuladosNoMes = pontos.getLancamentos().stream()
-                .filter(l -> l.getDataCriacao().getMonthValue() == hoje.getMonthValue() && l.getDataCriacao().getYear() == hoje.getYear())
-                .filter(l -> l.getPontosOriginais() > 0) // Pega só os acúmulos (valores positivos)
-                .mapToInt(LancamentoPontos::getPontosOriginais)
-                .sum();
-
-        if (pontosAcumuladosNoMes >= LIMITE_PONTOS_MENSAL) {
-            throw new IllegalStateException("Limite mensal de 500 pontos atingido para este mês");
-        }
-
         int pontosBase = (int) Math.floor(valorGasto * PONTOS_POR_REAL);
         int pontosComBonus = PontosCliente.calcularPontosComBonus(valorGasto, pontosBase);
 
@@ -88,11 +72,6 @@ public class FidelidadeService implements FidelidadeServiceInterface {
                 .map(aniversario -> aniversario.equals(MonthDay.from(hoje)))
                 .orElse(false);
         if (ehAniversario) pontosComBonus = pontosComBonus * 2;
-
-        // Se o que ele for ganhar passar do limite, ele ganha apenas a diferença até bater 500
-        if (pontosAcumuladosNoMes + pontosComBonus > LIMITE_PONTOS_MENSAL) {
-            pontosComBonus = LIMITE_PONTOS_MENSAL - pontosAcumuladosNoMes;
-        }
 
         String descricao;
         if (tituloFilme != null && !tituloFilme.isBlank()) {
