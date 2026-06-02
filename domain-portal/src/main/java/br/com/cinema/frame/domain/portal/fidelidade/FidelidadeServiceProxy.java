@@ -6,18 +6,7 @@ import java.util.UUID;
 
 import br.com.cinema.frame.domain.portal.cliente.ClienteRepository;
 
-/**
- * Padrão Proxy (Protection Proxy) — F3 Fidelidade.
- *
- * Intercepta todas as chamadas ao FidelidadeService real e:
- *  1. Valida que o clienteId não é nulo
- *  2. Verifica que o cliente existe no sistema antes de qualquer operação
- *  3. Garante que a conta de fidelidade é criada automaticamente se não existir
- *  4. Delega a operação ao serviço real (FidelidadeService)
- *
- * O controller e o PedidoService enxergam apenas FidelidadeServiceInterface —
- * não sabem se estão falando com o serviço real ou com o proxy.
- */
+
 public class FidelidadeServiceProxy implements FidelidadeServiceInterface {
 
     private final FidelidadeServiceInterface real;
@@ -32,19 +21,14 @@ public class FidelidadeServiceProxy implements FidelidadeServiceInterface {
         this.fidelidadeRepository = fidelidadeRepository;
     }
 
-    // ── Interceptação: garante conta antes de delegar ────────────────────────
-
     private void garantirConta(UUID clienteId) {
         if (clienteId == null) return;
-        // Se o cliente ainda não tem conta de fidelidade, cria uma vazia agora
         fidelidadeRepository.buscarPorCliente(clienteId).orElseGet(() -> {
             PontosCliente nova = new PontosCliente(clienteId);
             fidelidadeRepository.salvar(nova);
             return nova;
         });
     }
-
-    // ── Delegação com pré-verificação ────────────────────────────────────────
 
     @Override
     public boolean acumularPontos(UUID clienteId, double valorGasto, LocalDate hoje) {

@@ -11,10 +11,10 @@ import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.portal.cliente.ClienteRepository;
 import br.com.cinema.frame.domain.shared.cliente.ClienteId;
 
-
 public class FidelidadeService implements FidelidadeServiceInterface {
 
     private static final int PONTOS_POR_REAL = 1;
+    private static final int LIMITE_MENSAL = 10000;
 
     private final FidelidadeRepository fidelidadeRepository;
     private final BeneficioRepository beneficioRepository;
@@ -83,6 +83,11 @@ public class FidelidadeService implements FidelidadeServiceInterface {
             descricao = "Compra de ingresso";
         }
 
+        int jaAcumuladoNoMes = pontos.calcularPontosAcumuladosNoMes(hoje.getMonthValue(), hoje.getYear());
+        if (jaAcumuladoNoMes >= LIMITE_MENSAL) {
+            throw new IllegalStateException("Limite mensal de pontos atingido para este mês");
+        }
+
         LocalDate validade = hoje.plusMonths(12);
         boolean acumulou = pontos.acumularPontos(pontosComBonus, validade, hoje, descricao);
         fidelidadeRepository.salvar(pontos);
@@ -128,7 +133,6 @@ public class FidelidadeService implements FidelidadeServiceInterface {
 
         return pontos.getLancamentos();
     }
-
 
     @Override
     public List<Beneficio> listarTodosBeneficios(UUID clienteId, LocalDate hoje) {
@@ -212,7 +216,7 @@ public class FidelidadeService implements FidelidadeServiceInterface {
             throw new IllegalStateException("Pontos insuficientes. Necessário: " + pontosNecessarios
                     + " pts, disponível: " + pontos.getSaldoAtivo() + " pts");
 
-        pontos.debitarPontosDeCompra(pontosNecessarios, hoje);
+        pontos.debitarPontosSemHistorico(pontosNecessarios);
         fidelidadeRepository.salvar(pontos);
 
         String voucher = "VCH-FIDELIDADE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();

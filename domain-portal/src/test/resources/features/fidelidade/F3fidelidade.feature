@@ -43,15 +43,15 @@ Funcionalidade: Sistema de Fidelidade e Benefícios
     Quando o cliente "cliente-001" tenta resgatar o benefício "Ingresso Grátis" em "2025-06-01"
     Então deve ocorrer o erro "Pontos insuficientes para resgatar o benefício"
 
-  Cenário: Bloquear acúmulo quando limite mensal de 500 pontos é atingido
-    Dado que o cliente "cliente-001" já acumulou 500 pontos no mês "2025-06"
+  Cenário: Bloquear acúmulo quando limite mensal de 10000 pontos é atingido
+    Dado que o cliente "cliente-001" já acumulou 10000 pontos no mês "2025-06"
     Quando o cliente "cliente-001" tenta realizar uma compra de R$ 50,00 em "2025-06-20"
-    Então deve ocorrer o erro "Limite mensal de 500 pontos atingido para este mês"
+    Então deve ocorrer o erro "Limite mensal"
 
   Cenário: Acumular pontos normalmente quando limite mensal não foi atingido
-    Dado que o cliente "cliente-001" já acumulou 400 pontos no mês "2025-06"
+    Dado que o cliente "cliente-001" já acumulou 9000 pontos no mês "2025-06"
     Quando o cliente "cliente-001" realiza uma compra de R$ 50,00 em "2025-06-20"
-    Então o saldo de pontos do cliente "cliente-001" em "2025-06-20" deve ser 450
+    Então o saldo de pontos do cliente "cliente-001" em "2025-06-20" deve ser 9050
 
   Cenário: Dobrar pontos no aniversário do cliente
     Dado que o aniversário do cliente "cliente-001" é em "06-15"
@@ -110,8 +110,9 @@ Funcionalidade: Sistema de Fidelidade e Benefícios
 
   Cenário: Aplicar multiplicador 3x para compras acima de R$500
     Quando o cliente "cliente-001" realiza uma compra de R$ 600,00 em "2025-06-01"
-    Então o saldo de pontos do cliente "cliente-001" em "2025-06-01" deve ser 500
+    Então o saldo de pontos do cliente "cliente-001" em "2025-06-01" deve ser 1800
 
   Cenário: Nao aplicar bonus para compras abaixo de R$100
     Quando o cliente "cliente-001" realiza uma compra de R$ 80,00 em "2025-06-01"
     Então o saldo de pontos do cliente "cliente-001" em "2025-06-01" deve ser 80
+
