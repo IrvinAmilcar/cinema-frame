@@ -1,7 +1,9 @@
 package br.com.cinema.frame.domain.backoffice.grade;
 
+import br.com.cinema.frame.domain.backoffice.sala.Sala;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,6 +60,36 @@ public class GradeDeExibicao {
 
         sessoes.remove(sessao);
         return sessao;
+    }
+
+    public void atualizarSessao(UUID sessaoId, Filme novoFilme, Sala novaSala, LocalTime novoInicio) {
+        Sessao sessao = sessoes.stream()
+            .filter(s -> s.getId().equals(sessaoId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Sessão não encontrada: " + sessaoId));
+
+        Filme filmeAntigo = sessao.getFilme();
+        Sala salaAntiga = sessao.getSala();
+        LocalTime inicioAntigo = sessao.getInicio();
+
+        sessao.atualizar(novoFilme, novaSala, novoInicio);
+
+        for (Sessao outra : sessoes) {
+            if (outra.getId().equals(sessaoId)) continue;
+            if (sessao.conflitaCom(outra)) {
+                sessao.atualizar(filmeAntigo, salaAntiga, inicioAntigo);
+                throw new IllegalStateException("Conflito de horário: a sala já possui uma sessão nesse período");
+            }
+        }
+    }
+
+    public void atualizarPeriodo(LocalDate novoInicio, LocalDate novoFim) {
+        if (novoInicio == null || novoFim == null)
+            throw new IllegalArgumentException("Período da grade não pode ser nulo");
+        if (novoFim.isBefore(novoInicio))
+            throw new IllegalArgumentException("Data de fim não pode ser anterior ao início");
+        this.inicio = novoInicio;
+        this.fim = novoFim;
     }
 
     public static GradeDeExibicao reconstituir(UUID id, LocalDate inicio, LocalDate fim, List<Sessao> sessoes) {

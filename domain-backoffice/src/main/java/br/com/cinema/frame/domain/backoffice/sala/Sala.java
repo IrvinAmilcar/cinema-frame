@@ -31,6 +31,12 @@ public class Sala {
         return s;
     }
 
+    public void atualizar(int novoNumero, int novaCapacidade, TipoSala novoTipo) {
+        if (novoNumero > 0) this.numero = novoNumero;
+        if (novaCapacidade > 0) this.capacidade = novaCapacidade;
+        if (novoTipo != null) this.tipo = novoTipo;
+    }
+
     public UUID getId() { return id; }
     public int getNumero() { return numero; }
     public int getCapacidade() { return capacidade; }

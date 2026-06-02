@@ -46,6 +46,12 @@ public class Sessao {
         return this.inicio.isBefore(outra.getFimComIntervalo()) && outra.inicio.isBefore(this.getFimComIntervalo());
     }
 
+    public void atualizar(Filme novoFilme, Sala novaSala, LocalTime novoInicio) {
+        if (novoFilme != null) this.filme = novoFilme;
+        if (novaSala != null) this.sala = novaSala;
+        if (novoInicio != null) this.inicio = novoInicio;
+    }
+
     public static Sessao reconstituir(UUID id, Filme filme, Sala sala, LocalTime inicio) {
         Sessao s = new Sessao(filme, sala, inicio);
         s.id = id;

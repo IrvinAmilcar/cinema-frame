@@ -62,6 +62,19 @@ public class GradeService {
             .orElseThrow(() -> new IllegalArgumentException("Sala não encontrada: " + salaId));
 
         Sessao sessao = new Sessao(filme, sala, inicio);
+
+        // Verificação de conflito entre grades com períodos sobrepostos (regra de negócio do domínio)
+        gradeRepository.listarTodas().stream()
+            .filter(g -> !g.getId().equals(gradeId))
+            .filter(g -> !grade.getInicio().isAfter(g.getFim()) && !g.getInicio().isAfter(grade.getFim()))
+            .flatMap(g -> g.getSessoes().stream())
+            .filter(s -> s.getSala().getId().equals(salaId))
+            .filter(sessao::conflitaCom)
+            .findFirst()
+            .ifPresent(c -> { throw new IllegalStateException(
+                "Conflito de horário entre grades: sala " + sala.getNumero()
+                + " já está ocupada no período solicitado por outra grade"); });
+
         grade.adicionarSessao(sessao);
         gradeRepository.salvar(grade);
         return sessao.getId();
@@ -111,6 +124,48 @@ public class GradeService {
         }
 
         gradeRepository.remover(id);
+    }
+
+    public void atualizarSessao(UUID gradeId, UUID sessaoId, UUID filmeId, UUID salaId, LocalTime novoInicio) {
+        GradeDeExibicao grade = gradeRepository.buscarPorId(gradeId)
+            .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada: " + gradeId));
+
+        Filme novoFilme = filmeId != null
+            ? filmeRepository.buscarPorId(filmeId)
+                .orElseThrow(() -> new IllegalArgumentException("Filme não encontrado: " + filmeId))
+            : null;
+
+        Sala novaSala = salaId != null
+            ? salaRepository.buscarPorId(salaId)
+                .orElseThrow(() -> new IllegalArgumentException("Sala não encontrada: " + salaId))
+            : null;
+
+        grade.atualizarSessao(sessaoId, novoFilme, novaSala, novoInicio);
+
+        Sessao sessaoAtualizada = grade.getSessoes().stream()
+            .filter(s -> s.getId().equals(sessaoId))
+            .findFirst().orElseThrow();
+
+        gradeRepository.listarTodas().stream()
+            .filter(g -> !g.getId().equals(gradeId))
+            .filter(g -> !grade.getInicio().isAfter(g.getFim()) && !g.getInicio().isAfter(grade.getFim()))
+            .flatMap(g -> g.getSessoes().stream())
+            .filter(s -> s.getSala().getId().equals(sessaoAtualizada.getSala().getId()))
+            .filter(sessaoAtualizada::conflitaCom)
+            .findFirst()
+            .ifPresent(c -> { throw new IllegalStateException(
+                "Conflito de horário entre grades: sala " + sessaoAtualizada.getSala().getNumero()
+                + " já está ocupada no período solicitado por outra grade"); });
+
+        gradeRepository.salvar(grade);
+    }
+
+    public GradeDeExibicao atualizarGrade(UUID id, LocalDate novoInicio, LocalDate novoFim) {
+        GradeDeExibicao grade = gradeRepository.buscarPorId(id)
+            .orElseThrow(() -> new IllegalArgumentException("Grade não encontrada: " + id));
+        grade.atualizarPeriodo(novoInicio, novoFim);
+        gradeRepository.salvar(grade);
+        return grade;
     }
 
     public List<GradeDeExibicao> listarTodas() {

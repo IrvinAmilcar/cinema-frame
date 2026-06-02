@@ -37,6 +37,12 @@ public class SalaController {
         return SalaResponse.from(sala);
     }
 
+    @PutMapping("/{id}")
+    public SalaResponse atualizar(@PathVariable UUID id, @RequestBody SalaRequest req) {
+        var sala = salaService.atualizar(id, req.numero(), req.capacidade(), TipoSala.valueOf(req.tipo()));
+        return SalaResponse.from(sala);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void remover(@PathVariable UUID id) {

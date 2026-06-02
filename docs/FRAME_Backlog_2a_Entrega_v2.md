@@ -14,7 +14,7 @@ Os requisitos da 2.ª entrega são:
 - Implementar a camada de persistência com mapeamento objeto-relacional (JPA)
 - Implementar a camada de apresentação web
 
-**Estado atual do código — atualizado em 2026-05-27:**
+**Estado atual do código — atualizado em 2026-06-02:**
 
 | Camada | Status |
 |---|---|
@@ -26,35 +26,45 @@ Os requisitos da 2.ª entrega são:
 | `presentation-backend/src/main/resources/application.properties` — JPA + porta 8080 | ✅ Feito |
 | `presentation-backend/src/main/resources/application-local.properties` — credenciais do banco (gitignored) | ✅ Feito (cada membro cria localmente) |
 | `presentation-backend/src/main/resources/application-local.properties.example` — template para o time | ✅ Feito |
+| `presentation-frontend/.env` — `VITE_TMDB_TOKEN` (gitignored) | ✅ Feito (cada membro cria localmente) |
 | Estrutura do frontend React + Vite — `package.json`, `vite.config.ts`, `App.tsx`, `client.ts` | ✅ Feito |
 | `mvn install -DskipTests` — todos os 8 módulos compilando | ✅ Confirmado |
 | `mvn spring-boot:run` — backend sobe e conecta ao banco | ✅ Confirmado |
 | **F7 — Catálogo de Filmes: JPA + REST + Proxy** | ✅ Implementado e testado (Irvin) |
 | **F4 — Grade de Exibição: JPA + REST + Proxy** | ✅ Implementado e testado (Irvin) |
-| Padrão **Proxy** — F7 (`FilmeRepositoryProxy`) e F4 (`GradeDeExibicaoRepositoryProxy`) | ✅ Funcionando e validado |
+| Padrão **Proxy — Caching Proxy** — F7 (`FilmeRepositoryProxy`) e F4 (`GradeDeExibicaoRepositoryProxy`) interceptam `listarTodos()`/`listarTodas()` e retornam cache em memória; escrita invalida cache | ✅ Corrigido e validado pelo professor (2026-06-02) |
+| Regra de conflito de horário entre grades — movida para `GradeService.adicionarSessao()` no domínio | ✅ Corrigido (era incorretamente no Proxy) |
+| Regra de proteção de remoção de filme — em `FilmeService.remover()` no domínio | ✅ Já estava correto |
 | Classes `@Entity` na camada `infrastructure` (Filmes, Salas, Grades, Sessões) | ✅ Feito |
 | Controllers REST em `presentation-backend` (`/api/filmes`, `/api/salas`, `/api/grades`) | ✅ Feito |
 | `GlobalExceptionHandler` — 409 para conflitos, 400 para argumentos inválidos | ✅ Feito |
 | **Sessões recorrentes diárias** — `Sessao.inicio` é `LocalTime`; a grade define o período; sessões repetem todos os dias | ✅ Implementado |
 | **Validação de data passada** — `GradeDeExibicao` rejeita `inicio` anterior a hoje | ✅ Implementado |
 | **Bloqueio de remoção de grade** — `GradeService.removerGrade()` bloqueia se qualquer sessão de hoje já iniciou | ✅ Implementado |
-| **Remoção de grade via REST** — `DELETE /api/grades/{gradeId}` | ✅ Implementado |
-| **Frontend — Tela de Grade** (`GradePage.tsx`) — criar/remover grade, adicionar/remover sessão, "Sala livre às" | ✅ Implementado |
-| **Frontend — Tela de Filmes** (`FilmesPage.tsx`) — listar, cadastrar, ativar/desativar, remover | ✅ Implementado |
-| **Frontend — Tela de Salas** (`SalasPage.tsx`) — listar, cadastrar | ✅ Implementado |
+| **CRUD completo de Grade** — criar, editar período (`PUT /api/grades/{id}`), remover grade, adicionar/editar/remover sessão | ✅ Implementado |
+| **CRUD completo de Filme** — cadastrar, editar (`PUT /api/filmes/{id}`), ativar/desativar, remover | ✅ Implementado |
+| **CRUD completo de Sala** — cadastrar, editar (`PUT /api/salas/{id}`), remover | ✅ Implementado |
+| **Edição de sessão dentro de grade** — `PUT /api/grades/{gradeId}/sessoes/{sessaoId}` — altera filme, sala ou horário | ✅ Implementado |
 | `SessaoJpa.inicio` mapeado como `TIME` no banco (`@JdbcTypeCode(SqlTypes.TIME)`) | ✅ Feito |
 | Datas/horas serializadas como `String` nos `*Response` (sem dependência de Jackson feature flags) | ✅ Feito |
 | **Frontend — toggle Backoffice / Portal do Cliente** (`App.tsx`) — troca contexto de navegação e cor da sidebar | ✅ Implementado (Irvin) |
+| **Frontend — Tela de Grade** (`GradePage.tsx`) — design completo com cards, stats, modais, edição inline de sessão | ✅ Redesenhado (2026-06-02) |
+| **Frontend — Tela de Catálogo** (`CatalogoPage.tsx`) — grid de cards com pôsteres TMDB, badges, tabs, modal de edição | ✅ Redesenhado (2026-06-02) |
+| **Frontend — Tela de Salas** (`SalasPage.tsx`) — cards por tipo com barra de capacidade, modal de edição | ✅ Redesenhado (2026-06-02) |
+| Integração TMDB — pôsteres automáticos em `CatalogoPage` via `src/lib/tmdb.ts` + cache localStorage 7 dias | ✅ Funcionando |
 | **F5 — Bomboniere: JPA + REST + Observer** — insumos, produtos, receitas, venda, alertas, ativar/desativar produto | ✅ Implementado (Fabiana) |
 | Padrão **Observer** — `EstoqueSubject` + `EstoqueObserver` + `AlertaEstoqueObserver`; `BombonieresService` implementa `EstoqueSubject` e notifica via `BomboniereConfig` | ✅ Funcionando e validado |
-| `NoOpMovimentacaoRepository` — placeholder até JPA de `MovimentacaoEstoque` ser implementado | ✅ Feito |
-| **F6 — Check-in** (Fabiana) — Observer (ocupação em tempo real) | ❌ Pendente (Fabiana) |
-| F3/F8 — Fidelidade + Fechamento de Caixa (Amanda) — Iterator + Template Method | ❌ Pendente (Amanda) |
+| **F6 — Check-in** (Fabiana) — RBAC, seleção de funcionário, Observer de ocupação | ✅ Implementado (Fabiana) |
+| **RBAC — Controle de acesso de funcionários** — `FuncionarioController`, roles e permissões, `UsuariosPage.tsx` | ✅ Implementado (Fabiana) |
+| **F3 — Fidelidade: JPA + REST + Iterator** — acúmulo, resgate, extrato, benefícios | ✅ Implementado (Amanda) |
+| **F8 — Fechamento de Caixa** — Template Method | ❌ Pendente (Amanda) |
 | **F1 — Compra de Ingresso: JPA + REST + Strategy** — pedido, reserva, cupom, ingresso, QR Code, fluxo multi-etapa | ✅ Implementado (Julia) |
 | Padrão **Strategy** — `DescontoStrategy` + `DescontoLeve2Pague1` + `DescontoParceriaCartao` + `DescontoEstudante`; `MotorDePromocoes` recebe lista de estratégias e seleciona em runtime | ✅ Funcionando e validado |
 | **F2 — Explorar Programação: JPA + REST + Decorator** — histórico, favoritos, filmes sugeridos, recomendação personalizada | ✅ Implementado (Julia) |
 | Padrão **Decorator** — `ProgramacaoComRecomendacaoDecorator` envolve `ProgramacaoService` e adiciona recomendação sem alterar o serviço base | ✅ Funcionando e validado |
 | Use Cases no módulo `application` — `IniciarPedidoUseCase`, `AplicarCupomUseCase`, `FinalizarPedidoUseCase`, `ListarFilmesUseCase`, `FavoritarFilmeUseCase` | ✅ Implementado (Julia) |
+
+> **Atenção ao rodar o projeto:** Usar sempre `mvn install -DskipTests` (sem a flag os testes BDD de Fidelidade falham — problema pré-existente no módulo `domain-portal` que Amanda precisa corrigir). O banco usa `docker-compose up -d` na raiz. Cada membro cria `application-local.properties` e `presentation-frontend/.env` localmente (gitignored).
 
 **Decisão de stack confirmada pelo time:**
 - Banco: **PostgreSQL 17.10 via Docker local** — cada membro tem seu próprio banco, sem compartilhar dados

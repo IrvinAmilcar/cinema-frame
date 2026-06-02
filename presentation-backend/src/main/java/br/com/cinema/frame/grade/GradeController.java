@@ -50,6 +50,18 @@ public class GradeController {
         return GradeResponse.from(gradeService.buscarPorId(gradeId));
     }
 
+    @PutMapping("/{gradeId}")
+    public GradeResponse atualizar(@PathVariable UUID gradeId, @RequestBody GradeRequest req) {
+        return GradeResponse.from(gradeService.atualizarGrade(gradeId, req.inicio(), req.fim()));
+    }
+
+    @PutMapping("/{gradeId}/sessoes/{sessaoId}")
+    public GradeResponse atualizarSessao(@PathVariable UUID gradeId, @PathVariable UUID sessaoId,
+                                          @RequestBody SessaoRequest req) {
+        gradeService.atualizarSessao(gradeId, sessaoId, req.filmeId(), req.salaId(), req.inicio());
+        return GradeResponse.from(gradeService.buscarPorId(gradeId));
+    }
+
     @DeleteMapping("/{gradeId}/sessoes/{sessaoId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removerSessao(@PathVariable UUID gradeId, @PathVariable UUID sessaoId) {

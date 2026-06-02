@@ -33,6 +33,14 @@ public class SalaService {
         return salaRepository.listarTodas();
     }
 
+    public Sala atualizar(UUID id, int numero, int capacidade, TipoSala tipo) {
+        Sala sala = salaRepository.buscarPorId(id)
+            .orElseThrow(() -> new IllegalArgumentException("Sala não encontrada: " + id));
+        sala.atualizar(numero, capacidade, tipo);
+        salaRepository.salvar(sala);
+        return sala;
+    }
+
     public void remover(UUID id) {
         salaRepository.buscarPorId(id)
             .orElseThrow(() -> new IllegalArgumentException("Sala não encontrada: " + id));
