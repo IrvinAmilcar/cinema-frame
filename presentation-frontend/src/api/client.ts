@@ -251,6 +251,36 @@ export const apiCaixa = {
     return json;
   },
 
+  ocupacaoPorSessao: async (dataInicio: string, dataFim: string): Promise<{
+    sessaoId: string;
+    filme: string;
+    horario: string;
+    salaNumero: number;
+    salaTipo: string;
+    capacidade: number;
+    ingressosVendidos: number;
+    diasVigencia: number;
+  }[]> => {
+    const res = await fetch(`${API_URL}/caixa/ocupacao-por-sessao?dataInicio=${dataInicio}&dataFim=${dataFim}`);
+    if (!res.ok) throw new Error('Erro ao buscar ocupação por sessão');
+    return res.json();
+  },
+
+  bombonierePorSessao: async (dataInicio: string, dataFim: string): Promise<{
+    sessaoId: string;
+    filme: string;
+    horario: string;
+    salaNumero: number;
+    salaTipo: string;
+    produto: string;
+    quantidade: number;
+    valorTotal: number;
+  }[]> => {
+    const res = await fetch(`${API_URL}/caixa/bomboniere-por-sessao?dataInicio=${dataInicio}&dataFim=${dataFim}`);
+    if (!res.ok) throw new Error('Erro ao buscar bomboniere por sessão');
+    return res.json();
+  },
+
   ingressosPorSessao: async (dataInicio: string, dataFim: string): Promise<{
     sessaoId: string;
     filme: string;

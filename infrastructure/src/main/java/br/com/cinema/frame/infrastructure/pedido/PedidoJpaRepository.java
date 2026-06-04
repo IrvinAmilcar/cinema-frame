@@ -81,6 +81,7 @@ public interface PedidoJpaRepository extends JpaRepository<PedidoJpa, UUID> {
         JOIN salas  s  ON se.sala_id  = s.id
         LEFT JOIN pedidos   p ON p.sessao_id = se.id AND p.finalizado = true
                               AND p.data_sessao BETWEEN :dataInicio AND :dataFim
+                              AND p.data_sessao BETWEEN g.inicio AND g.fim
         LEFT JOIN ingressos i ON i.pedido_id = p.id
         WHERE g.inicio <= :dataFim
           AND g.fim    >= :dataInicio
@@ -88,4 +89,30 @@ public interface PedidoJpaRepository extends JpaRepository<PedidoJpa, UUID> {
         ORDER BY se.inicio, f.titulo
         """, nativeQuery = true)
     List<Object[]> ingressosPorSessao(@Param("dataInicio") LocalDate dataInicio, @Param("dataFim") LocalDate dataFim);
+
+    @Query(value = """
+        SELECT
+            se.id                                                               AS sessao_id,
+            f.titulo                                                            AS filme,
+            se.inicio                                                           AS horario,
+            s.numero                                                            AS sala_numero,
+            s.tipo                                                              AS sala_tipo,
+            s.capacidade                                                        AS capacidade,
+            COUNT(i.id)                                                         AS ingressos_vendidos,
+            (LEAST(g.fim, CAST(:dataFim AS date))
+             - GREATEST(g.inicio, CAST(:dataInicio AS date)) + 1)              AS dias_vigencia
+        FROM sessoes se
+        JOIN grades g  ON se.grade_id = g.id
+        JOIN filmes f  ON se.filme_id = f.id
+        JOIN salas  s  ON se.sala_id  = s.id
+        LEFT JOIN pedidos   p ON p.sessao_id = se.id AND p.finalizado = true
+                              AND p.data_sessao BETWEEN :dataInicio AND :dataFim
+                              AND p.data_sessao BETWEEN g.inicio AND g.fim
+        LEFT JOIN ingressos i ON i.pedido_id = p.id
+        WHERE g.inicio <= :dataFim
+          AND g.fim    >= :dataInicio
+        GROUP BY se.id, f.titulo, se.inicio, s.numero, s.tipo, s.capacidade, g.inicio, g.fim
+        ORDER BY se.inicio, f.titulo
+        """, nativeQuery = true)
+    List<Object[]> ocupacaoPorSessao(@Param("dataInicio") LocalDate dataInicio, @Param("dataFim") LocalDate dataFim);
 }

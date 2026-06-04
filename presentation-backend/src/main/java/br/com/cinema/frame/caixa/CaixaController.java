@@ -1,23 +1,19 @@
 package br.com.cinema.frame.caixa;
 
+import br.com.cinema.frame.domain.backoffice.caixa.CaixaService;
+import br.com.cinema.frame.domain.backoffice.caixa.FechamentoCaixa;
+import br.com.cinema.frame.domain.backoffice.caixa.BombonierePorSessaoItem;
+import br.com.cinema.frame.domain.backoffice.caixa.OcupacaoPorSessaoItem;
+import br.com.cinema.frame.domain.backoffice.caixa.IngressosPorSessaoItem;
+import br.com.cinema.frame.domain.backoffice.caixa.ResumoPeriodoRepository;
+import br.com.cinema.frame.domain.backoffice.caixa.VendaDia;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import br.com.cinema.frame.domain.backoffice.caixa.CaixaService;
-import br.com.cinema.frame.domain.backoffice.caixa.FechamentoCaixa;
-import br.com.cinema.frame.domain.backoffice.caixa.ResumoPeriodoRepository;
-import br.com.cinema.frame.domain.backoffice.caixa.VendaDia;
 
 @RestController
 @RequestMapping("/caixa")
@@ -83,6 +79,34 @@ public class CaixaController {
     public ResponseEntity<String> corrigirDatas() {
         int atualizados = resumoRepository.corrigirDatasSessaoNula();
         return ResponseEntity.ok("Pedidos corrigidos: " + atualizados);
+    }
+
+    @GetMapping("/ocupacao-por-sessao")
+    public ResponseEntity<List<OcupacaoPorSessaoResponse>> ocupacaoPorSessao(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim) {
+        List<OcupacaoPorSessaoResponse> result = resumoRepository.ocupacaoPorSessao(dataInicio, dataFim)
+                .stream()
+                .map(i -> new OcupacaoPorSessaoResponse(
+                        i.sessaoId(), i.filme(), i.horario(),
+                        i.salaNumero(), i.salaTipo(),
+                        i.capacidade(), i.ingressosVendidos(), i.diasVigencia()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/bomboniere-por-sessao")
+    public ResponseEntity<List<BombonierePorSessaoResponse>> bombonierePorSessao(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim) {
+        List<BombonierePorSessaoResponse> result = resumoRepository.bombonierePorSessao(dataInicio, dataFim)
+                .stream()
+                .map(i -> new BombonierePorSessaoResponse(
+                        i.sessaoId(), i.filme(), i.horario(),
+                        i.salaNumero(), i.salaTipo(), i.produto(),
+                        i.quantidade(), i.valorTotal()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/ingressos-por-sessao")

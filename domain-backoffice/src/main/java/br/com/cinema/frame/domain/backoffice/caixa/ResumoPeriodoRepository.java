@@ -10,4 +10,6 @@ public interface ResumoPeriodoRepository {
     double somarDescontosPontosPosPeriodo(LocalDate dataInicio, LocalDate dataFim);
     int corrigirDatasSessaoNula();
     List<IngressosPorSessaoItem> ingressosPorSessao(LocalDate dataInicio, LocalDate dataFim);
+    List<BombonierePorSessaoItem> bombonierePorSessao(LocalDate dataInicio, LocalDate dataFim);
+    List<OcupacaoPorSessaoItem> ocupacaoPorSessao(LocalDate dataInicio, LocalDate dataFim);
 }

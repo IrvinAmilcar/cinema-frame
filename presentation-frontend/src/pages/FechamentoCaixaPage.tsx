@@ -107,7 +107,21 @@ export default function FechamentoCaixaPage() {
     salaNumero: number; salaTipo: string;
     totalIngressos: number; totalInteira: number; valorTotal: number;
   }
+  interface BomboniereSessao {
+    sessaoId: string; filme: string; horario: string;
+    salaNumero: number; salaTipo: string;
+    produto: string; quantidade: number; valorTotal: number;
+  }
+  interface OcupacaoSessao {
+    sessaoId: string; filme: string; horario: string;
+    salaNumero: number; salaTipo: string;
+    capacidade: number; ingressosVendidos: number; diasVigencia: number;
+  }
   const [ingressosSessao, setIngressosSessao] = useState<IngressoSessao[]>([]);
+  const [ocupacaoSessao, setOcupacaoSessao] = useState<OcupacaoSessao[]>([]);
+  const [carregandoOcupacao, setCarregandoOcupacao] = useState(false);
+  const [bomboniereSessao, setBomboniereSessao] = useState<BomboniereSessao[]>([]);
+  const [carregandoBomboniere, setCarregandoBomboniere] = useState(false);
   const [carregandoIngressos, setCarregandoIngressos] = useState(false);
   const [carregandoResumo, setCarregandoResumo] = useState(false);
   const [caixas, setCaixas] = useState<Caixa[]>(caixasIniciais);
@@ -178,19 +192,29 @@ export default function FechamentoCaixaPage() {
     if (!inicio || !fim || inicio > fim) return;
     setCarregandoResumo(true);
     setCarregandoIngressos(true);
+    setCarregandoBomboniere(true);
+    setCarregandoOcupacao(true);
     try {
-      const [resumoRes, ingressosRes] = await Promise.all([
+      const [resumoRes, ingressosRes, bombonieresRes, ocupacaoRes] = await Promise.all([
         apiCaixa.resumoPorPeriodo(inicio, fim),
         apiCaixa.ingressosPorSessao(inicio, fim),
+        apiCaixa.bombonierePorSessao(inicio, fim),
+        apiCaixa.ocupacaoPorSessao(inicio, fim),
       ]);
       setResumo(resumoRes);
       setIngressosSessao(ingressosRes);
+      setBomboniereSessao(bombonieresRes);
+      setOcupacaoSessao(ocupacaoRes);
     } catch {
       setResumo(null);
       setIngressosSessao([]);
+      setBomboniereSessao([]);
+      setOcupacaoSessao([]);
     } finally {
       setCarregandoResumo(false);
       setCarregandoIngressos(false);
+      setCarregandoBomboniere(false);
+      setCarregandoOcupacao(false);
     }
   }, []);
 
@@ -551,34 +575,137 @@ export default function FechamentoCaixaPage() {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot>
-                  <tr style={{ backgroundColor: '#f9f8f5', borderTop: `2px solid ${cores.borda}` }}>
-                    <td colSpan={4} style={{ padding: '10px 16px', fontWeight: 600, color: '#555', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total</td>
-                    <td style={{ padding: '10px 16px', fontWeight: 700, color: '#1a1a1a' }}>
-                      {ingressosSessao.reduce((s, i) => s + i.totalIngressos, 0)}
-                    </td>
-                    <td style={{ padding: '10px 16px', fontWeight: 700, color: cores.vinho }}>
-                      {fmtBRL(ingressosSessao.reduce((s, i) => s + i.valorTotal, 0))}
-                    </td>
-                  </tr>
-                </tfoot>
+
               </table>
             )}
           </div>
         )}
 
         {abaAtiva === 'bomboniere' && (
-          <div style={{ padding: '24px', color: '#888', textAlign: 'center', fontSize: '13px' }}>Em construção.</div>
+          <div>
+            {carregandoBomboniere ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: '#888', fontSize: '13px' }}>Carregando...</div>
+            ) : bomboniereSessao.length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: '#bbb', fontSize: '13px' }}>Nenhuma venda de bomboniere encontrada para o período selecionado.</div>
+            ) : (() => {
+              // Agrupar por sessão para exibir sessão + seus produtos
+              const sessoes = Array.from(new Map(bomboniereSessao.map(i => [i.sessaoId, {
+                sessaoId: i.sessaoId, filme: i.filme, horario: i.horario,
+                salaNumero: i.salaNumero, salaTipo: i.salaTipo,
+              }])).values());
+
+              return (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f9f8f5', borderBottom: `1px solid ${cores.borda}` }}>
+                      {['Data/Hora', 'Filme', 'Sala', 'Produtos', 'Total'].map(h => (
+                        <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sessoes.map(sessao => {
+                      const itens = bomboniereSessao.filter(i => i.sessaoId === sessao.sessaoId);
+                      const totalSessao = itens.reduce((s, i) => s + i.valorTotal, 0);
+                      return (
+                        <tr key={sessao.sessaoId} style={{ borderBottom: `1px solid #f0eeea` }}>
+                          <td style={{ padding: '12px 16px', color: '#555', whiteSpace: 'nowrap', verticalAlign: 'top' }}>{itens[0].horario}</td>
+                          <td style={{ padding: '12px 16px', fontWeight: 500, color: '#1a1a1a', verticalAlign: 'top' }}>{itens[0].filme}</td>
+                          <td style={{ padding: '12px 16px', color: '#555', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                            Sala {itens[0].salaNumero}
+                            <span style={{ marginLeft: '6px', fontSize: '10px', backgroundColor: '#f0eeea', padding: '2px 6px', borderRadius: '4px', color: '#888', fontWeight: 600 }}>
+                              {itens[0].salaTipo.replace('TRES_D', '3D')}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 16px', verticalAlign: 'top' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                              {itens.map((item, ii) => (
+                                <span key={ii} style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                  backgroundColor: '#f0f4ff', border: '1px solid #d0d9f5',
+                                  borderRadius: '6px', padding: '3px 9px', fontSize: '12px',
+                                }}>
+                                  <strong style={{ color: '#1a1a1a' }}>{item.quantidade}×</strong>
+                                  <span style={{ color: '#333' }}>{item.produto}</span>
+                                  <span style={{ color: '#999', fontSize: '11px' }}>· {fmtBRL(item.valorTotal)}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td style={{ padding: '12px 16px', fontWeight: 700, color: cores.vinho, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                            {fmtBRL(totalSessao)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+
+                </table>
+              );
+            })()}
+          </div>
         )}
         {abaAtiva === 'ocupacao' && (
-          <div style={{ padding: '24px', color: '#888', textAlign: 'center', fontSize: '13px' }}>Em construção.</div>
+          <div>
+            {carregandoOcupacao ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: '#888', fontSize: '13px' }}>Carregando...</div>
+            ) : ocupacaoSessao.length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: '#bbb', fontSize: '13px' }}>Nenhuma sessão encontrada para o período selecionado.</div>
+            ) : (() => {
+              const taxas = ocupacaoSessao.map(s => (s.capacidade > 0 && s.diasVigencia > 0) ? (s.ingressosVendidos / (s.capacidade * s.diasVigencia)) * 100 : 0);
+              const taxaMedia = taxas.reduce((a, b) => a + b, 0) / taxas.length;
+
+              return (
+                <>
+                  {/* Tabela */}
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f9f8f5', borderBottom: `1px solid ${cores.borda}` }}>
+                        {['Horário', 'Filme', 'Sala', 'Vendidos', 'Capacidade', 'Ocupação'].map(h => (
+                          <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ocupacaoSessao.map((s, i) => {
+                        const taxa = (s.capacidade > 0 && s.diasVigencia > 0) ? (s.ingressosVendidos / (s.capacidade * s.diasVigencia)) * 100 : 0;
+                        const cor = taxa >= 75 ? '#2E7D32' : taxa >= 40 ? '#F57C00' : '#C62828';
+                        const bg = taxa >= 75 ? '#E8F5E9' : taxa >= 40 ? '#FFF3E0' : '#FFEBEE';
+                        return (
+                          <tr key={i} style={{ borderBottom: `1px solid #f0eeea` }}>
+                            <td style={{ padding: '10px 16px', color: '#555' }}>{s.horario}</td>
+                            <td style={{ padding: '10px 16px', fontWeight: 500, color: '#1a1a1a' }}>{s.filme}</td>
+                            <td style={{ padding: '10px 16px', color: '#555' }}>
+                              Sala {s.salaNumero}
+                              <span style={{ marginLeft: '6px', fontSize: '10px', backgroundColor: '#f0eeea', padding: '2px 6px', borderRadius: '4px', color: '#888', fontWeight: 600 }}>
+                                {s.salaTipo.replace('TRES_D', '3D')}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 16px', fontWeight: 600, color: '#1a1a1a' }}>{s.ingressosVendidos}</td>
+                            <td style={{ padding: '10px 16px', color: '#555' }}>{s.capacidade * s.diasVigencia}</td>
+                            <td style={{ padding: '10px 16px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ flex: 1, maxWidth: '120px', height: '6px', backgroundColor: '#f0eeea', borderRadius: '3px', overflow: 'hidden' }}>
+                                  <div style={{ width: `${Math.min(taxa, 100)}%`, height: '100%', backgroundColor: cor, borderRadius: '3px', transition: 'width .3s' }} />
+                                </div>
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: cor, backgroundColor: bg, padding: '2px 8px', borderRadius: '4px', minWidth: '48px', textAlign: 'center' }}>
+                                  {taxa.toFixed(1)}%
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </>
+              );
+            })()}
+          </div>
         )}
       </div>
 
     </div>
   );
 }
-
-
-
 
