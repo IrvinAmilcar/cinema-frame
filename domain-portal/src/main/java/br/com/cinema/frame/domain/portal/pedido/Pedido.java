@@ -1,16 +1,15 @@
 package br.com.cinema.frame.domain.portal.pedido;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
 import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.backoffice.bomboniere.ProdutoDaBomboniere;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.ingresso.Ingresso;
 import br.com.cinema.frame.domain.backoffice.ingresso.TipoIngresso;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.List;
-import java.util.UUID;
 
 public class Pedido {
 
@@ -60,6 +59,16 @@ public class Pedido {
         Pedido p = new Pedido(id, sessao, clienteId);
         p.reservaId = reservaId;
         p.ingressos.addAll(ingressos);
+        return p;
+    }
+
+    public static Pedido reconstituirComTudo(UUID id, Sessao sessao, UUID clienteId,
+                                              UUID reservaId, List<Ingresso> ingressos,
+                                              List<ProdutoDaBomboniere> produtos) {
+        Pedido p = new Pedido(id, sessao, clienteId);
+        p.reservaId = reservaId;
+        p.ingressos.addAll(ingressos);
+        p.produtos.addAll(produtos);
         return p;
     }
 

@@ -398,6 +398,7 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
         body: JSON.stringify({
           valorTotal: totalFinal,
           usarPontos: usarPontos && saldoPontos !== null && saldoPontos > 0,
+          descontoPontos: (usarPontos && saldoPontos !== null && saldoPontos > 0) ? descontoPontosReais : 0,
           clienteId: cliente?.clienteId ?? null,
         }),
       })
@@ -967,4 +968,6 @@ function Row({ label, value, green }: { label: string; value: string; green?: bo
     </div>
   )
 }
+
+
 

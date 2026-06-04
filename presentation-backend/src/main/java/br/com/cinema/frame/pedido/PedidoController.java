@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
+import br.com.cinema.frame.domain.backoffice.caixa.DescontoPontosRepository;
 import br.com.cinema.frame.domain.portal.pedido.Pedido;
 import br.com.cinema.frame.domain.portal.pedido.PedidoRepository;
 import br.com.cinema.frame.domain.portal.pedido.PedidoService;
@@ -38,19 +39,22 @@ public class PedidoController {
     private final BombonieresService bombonieresService;
     private final PedidoRepository pedidoRepository;
     private final MotorDePromocoes motorDePromocoes;
+    private final DescontoPontosRepository descontoPontosRepository;
 
     public PedidoController(PedidoService pedidoService,
                              ReservaService reservaService,
                              CupomRepository cupomRepository,
                              BombonieresService bombonieresService,
                              PedidoRepository pedidoRepository,
-                             MotorDePromocoes motorDePromocoes) {
+                             MotorDePromocoes motorDePromocoes,
+                             DescontoPontosRepository descontoPontosRepository) {
         this.pedidoService = pedidoService;
         this.reservaService = reservaService;
         this.cupomRepository = cupomRepository;
         this.bombonieresService = bombonieresService;
         this.pedidoRepository = pedidoRepository;
         this.motorDePromocoes = motorDePromocoes;
+        this.descontoPontosRepository = descontoPontosRepository;
     }
 
     @PostMapping("/api/reserva")
@@ -111,7 +115,9 @@ public class PedidoController {
     public VoucherResponse adicionarProduto(@PathVariable UUID id,
                                              @RequestBody AdicionarProdutoRequest req) {
         int qtd = Math.max(1, req.quantidade());
-        for (int i = 0; i < qtd; i++) bombonieresService.vender(req.produtoId());
+        for (int i = 0; i < qtd; i++) {
+            pedidoService.adicionarProduto(id, req.produtoId());
+        }
         return new VoucherResponse("VCH-" + id.toString().toUpperCase());
     }
 
@@ -123,13 +129,19 @@ public class PedidoController {
         double valorTotal = (req != null && req.valorTotal() != null && req.valorTotal() > 0)
                 ? req.valorTotal() : 0.0;
         boolean usarPontos = req != null && Boolean.TRUE.equals(req.usarPontos());
+        double descontoPontos = (req != null && req.descontoPontos() != null && req.descontoPontos() > 0)
+                ? req.descontoPontos() : 0.0;
 
         ResultadoDoPedido resultado = pedidoService.finalizar(
                 id, StatusPagamento.APROVADO, valorTotal, LocalDateTime.now(), usarPontos);
+
+        if (descontoPontos > 0) {
+            descontoPontosRepository.salvar(id, descontoPontos, LocalDate.now());
+        }
         return ResultadoPedidoResponse.from(resultado);
     }
 
-    public record FinalizarPedidoRequest(Double valorTotal, Boolean usarPontos, UUID clienteId) {}
+    public record FinalizarPedidoRequest(Double valorTotal, Boolean usarPontos, UUID clienteId, Double descontoPontos) {}
     public record PedidoIniciadoResponse(UUID pedidoId) {}
 
     public record IngressoClienteResponse(

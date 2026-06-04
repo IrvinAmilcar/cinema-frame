@@ -159,11 +159,15 @@ public class PedidoService {
             }
 
             if (valorTotal != null && valorTotal > 0) {
-                boolean acumulou = fidelidadeService.acumularPontos(pedido.getClienteId(), valorTotal, hoje,
-                        pedido.getSessao().getFilme().getTitulo(),
-                        pedido.getSessao().getInicio().toString(),
-                        pedido.getSessao().getSala().getNumero());
-                resultado.setLimitePontosAtingido(!acumulou);
+                try {
+                    boolean acumulou = fidelidadeService.acumularPontos(pedido.getClienteId(), valorTotal, hoje,
+                            pedido.getSessao().getFilme().getTitulo(),
+                            pedido.getSessao().getInicio().toString(),
+                            pedido.getSessao().getSala().getNumero());
+                    resultado.setLimitePontosAtingido(!acumulou);
+                } catch (IllegalStateException e) {
+                    resultado.setLimitePontosAtingido(true);
+                }
             }
         }
 

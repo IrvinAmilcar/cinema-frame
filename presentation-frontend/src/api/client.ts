@@ -205,3 +205,61 @@ export const apiUsuarios = {
     if (!res.ok) throw new Error('Erro ao excluir funcionário');
   }
 };
+// ==========================
+// FECHAMENTO DE CAIXA
+// ==========================
+
+export interface VendaDiaRequest {
+  sessaoId: string;
+  capacidadeSala: number;
+  ingressosVendidos: number;
+  valorArrecadado: number;
+}
+
+export interface FecharCaixaRequest {
+  data: string;
+  momentoFechamento: string;
+  vendas: VendaDiaRequest[];
+}
+
+export interface FechamentoCaixaResponse {
+  id: string;
+  data: string;
+  totalVendas: number;
+  totalIngressos: number;
+  totalSessoes: number;
+  taxaOcupacaoMedia: number;
+  momentoFechamento: string;
+}
+
+export const apiCaixa = {
+  fecharCaixa: async (dados: FecharCaixaRequest): Promise<FechamentoCaixaResponse> => {
+    const res = await fetch(`${API_URL}/caixa/fechar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.mensagem || 'Erro ao fechar o caixa');
+    return json;
+  },
+
+  consultarRelatorio: async (data: string): Promise<FechamentoCaixaResponse> => {
+    const res = await fetch(`${API_URL}/caixa/relatorio?data=${data}`);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.mensagem || 'Nenhum fechamento encontrado para essa data');
+    return json;
+  },
+
+  resumoPorPeriodo: async (dataInicio: string, dataFim: string): Promise<{
+    totalIngressos: number;
+    totalIngressosValor: number;
+    totalBomboniere: number;
+    totalDescontoPontos: number;
+    receitaTotal: number;
+  }> => {
+    const res = await fetch(`${API_URL}/caixa/resumo?dataInicio=${dataInicio}&dataFim=${dataFim}`);
+    if (!res.ok) throw new Error('Erro ao buscar resumo do período');
+    return res.json();
+  },
+};

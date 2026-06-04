@@ -13,6 +13,7 @@ import { CheckInPage } from './pages/CheckInPage';
 import AuthModal, { type ClienteLogado } from './components/AuthModal'
 import FidelidadePage from './pages/FidelidadePage'
 import UsuariosPage from './pages/UsuariosPage';
+import FechamentoCaixaPage from './pages/FechamentoCaixaPage'
 
 type Modo = 'backoffice' | 'portal'
 
@@ -177,7 +178,7 @@ export default function App() {
             <Route path='/grade' element={<GradePage />} />
             <Route path='/bomboniere' element={<BombonierePage />} />
             <Route path='/checkin' element={<CheckInPage />} />
-            <Route path='/caixa' element={<EmConstrucao nome='Fechamento de Caixa' />} />
+            <Route path='/caixa' element={<FechamentoCaixaPage />} />
             <Route path='/usuarios' element={<UsuariosPage />} />
 
             {/* Portal */}
