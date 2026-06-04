@@ -53,10 +53,76 @@ export default function FechamentoCaixaPage() {
   const [resumo, setResumo] = useState<ResumoPeriodo | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [carregandoResumo, setCarregandoResumo] = useState(false);
+
+  interface FechamentoCaixaResumo {
+    totalVendas: number;
+    totalIngressos: number;
+    totalSessoes: number;
+    taxaOcupacao: number;
+    dataHora: string;
+  }
+  interface Caixa {
+    id: number;
+    aberto: boolean;
+    dataAbertura: string | null;
+    fechamento: FechamentoCaixaResumo | null;
+  }
+
+  function caixasIniciais(): Caixa[] {
+    try {
+      const salvo = localStorage.getItem('frame_caixas');
+      if (salvo) return JSON.parse(salvo);
+    } catch {}
+    return [
+      { id: 1, aberto: true, dataAbertura: new Date().toLocaleString('pt-BR'), fechamento: null },
+      { id: 2, aberto: false, dataAbertura: null, fechamento: null },
+    ];
+  }
+
+  const [caixas, setCaixas] = useState<Caixa[]>(caixasIniciais);
+
+  function salvarCaixas(lista: Caixa[]) {
+    try { localStorage.setItem('frame_caixas', JSON.stringify(lista)); } catch {}
+    setCaixas(lista);
+  }
+
+  function gerarResumoAleatorio(): FechamentoCaixaResumo {
+    const totalSessoes = Math.floor(Math.random() * 6) + 3;
+    const totalIngressos = Math.floor(Math.random() * 80) + 40;
+    const totalVendas = totalIngressos * (Math.random() * 20 + 20);
+    const taxaOcupacao = Math.random() * 40 + 50;
+    return {
+      totalVendas: parseFloat(totalVendas.toFixed(2)),
+      totalIngressos,
+      totalSessoes,
+      taxaOcupacao: parseFloat(taxaOcupacao.toFixed(1)),
+      dataHora: new Date().toLocaleString('pt-BR'),
+    };
+  }
+
+  function toggleCaixa(id: number) {
+    const nova = caixas.map(c => {
+      if (c.id !== id) return c;
+      if (c.aberto) {
+        return {
+          ...c,
+          aberto: false,
+          dataAbertura: null,
+          fechamento: gerarResumoAleatorio(),
+        };
+      }
+      return {
+        ...c,
+        aberto: true,
+        dataAbertura: new Date().toLocaleString('pt-BR'),
+        fechamento: null,
+      };
+    });
+    salvarCaixas(nova);
+  }
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
 
-  // Busca o resumo do período sempre que as datas mudam
   const buscarResumo = useCallback(async (inicio: string, fim: string) => {
     if (!inicio || !fim || inicio > fim) return;
     setCarregandoResumo(true);
@@ -118,11 +184,9 @@ export default function FechamentoCaixaPage() {
     }));
   }
 
-  // Valores dos cards: usa resumo do back se disponível, senão calcula localmente da tabela
   const valorIngressos = resumo?.totalIngressosValor ?? 0;
   const valorBomboniere = resumo?.totalBomboniere ?? 0;
   const totalDescontoPontos = resumo?.totalDescontoPontos ?? 0;
-  // Receita Total = ingressos + bomboniere - descontos de fidelidade
   const receitaTotal = valorIngressos + valorBomboniere - totalDescontoPontos;
 
   function mostrarSucesso(msg: string) {
@@ -294,6 +358,72 @@ export default function FechamentoCaixaPage() {
           <div style={{ fontSize: '22px', fontWeight: 600, color: 'white' }}>{fmtBRL(receitaTotal)}</div>
         </div>
       </div>
+
+      {/* Controle de Caixas */}
+      <div style={{ backgroundColor: 'white', border: `1px solid ${cores.borda}`, borderRadius: '10px', padding: '18px 20px', marginBottom: '20px' }}>
+        <div style={{ fontSize: '13px', fontWeight: 600, color: '#555', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: cores.vinho }}>💲</span> Controle de Caixas Presenciais
+        </div>
+        <div style={{ display: 'flex', gap: '14px' }}>
+          {caixas.map(caixa => (
+            <div
+              key={caixa.id}
+              style={{
+                flex: 1, borderRadius: '10px', padding: '16px 18px',
+                backgroundColor: caixa.aberto ? '#F0FFF4' : 'white',
+                border: `1px solid ${caixa.aberto ? '#A8D5B5' : cores.borda}`,
+              }}
+            >
+              {/* Nome e status */}
+              <div style={{ fontWeight: 600, fontSize: '14px', color: '#1a1a1a', marginBottom: '6px' }}>
+                Caixa {caixa.id}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '10px' }}>
+                <span style={{ fontSize: '12px' }}>{caixa.aberto ? '🔓' : '🔒'}</span>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: caixa.aberto ? '#2E7D32' : '#888' }}>
+                  {caixa.aberto ? 'Aberto' : 'Fechado'}
+                </span>
+              </div>
+
+              {/* Data de abertura */}
+              {caixa.aberto && caixa.dataAbertura && (
+                <div style={{ fontSize: '11px', color: '#777', marginBottom: '12px', padding: '6px 10px', backgroundColor: '#E8F5E9', borderRadius: '6px' }}>
+                  📅 Aberto em {caixa.dataAbertura}
+                </div>
+              )}
+
+              {/* Resumo do fechamento */}
+              {!caixa.aberto && caixa.fechamento && (
+                <div style={{ fontSize: '11px', color: '#555', marginBottom: '12px', padding: '10px', backgroundColor: '#f9f8f5', borderRadius: '6px', lineHeight: 1.8 }}>
+                  <div style={{ fontWeight: 600, color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Fechado em {caixa.fechamento.dataHora}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px', marginTop: '6px' }}>
+                    <div><span style={{ color: '#999' }}>Total vendas</span><br /><strong>{fmtBRL(caixa.fechamento.totalVendas)}</strong></div>
+                    <div><span style={{ color: '#999' }}>Ingressos</span><br /><strong>{caixa.fechamento.totalIngressos}</strong></div>
+                    <div><span style={{ color: '#999' }}>Sessões</span><br /><strong>{caixa.fechamento.totalSessoes}</strong></div>
+                    <div><span style={{ color: '#999' }}>Ocupação</span><br /><strong>{caixa.fechamento.taxaOcupacao}%</strong></div>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => toggleCaixa(caixa.id)}
+                style={{
+                  width: '100%', padding: '9px', border: 'none', borderRadius: '7px',
+                  fontWeight: 600, fontSize: '13px', cursor: 'pointer',
+                  backgroundColor: caixa.aberto ? cores.vinho : '#2E7D32',
+                  color: 'white',
+                }}
+              >
+                {caixa.aberto ? '🔒 Fechar Caixa' : '🔓 Abrir Caixa'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+
     </div>
-  )
+  );
 }
+
+
