@@ -30,6 +30,11 @@ public class ResumoPeriodoRepositoryImpl implements ResumoPeriodoRepository {
     }
 
     @Override
+    public double somarValorIngressosPorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+        return pedidoJpaRepository.somarValorIngressosPorPeriodo(dataInicio, dataFim);
+    }
+
+    @Override
     public double somarVendasBombonierePorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
         return pedidoProdutoJpaRepository.somarVendasBombonierePorPeriodo(dataInicio, dataFim);
     }
@@ -37,5 +42,10 @@ public class ResumoPeriodoRepositoryImpl implements ResumoPeriodoRepository {
     @Override
     public double somarDescontosPontosPosPeriodo(LocalDate dataInicio, LocalDate dataFim) {
         return descontoPontosJpaRepository.somarDescontosPorPeriodo(dataInicio, dataFim);
+    }
+
+    @Override
+    public int corrigirDatasSessaoNula() {
+        return pedidoJpaRepository.preencherDataSessaoNula();
     }
 }

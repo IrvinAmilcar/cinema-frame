@@ -119,11 +119,11 @@ export default function FechamentoCaixaPage() {
   }
 
   // Valores dos cards: usa resumo do back se disponível, senão calcula localmente da tabela
-  const valorIngressos = resumo?.totalIngressosValor
-    ?? linhas.reduce((s, l) => s + (parseFloat(l.valorArrecadado) || 0), 0);
+  const valorIngressos = resumo?.totalIngressosValor ?? 0;
   const valorBomboniere = resumo?.totalBomboniere ?? 0;
   const totalDescontoPontos = resumo?.totalDescontoPontos ?? 0;
-  const receitaTotal = resumo?.receitaTotal ?? valorIngressos + valorBomboniere;
+  // Receita Total = ingressos + bomboniere - descontos de fidelidade
+  const receitaTotal = valorIngressos + valorBomboniere - totalDescontoPontos;
 
   function mostrarSucesso(msg: string) {
     setSucesso(msg); setErro(null);
@@ -271,8 +271,9 @@ export default function FechamentoCaixaPage() {
             {carregandoResumo && <span style={{ fontSize: '10px', color: '#bbb' }}>atualizando...</span>}
           </div>
           <div style={{ fontSize: '22px', fontWeight: 600, color: '#1a1a1a' }}>
-            {resumo ? `${resumo.totalIngressos} vendidos` : fmtBRL(valorIngressos)}
+            {fmtBRL(valorIngressos)}
           </div>
+          {resumo && <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>{resumo.totalIngressos} ingressos vendidos</div>}
         </div>
         <div style={{ flex: 1, backgroundColor: 'white', border: `1px solid ${cores.borda}`, borderRadius: '10px', padding: '16px 18px' }}>
           <div style={{ fontSize: '11px', color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
@@ -282,7 +283,7 @@ export default function FechamentoCaixaPage() {
         </div>
         <div style={{ flex: 1, backgroundColor: 'white', border: `1px solid ${cores.borda}`, borderRadius: '10px', padding: '16px 18px' }}>
           <div style={{ fontSize: '11px', color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
-            💎 Descontos Fidelidade
+            🎫 Descontos Fidelidade
           </div>
           <div style={{ fontSize: '22px', fontWeight: 600, color: cores.vermelhoTexto }}>- {fmtBRL(totalDescontoPontos)}</div>
         </div>
@@ -293,7 +294,6 @@ export default function FechamentoCaixaPage() {
           <div style={{ fontSize: '22px', fontWeight: 600, color: 'white' }}>{fmtBRL(receitaTotal)}</div>
         </div>
       </div>
-
     </div>
-  );
+  )
 }

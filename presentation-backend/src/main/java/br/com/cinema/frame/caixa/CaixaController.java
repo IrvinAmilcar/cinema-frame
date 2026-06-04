@@ -1,15 +1,22 @@
 package br.com.cinema.frame.caixa;
 
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import br.com.cinema.frame.domain.backoffice.caixa.CaixaService;
 import br.com.cinema.frame.domain.backoffice.caixa.FechamentoCaixa;
 import br.com.cinema.frame.domain.backoffice.caixa.ResumoPeriodoRepository;
 import br.com.cinema.frame.domain.backoffice.caixa.VendaDia;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/caixa")
@@ -57,17 +64,24 @@ public class CaixaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim) {
 
         int totalIngressos = resumoRepository.contarIngressosPorPeriodo(dataInicio, dataFim);
+        double totalIngressosValor = resumoRepository.somarValorIngressosPorPeriodo(dataInicio, dataFim);
         double totalBomboniere = resumoRepository.somarVendasBombonierePorPeriodo(dataInicio, dataFim);
         double totalDescontoPontos = resumoRepository.somarDescontosPontosPosPeriodo(dataInicio, dataFim);
-        double totalIngressosValor = 0.0;
+        double receitaTotal = totalIngressosValor + totalBomboniere - totalDescontoPontos;
 
         return ResponseEntity.ok(new ResumoPeriodoResponse(
                 totalIngressos,
                 totalIngressosValor,
                 totalBomboniere,
                 totalDescontoPontos,
-                totalIngressosValor + totalBomboniere
+                receitaTotal
         ));
+    }
+
+    @PostMapping("/corrigir-datas")
+    public ResponseEntity<String> corrigirDatas() {
+        int atualizados = resumoRepository.corrigirDatasSessaoNula();
+        return ResponseEntity.ok("Pedidos corrigidos: " + atualizados);
     }
 
     private FechamentoCaixaResponse toResponse(FechamentoCaixa f) {

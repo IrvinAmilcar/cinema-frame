@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.cinema.frame.domain.backoffice.bomboniere.BombonieresService;
 import br.com.cinema.frame.domain.backoffice.caixa.DescontoPontosRepository;
+import br.com.cinema.frame.domain.backoffice.caixa.ResumoFinanceiroPedidoRepository;
 import br.com.cinema.frame.domain.portal.pedido.Pedido;
 import br.com.cinema.frame.domain.portal.pedido.PedidoRepository;
 import br.com.cinema.frame.domain.portal.pedido.PedidoService;
@@ -40,6 +41,7 @@ public class PedidoController {
     private final PedidoRepository pedidoRepository;
     private final MotorDePromocoes motorDePromocoes;
     private final DescontoPontosRepository descontoPontosRepository;
+    private final ResumoFinanceiroPedidoRepository resumoFinanceiroRepository;
 
     public PedidoController(PedidoService pedidoService,
                              ReservaService reservaService,
@@ -47,7 +49,8 @@ public class PedidoController {
                              BombonieresService bombonieresService,
                              PedidoRepository pedidoRepository,
                              MotorDePromocoes motorDePromocoes,
-                             DescontoPontosRepository descontoPontosRepository) {
+                             DescontoPontosRepository descontoPontosRepository,
+                             ResumoFinanceiroPedidoRepository resumoFinanceiroRepository) {
         this.pedidoService = pedidoService;
         this.reservaService = reservaService;
         this.cupomRepository = cupomRepository;
@@ -55,6 +58,7 @@ public class PedidoController {
         this.pedidoRepository = pedidoRepository;
         this.motorDePromocoes = motorDePromocoes;
         this.descontoPontosRepository = descontoPontosRepository;
+        this.resumoFinanceiroRepository = resumoFinanceiroRepository;
     }
 
     @PostMapping("/api/reserva")
@@ -138,10 +142,15 @@ public class PedidoController {
         if (descontoPontos > 0) {
             descontoPontosRepository.salvar(id, descontoPontos, LocalDate.now());
         }
+
+        double vIngressos = (req != null && req.valorIngressos() != null) ? req.valorIngressos() : valorTotal;
+        double vBomboniere = (req != null && req.valorBomboniere() != null) ? req.valorBomboniere() : 0.0;
+        double vDescontoCupom = (req != null && req.descontoCupom() != null) ? req.descontoCupom() : 0.0;
+        resumoFinanceiroRepository.salvar(id, vIngressos, vBomboniere, vDescontoCupom, descontoPontos, valorTotal, LocalDate.now());
         return ResultadoPedidoResponse.from(resultado);
     }
 
-    public record FinalizarPedidoRequest(Double valorTotal, Boolean usarPontos, UUID clienteId, Double descontoPontos) {}
+    public record FinalizarPedidoRequest(Double valorTotal, Boolean usarPontos, UUID clienteId, Double descontoPontos, Double valorIngressos, Double valorBomboniere, Double descontoCupom) {}
     public record PedidoIniciadoResponse(UUID pedidoId) {}
 
     public record IngressoClienteResponse(
