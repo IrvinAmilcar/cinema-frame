@@ -230,25 +230,7 @@ export default function UsuariosPage() {
             </div>
           </div>
 
-          <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', color: cores.texto }}>Permissões Ativas</h4>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto' }}>
-            {PERMISSOES_UI.map(perm => {
-              const temPermissao = usuarioSelecionado.permissoes.includes(perm.id);
-              return (
-                <div key={perm.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: cores.fundo, padding: '12px 16px', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '13px', color: '#424242' }}>{perm.shortLabel}</span>
-                  <span style={{ 
-                    backgroundColor: temPermissao ? cores.verdeClaro : cores.vermelhoClaro, 
-                    color: temPermissao ? cores.verdeTexto : cores.vermelhoTexto, 
-                    padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 500 
-                  }}>
-                    {temPermissao ? 'Permitido' : 'Negado'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+
         </div>
       )}
 
@@ -301,20 +283,6 @@ export default function UsuariosPage() {
                   <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: cores.subtexto }}>
                     {ROLES.find(r => r.value === formFunc.role)?.desc}
                   </p>
-                </div>
-
-                <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', color: cores.texto, fontWeight: 600 }}>Permissões Específicas</h4>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-                  {PERMISSOES_UI.map(perm => (
-                    <div key={perm.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: cores.fundo, padding: '16px', borderRadius: '8px' }}>
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: 500, color: cores.texto, marginBottom: '4px' }}>{perm.label}</div>
-                        <div style={{ fontSize: '13px', color: cores.subtexto }}>{perm.desc}</div>
-                      </div>
-                      <Switch checked={formFunc.permissoes.includes(perm.id)} onChange={() => togglePermissao(perm.id)} />
-                    </div>
-                  ))}
                 </div>
 
                 {modalAberto === 'EDITAR' && (
