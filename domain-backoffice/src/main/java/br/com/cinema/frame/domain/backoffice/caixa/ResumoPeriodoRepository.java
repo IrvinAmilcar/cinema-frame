@@ -1,6 +1,7 @@
 package br.com.cinema.frame.domain.backoffice.caixa;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface ResumoPeriodoRepository {
     int contarIngressosPorPeriodo(LocalDate dataInicio, LocalDate dataFim);
@@ -8,4 +9,5 @@ public interface ResumoPeriodoRepository {
     double somarVendasBombonierePorPeriodo(LocalDate dataInicio, LocalDate dataFim);
     double somarDescontosPontosPosPeriodo(LocalDate dataInicio, LocalDate dataFim);
     int corrigirDatasSessaoNula();
+    List<IngressosPorSessaoItem> ingressosPorSessao(LocalDate dataInicio, LocalDate dataFim);
 }

@@ -251,6 +251,21 @@ export const apiCaixa = {
     return json;
   },
 
+  ingressosPorSessao: async (dataInicio: string, dataFim: string): Promise<{
+    sessaoId: string;
+    filme: string;
+    horario: string;
+    salaNumero: number;
+    salaTipo: string;
+    totalIngressos: number;
+    totalInteira: number;
+    valorTotal: number;
+  }[]> => {
+    const res = await fetch(`${API_URL}/caixa/ingressos-por-sessao?dataInicio=${dataInicio}&dataFim=${dataFim}`);
+    if (!res.ok) throw new Error('Erro ao buscar ingressos por sessão');
+    return res.json();
+  },
+
   resumoPorPeriodo: async (dataInicio: string, dataFim: string): Promise<{
     totalIngressos: number;
     totalIngressosValor: number;

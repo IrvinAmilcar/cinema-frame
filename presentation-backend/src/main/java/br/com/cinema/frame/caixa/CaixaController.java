@@ -2,6 +2,7 @@ package br.com.cinema.frame.caixa;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -82,6 +83,20 @@ public class CaixaController {
     public ResponseEntity<String> corrigirDatas() {
         int atualizados = resumoRepository.corrigirDatasSessaoNula();
         return ResponseEntity.ok("Pedidos corrigidos: " + atualizados);
+    }
+
+    @GetMapping("/ingressos-por-sessao")
+    public ResponseEntity<List<IngressosPorSessaoResponse>> ingressosPorSessao(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim) {
+        List<IngressosPorSessaoResponse> result = resumoRepository.ingressosPorSessao(dataInicio, dataFim)
+                .stream()
+                .map(i -> new IngressosPorSessaoResponse(
+                        i.sessaoId(), i.filme(), i.horario(),
+                        i.salaNumero(), i.salaTipo(),
+                        i.totalIngressos(), i.totalInteira(), i.valorTotal()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 
     private FechamentoCaixaResponse toResponse(FechamentoCaixa f) {

@@ -51,4 +51,41 @@ public interface PedidoJpaRepository extends JpaRepository<PedidoJpa, UUID> {
           AND p.data_sessao BETWEEN :dataInicio AND :dataFim
         """, nativeQuery = true)
     double somarValorIngressosPorPeriodo(@Param("dataInicio") LocalDate dataInicio, @Param("dataFim") LocalDate dataFim);
+
+    @Query(value = """
+        SELECT
+            se.id                                                          AS sessao_id,
+            f.titulo                                                       AS filme,
+            se.inicio                                                      AS horario,
+            s.numero                                                       AS sala_numero,
+            s.tipo                                                         AS sala_tipo,
+            COUNT(i.id)                                                    AS total_ingressos,
+            COUNT(CASE WHEN i.tipo = 'INTEIRA' THEN 1 END)                AS total_inteira,
+            COALESCE(SUM(
+                20.0
+                * (1 + CASE s.tipo
+                    WHEN 'PADRAO' THEN 0.0
+                    WHEN 'TRES_D' THEN 0.5
+                    WHEN 'IMAX'   THEN 1.2
+                    WHEN 'VIP'    THEN 2.0
+                    ELSE 0.0 END)
+                * CASE i.tipo
+                    WHEN 'INTEIRA'  THEN 1.0
+                    WHEN 'MEIA'     THEN 0.5
+                    WHEN 'CONVITE'  THEN 0.0
+                    ELSE 1.0 END
+            ), 0)                                                          AS valor_total
+        FROM sessoes se
+        JOIN grades g  ON se.grade_id = g.id
+        JOIN filmes f  ON se.filme_id = f.id
+        JOIN salas  s  ON se.sala_id  = s.id
+        LEFT JOIN pedidos   p ON p.sessao_id = se.id AND p.finalizado = true
+                              AND p.data_sessao BETWEEN :dataInicio AND :dataFim
+        LEFT JOIN ingressos i ON i.pedido_id = p.id
+        WHERE g.inicio <= :dataFim
+          AND g.fim    >= :dataInicio
+        GROUP BY se.id, f.titulo, se.inicio, s.numero, s.tipo
+        ORDER BY se.inicio, f.titulo
+        """, nativeQuery = true)
+    List<Object[]> ingressosPorSessao(@Param("dataInicio") LocalDate dataInicio, @Param("dataFim") LocalDate dataFim);
 }
