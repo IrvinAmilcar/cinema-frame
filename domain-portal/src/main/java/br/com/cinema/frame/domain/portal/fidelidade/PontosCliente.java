@@ -99,7 +99,7 @@ public class PontosCliente {
         if (saldoAtivo < pontos) throw new IllegalStateException("Saldo insuficiente de pontos");
         debitarFIFO(pontos);
         saldoAtivo -= pontos;
-        historicoResgates.add(new RegistroResgate(new UUID(0L, 0L), pontos, hoje));
+        historicoResgates.add(new RegistroResgate(new UUID(0L, 0L), pontos, hoje.atStartOfDay(), "Usado como promoção"));
     }
 
     public void debitarPontosSemHistorico(int pontos) {

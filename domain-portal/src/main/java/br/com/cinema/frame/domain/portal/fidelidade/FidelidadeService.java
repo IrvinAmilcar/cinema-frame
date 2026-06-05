@@ -109,6 +109,8 @@ public class FidelidadeService implements FidelidadeServiceInterface {
 
         pontos.debitarPontosDeCompra(saldo, hoje);
         fidelidadeRepository.salvar(pontos);
+        resgateRepository.salvar(clienteId, new RegistroResgate(
+                new UUID(0L, 0L), saldo, LocalDateTime.now(), "Usado como promoção"));
     }
 
     @Override
