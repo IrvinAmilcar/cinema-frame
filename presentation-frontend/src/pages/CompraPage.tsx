@@ -400,9 +400,12 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
           usarPontos: usarPontos && saldoPontos !== null && saldoPontos > 0,
           descontoPontos: (usarPontos && saldoPontos !== null && saldoPontos > 0) ? descontoPontosReais : 0,
           clienteId: cliente?.clienteId ?? null,
+          valorIngressos: precoFinal,
+          valorBomboniere: totalBomboniere,
+          descontoCupom: desconto?.valorDesconto ?? 0,
         }),
       })
-      if (!res.ok) throw new Error()
+      if (!res.ok) throw new Error(await extrairMensagemErro(res) || 'Erro ao finalizar a compra.')
       // ── MUDANÇA 2: ler limitePontosAtingido da resposta ──
       const respData = await res.json()
       const codigosDoBackend = respData.qrCodes
@@ -414,8 +417,8 @@ export default function CompraPage({ cliente }: { cliente: ClienteLogado | null 
       setVoucherQr(voucherCodigo)
       setPontosGanhos(respData.limitePontosAtingido ? 0 : pontosQueVaiGanhar)
       setEtapa('sucesso')
-    } catch {
-      setErro('Erro ao finalizar a compra.')
+    } catch (e: unknown) {
+      setErro(e instanceof Error ? e.message : 'Erro ao finalizar a compra.')
     } finally {
       setCarregando(false)
     }

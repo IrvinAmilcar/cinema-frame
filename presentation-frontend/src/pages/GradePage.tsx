@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import api from '../api/client'
 
 interface Sessao { id:string; filmeId:string; filmeTitulo:string; salaId:string; salaNumero:number; inicio:string; fim:string }
@@ -176,8 +176,8 @@ export default function GradePage() {
                     </thead>
                     <tbody>
                       {g.sessoes.map(s => (
-                        <>
-                          <tr key={s.id} style={{ borderBottom:'1px solid #F5F5F5', background:editandoSessao?.sessaoId===s.id?'#F8F9FF':'white', transition:'background .15s' }}>
+                        <React.Fragment key={s.id}>
+                          <tr style={{ borderBottom:'1px solid #F5F5F5', background:editandoSessao?.sessaoId===s.id?'#F8F9FF':'white', transition:'background .15s' }}>
                             <td style={{ padding:'14px 20px', fontWeight:600, fontSize:14 }}>{s.filmeTitulo}</td>
                             <td style={{ padding:'14px 20px' }}>
                               <span style={{ background:'#E3F2FD', color:'#1565C0', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:600 }}>Sala {s.salaNumero}</span>
@@ -217,7 +217,7 @@ export default function GradePage() {
                               </td>
                             </tr>
                           )}
-                        </>
+                        </React.Fragment>
                       ))}
                     </tbody>
                   </table>

@@ -47,7 +47,7 @@ export default function UsuariosPage() {
   const [modalAberto, setModalAberto] = useState<'CADASTRAR' | 'EDITAR' | null>(null);
 
   // Estado do Formulário
-  const formInicial = { nome: '', email: '', role: 'OPERADOR', ativo: true, permissoes: [] as string[] };
+  const formInicial = { nome: '', email: '', role: 'OPERADOR_DE_CAIXA', ativo: true, permissoes: [] as string[] };
   const [formFunc, setFormFunc] = useState(formInicial);
 
   useEffect(() => {

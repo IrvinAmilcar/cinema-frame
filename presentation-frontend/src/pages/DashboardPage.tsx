@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import RankingFilmes from './RankingFilmes'
 import BombonieireChart from './BombonieireChart'
-import SugestoesProgramacao from './SugestoesProgramacao'
 
 const cores = {
   vinho: '#8B0000',
@@ -69,15 +68,6 @@ interface IngressosSessao {
   totalIngressos: number
   totalInteira: number
   valorTotal: number
-}
-
-interface SugestaoGenero {
-  genero: string
-  label: string
-  assistidos: number
-  favoritados: number
-  score: number
-  naGrade: boolean
 }
 
 interface BomboniereSessao {
@@ -294,7 +284,6 @@ export default function DashboardPage() {
   const [ocupacaoReal, setOcupacaoReal] = useState<OcupacaoReal[]>([])
   const [ingressos, setIngressos] = useState<IngressosSessao[]>([])
   const [ocupacaoPeriodo, setOcupacaoPeriodo] = useState<OcupacaoSessao[]>([])
-  const [sugestoes, setSugestoes] = useState<SugestaoGenero[]>([])
   const [bomboniere, setBomboniere] = useState<BomboniereSessao[]>([])
   const [atualizadoEm, setAtualizadoEm] = useState('')
   const [carregando, setCarregando] = useState(false)
@@ -344,26 +333,25 @@ export default function DashboardPage() {
       .finally(() => setAlertasLoading(false))
 
     try {
-      const [salasRes, gradeRes, ingRes, ocuPeriodoRes, bombRes, sugestoesRes] = await Promise.all([
+      const [salasRes, gradesRes, ingRes, ocuPeriodoRes, bombRes] = await Promise.all([
         fetch(`${API_URL}/api/salas`).then(r => r.ok ? r.json() : []),
-        fetch(`${API_URL}/api/grades/data?data=${dataHoje}`).then(r => r.ok ? r.json() : null),
+        fetch(`${API_URL}/api/grades`).then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/caixa/ingressos-por-sessao?dataInicio=${ini30()}&dataFim=${dataHoje}`)
           .then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/caixa/ocupacao-por-sessao?dataInicio=${ini30()}&dataFim=${dataHoje}`)
           .then(r => r.ok ? r.json() : []),
         fetch(`${API_URL}/caixa/bomboniere-por-sessao?dataInicio=${ini30()}&dataFim=${dataHoje}`)
           .then(r => r.ok ? r.json() : []),
-        fetch(`${API_URL}/api/dashboard/sugestoes-programacao`)
-          .then(r => r.ok ? r.json() : []),
       ])
 
       setSalas(salasRes)
-      const sessoesHoje: SessaoResponse[] = (gradeRes as GradeResponse | null)?.sessoes ?? []
+      const sessoesHoje: SessaoResponse[] = (gradesRes as GradeResponse[])
+        .filter(g => g.inicio <= dataHoje && g.fim >= dataHoje)
+        .flatMap(g => g.sessoes)
       setSessoesDoDia(sessoesHoje)
       setIngressos(ingRes)
       setOcupacaoPeriodo(ocuPeriodoRes)
       setBomboniere(bombRes)
-      setSugestoes(sugestoesRes)
 
       // busca ocupação real (assentos reservados) para cada sessão de hoje
       await buscarOcupacaoReal(sessoesHoje)
@@ -381,10 +369,12 @@ export default function DashboardPage() {
       const dataHoje = hoje()
       setAtualizadoEm(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
       fetch(`${API_URL}/bomboniere/alertas`).then(r => r.json()).then(setAlertas).catch(() => {})
-      fetch(`${API_URL}/api/grades/data?data=${dataHoje}`)
-        .then(r => r.ok ? r.json() : null)
-        .then(async (g: GradeResponse | null) => {
-          const sessoesHoje = g?.sessoes ?? []
+      fetch(`${API_URL}/api/grades`)
+        .then(r => r.ok ? r.json() : [])
+        .then(async (grades: GradeResponse[]) => {
+          const sessoesHoje = grades
+            .filter(g => g.inicio <= dataHoje && g.fim >= dataHoje)
+            .flatMap(g => g.sessoes)
           setSessoesDoDia(sessoesHoje)
           await buscarOcupacaoReal(sessoesHoje)
         })
@@ -490,11 +480,10 @@ export default function DashboardPage() {
           <BombonieireChart dados={bomboniere} />
         </div>
       </div>
+
     </div>
   )
 }
-
-
 
 
 

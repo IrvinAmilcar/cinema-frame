@@ -5,6 +5,7 @@ import br.com.cinema.frame.domain.backoffice.grade.GradeService;
 import br.com.cinema.frame.domain.portal.notificacao.NotificacaoService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -30,9 +31,13 @@ public class GradeController {
     }
 
     @GetMapping("/data")
-    public GradeResponse buscarPorData(
+    public ResponseEntity<GradeResponse> buscarPorData(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
-        return GradeResponse.from(gradeService.buscarPorData(data));
+        try {
+            return ResponseEntity.ok(GradeResponse.from(gradeService.buscarPorData(data)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.noContent().build();
+        }
     }
 
     @PostMapping
