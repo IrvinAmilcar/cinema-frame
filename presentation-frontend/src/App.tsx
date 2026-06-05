@@ -14,6 +14,7 @@ import AuthModal, { type ClienteLogado } from './components/AuthModal'
 import FidelidadePage from './pages/FidelidadePage'
 import UsuariosPage from './pages/UsuariosPage';
 import FechamentoCaixaPage from './pages/FechamentoCaixaPage'
+import DashboardPage from './pages/DashboardPage'
 
 type Modo = 'backoffice' | 'portal'
 
@@ -171,8 +172,8 @@ export default function App() {
         />
         <main style={{ flex: 1, padding: '1.5rem', backgroundColor: '#FAFAFA' , overflow: 'hidden' }}>
           <Routes>
-            <Route path='/' element={<Home modo={modo} cliente={cliente} />} />
             {/* Backoffice */}
+            <Route path='/' element={ modo === 'backoffice' ? <DashboardPage />: <PortalHomePage cliente={cliente} />} />
             <Route path='/filmes' element={<CatalogoPage />} />
             <Route path='/salas' element={<SalasPage />} />
             <Route path='/grade' element={<GradePage />} />

@@ -380,7 +380,7 @@ export default function FechamentoCaixaPage() {
           <div style={{ fontSize: '22px', fontWeight: 600, color: '#1a1a1a' }}>{fmtBRL(valorBomboniere)}</div>
         </div>
         <div style={{ flex: 1, backgroundColor: 'white', border: `1px solid ${cores.borda}`, borderRadius: '10px', padding: '16px 18px' }}>
-          <div style={{ fontSize: '11px', color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>💎 Descontos Fidelidade</div>
+          <div style={{ fontSize: '11px', color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>🎫 Descontos Fidelidade</div>
           <div style={{ fontSize: '22px', fontWeight: 600, color: cores.vermelhoTexto }}>- {fmtBRL(totalDescontoPontos)}</div>
         </div>
         <div style={{ flex: 1, backgroundColor: cores.vinho, border: `1px solid ${cores.vinho}`, borderRadius: '10px', padding: '16px 18px' }}>
