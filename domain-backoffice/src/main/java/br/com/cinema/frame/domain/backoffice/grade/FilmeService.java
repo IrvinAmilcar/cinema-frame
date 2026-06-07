@@ -5,22 +5,18 @@ import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 
 import java.time.Duration;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
-public class FilmeService {
+
+public class FilmeService implements FilmeServiceInterface {
 
     private final FilmeRepository filmeRepository;
-    private final SessaoRepository sessaoRepository;
 
-    public FilmeService(FilmeRepository filmeRepository, SessaoRepository sessaoRepository) {
+    public FilmeService(FilmeRepository filmeRepository) {
         if (filmeRepository == null)
             throw new IllegalArgumentException("FilmeRepository não pode ser nulo");
-        if (sessaoRepository == null)
-            throw new IllegalArgumentException("SessaoRepository não pode ser nulo");
         this.filmeRepository = filmeRepository;
-        this.sessaoRepository = sessaoRepository;
     }
 
     public void cadastrar(Filme filme) {
@@ -67,12 +63,6 @@ public class FilmeService {
     public void remover(UUID id) {
         filmeRepository.buscarPorId(id)
             .orElseThrow(() -> new IllegalArgumentException("Filme não encontrado: " + id));
-
-        boolean temSessoesFuturas = !sessaoRepository.buscarPorFilme(id).isEmpty();
-
-        if (temSessoesFuturas)
-            throw new IllegalStateException("Filme possui sessões futuras cadastradas e não pode ser removido");
-
         filmeRepository.remover(id);
     }
 }

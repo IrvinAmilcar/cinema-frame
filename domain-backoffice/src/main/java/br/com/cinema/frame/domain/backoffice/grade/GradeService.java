@@ -11,7 +11,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
-public class GradeService {
+public class GradeService implements GradeServiceInterface {
 
     private final GradeDeExibicaoRepository gradeRepository;
     private final FilmeRepository filmeRepository;
@@ -62,18 +62,6 @@ public class GradeService {
             .orElseThrow(() -> new IllegalArgumentException("Sala não encontrada: " + salaId));
 
         Sessao sessao = new Sessao(filme, sala, inicio);
-
-        // Verificação de conflito entre grades com períodos sobrepostos (regra de negócio do domínio)
-        gradeRepository.listarTodas().stream()
-            .filter(g -> !g.getId().equals(gradeId))
-            .filter(g -> !grade.getInicio().isAfter(g.getFim()) && !g.getInicio().isAfter(grade.getFim()))
-            .flatMap(g -> g.getSessoes().stream())
-            .filter(s -> s.getSala().getId().equals(salaId))
-            .filter(sessao::conflitaCom)
-            .findFirst()
-            .ifPresent(c -> { throw new IllegalStateException(
-                "Conflito de horário entre grades: sala " + sala.getNumero()
-                + " já está ocupada no período solicitado por outra grade"); });
 
         grade.adicionarSessao(sessao);
         gradeRepository.salvar(grade);
@@ -141,21 +129,6 @@ public class GradeService {
             : null;
 
         grade.atualizarSessao(sessaoId, novoFilme, novaSala, novoInicio);
-
-        Sessao sessaoAtualizada = grade.getSessoes().stream()
-            .filter(s -> s.getId().equals(sessaoId))
-            .findFirst().orElseThrow();
-
-        gradeRepository.listarTodas().stream()
-            .filter(g -> !g.getId().equals(gradeId))
-            .filter(g -> !grade.getInicio().isAfter(g.getFim()) && !g.getInicio().isAfter(grade.getFim()))
-            .flatMap(g -> g.getSessoes().stream())
-            .filter(s -> s.getSala().getId().equals(sessaoAtualizada.getSala().getId()))
-            .filter(sessaoAtualizada::conflitaCom)
-            .findFirst()
-            .ifPresent(c -> { throw new IllegalStateException(
-                "Conflito de horário entre grades: sala " + sessaoAtualizada.getSala().getNumero()
-                + " já está ocupada no período solicitado por outra grade"); });
 
         gradeRepository.salvar(grade);
     }

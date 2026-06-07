@@ -4,6 +4,8 @@ import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.backoffice.grade.Filme;
 import br.com.cinema.frame.domain.backoffice.grade.FilmeRepository;
 import br.com.cinema.frame.domain.backoffice.grade.FilmeService;
+import br.com.cinema.frame.domain.backoffice.grade.FilmeServiceInterface;
+import br.com.cinema.frame.domain.backoffice.grade.FilmeServiceProxy;
 import br.com.cinema.frame.domain.backoffice.grade.Sessao;
 import br.com.cinema.frame.domain.backoffice.grade.SessaoRepository;
 import br.com.cinema.frame.domain.backoffice.sala.Sala;
@@ -25,7 +27,7 @@ public class CatalogoSteps {
 
     private FilmeRepository filmeRepository = mock(FilmeRepository.class);
     private SessaoRepository sessaoRepository = mock(SessaoRepository.class);
-    private FilmeService filmeService = new FilmeService(filmeRepository, sessaoRepository);
+    private FilmeServiceInterface filmeService = new FilmeServiceProxy(new FilmeService(filmeRepository), sessaoRepository);
 
     private Filme filme;
     private Filme filmeAtualizado;

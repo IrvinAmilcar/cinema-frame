@@ -1,6 +1,6 @@
 package br.com.cinema.frame.catalogo;
 
-import br.com.cinema.frame.domain.backoffice.grade.FilmeService;
+import br.com.cinema.frame.domain.backoffice.grade.FilmeServiceInterface;
 import br.com.cinema.frame.domain.shared.classificacao.ClassificacaoIndicativa;
 import br.com.cinema.frame.domain.shared.filme.GeneroFilme;
 import org.springframework.http.HttpStatus;
@@ -14,9 +14,9 @@ import java.util.UUID;
 @RequestMapping("/api/filmes")
 public class FilmeController {
 
-    private final FilmeService filmeService;
+    private final FilmeServiceInterface filmeService;
 
-    public FilmeController(FilmeService filmeService) {
+    public FilmeController(FilmeServiceInterface filmeService) {
         this.filmeService = filmeService;
     }
 

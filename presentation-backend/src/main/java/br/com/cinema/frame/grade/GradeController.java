@@ -1,7 +1,6 @@
 package br.com.cinema.frame.grade;
 
-import br.com.cinema.frame.domain.backoffice.grade.GradeDeExibicao;
-import br.com.cinema.frame.domain.backoffice.grade.GradeService;
+import br.com.cinema.frame.domain.backoffice.grade.GradeServiceInterface;
 import br.com.cinema.frame.domain.portal.notificacao.NotificacaoService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -17,10 +16,10 @@ import java.util.UUID;
 @RequestMapping("/api/grades")
 public class GradeController {
 
-    private final GradeService gradeService;
+    private final GradeServiceInterface gradeService;
     private final NotificacaoService notificacaoService;
 
-    public GradeController(GradeService gradeService, NotificacaoService notificacaoService) {
+    public GradeController(GradeServiceInterface gradeService, NotificacaoService notificacaoService) {
         this.gradeService = gradeService;
         this.notificacaoService = notificacaoService;
     }
