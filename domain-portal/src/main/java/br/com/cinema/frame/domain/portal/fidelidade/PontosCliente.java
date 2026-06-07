@@ -133,6 +133,10 @@ public class PontosCliente {
         historicoResgates.add(registro);
     }
 
+    public LancamentosIterator iteradorDeLancamentosAtivos(LocalDate hoje) {
+        return new LancamentosIterator(lancamentos, hoje);
+    }
+
     public int getSaldoAtivo() { return saldoAtivo; }
     public UUID getClienteId() { return clienteId; }
     public List<LancamentoPontos> getLancamentos() { return List.copyOf(lancamentos); }

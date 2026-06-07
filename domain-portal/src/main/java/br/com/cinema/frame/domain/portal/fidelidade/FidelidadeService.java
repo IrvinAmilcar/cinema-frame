@@ -123,7 +123,12 @@ public class FidelidadeService implements FidelidadeServiceInterface {
 
         pontos.expirarPontosVencidos(hoje);
         fidelidadeRepository.salvar(pontos);
-        return pontos.getSaldoAtivo();
+
+        // Iterator percorre apenas lançamentos válidos para calcular saldo
+        LancamentosIterator it = pontos.iteradorDeLancamentosAtivos(hoje);
+        int saldo = 0;
+        while (it.hasNext()) saldo += it.next().getSaldo();
+        return saldo;
     }
 
     @Override

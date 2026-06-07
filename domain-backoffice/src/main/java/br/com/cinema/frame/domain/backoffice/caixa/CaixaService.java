@@ -3,7 +3,6 @@ package br.com.cinema.frame.domain.backoffice.caixa;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 public class CaixaService {
 
@@ -23,27 +22,7 @@ public class CaixaService {
             throw new IllegalStateException("Já existe um fechamento de caixa para a data " + data);
         }
 
-        double totalVendas = vendas.stream()
-                .mapToDouble(VendaDia::getValorArrecadado)
-                .sum();
-
-        int totalIngressos = vendas.stream()
-                .mapToInt(VendaDia::getIngressosVendidos)
-                .sum();
-
-        int totalSessoes = vendas.size();
-
-        double taxaOcupacaoMedia = vendas.stream()
-                .mapToDouble(VendaDia::getOcupacaoPercentual)
-                .average()
-                .orElse(0.0);
-
-        FechamentoCaixa fechamento = new FechamentoCaixa(
-                UUID.randomUUID(), data, totalVendas,
-                totalIngressos, totalSessoes,
-                taxaOcupacaoMedia, momentoFechamento
-        );
-
+        FechamentoCaixa fechamento = new RelatorioDiario().gerar(data, vendas, momentoFechamento);
         fechamentoRepository.salvar(fechamento);
         return fechamento;
     }
