@@ -1,6 +1,6 @@
 # F.R.A.M.E
 
-> Sistema de gestão cinematográfica completo — do backoffice ao portal do cliente — construído com Domain-Driven Design, arquitetura limpa e testes BDD com Cucumber.
+> Sistema de gestão cinematográfica completo — do backoffice ao portal do cliente — construído com Domain-Driven Design, Arquitetura Limpa, persistência JPA, API REST e frontend web, com testes BDD em Cucumber.
 
 ---
 
@@ -10,21 +10,76 @@ O **F.R.A.M.E** (Film Resource & Attendance Management Engine) é uma aplicaçã
 
 A arquitetura segue os princípios de **DDD (Domain-Driven Design)** em seus quatro níveis — preliminar, estratégico, tático e operacional — com separação clara de responsabilidades entre os três subdomínios e suas camadas.
 
+> **Para o professor:** as seções [Mapa por Integrante](#mapa-por-integrante) e [Padrões de Projeto — Mapa de Arquivos](#padrões-de-projeto--mapa-de-arquivos) foram criadas para localizar rapidamente, por aluno, os arquivos de cada funcionalidade e — principalmente — os arquivos onde cada padrão de projeto está implementado.
+
 ---
 
 ## Entregáveis
 
-- **Protótipo do Cliente:**  
-  https://laptop-lid-95728362.figma.site
+- **Protótipo do Cliente:** https://laptop-lid-95728362.figma.site
+- **Protótipo do Administrador:** https://upbeat-fill-92439671.figma.site
+- **Mapa de Histórias do Usuário:** https://cinema-frame-1.avion.io/share/TThewBZaSiEavTsHx
+- **Descrição do Domínio:** https://docs.google.com/document/d/13dxD7cTTPYoqs5jBu6f-LrumLTHMguilH8nVoNQUx6s/edit?tab=t.0
 
-- **Protótipo do Administrador:**  
-  https://upbeat-fill-92439671.figma.site
+---
 
-- **Mapa de Histórias do Usuário:**  
-  https://cinema-frame-1.avion.io/share/TThewBZaSiEavTsHx
+## Padrões de Projeto — Mapa de Arquivos
 
-- **Descrição do Domínio:**  
-  https://docs.google.com/document/d/13dxD7cTTPYoqs5jBu6f-LrumLTHMguilH8nVoNQUx6s/edit?tab=t.0
+São **6 padrões de projeto distintos** implementados (mínimo exigido). Os padrões Proxy e Observer aparecem em dois contextos diferentes cada, mas contam como **um padrão distinto cada**.
+
+| Padrão | Integrante | Arquivos | Camada |
+|---|---|---|---|
+| **Strategy** | Julia | `DescontoStrategy` + `DescontoLeve2Pague1`, `DescontoParceriaCartao`, `DescontoEstudante` + `MotorDePromocoes` | Domínio |
+| **Decorator** | Julia | `ProgramacaoService` (componente) + `ProgramacaoComRecomendacaoDecorator` | Domínio |
+| **Iterator** | Amanda | `LancamentosIterator` + `PontosCliente` | Domínio |
+| **Template Method** | Amanda | `RelatorioFechamento` + `RelatorioDiario`, `RelatorioPorSessao` | Domínio |
+| **Proxy** | Irvin | `FilmeServiceProxy`, `GradeServiceProxy` | Domínio |
+| | | `FilmeRepositoryProxy`, `GradeDeExibicaoRepositoryProxy` | Infraestrutura |
+| **Observer** | Fabiana | `EstoqueSubject`, `EstoqueObserver`, `AlertaEstoqueObserver` (F5) · `CheckInObserver`, `LotaCargaObserver` (F6) | Domínio |
+
+---
+
+## Mapa por Integrante
+
+Cada integrante é responsável por **2 funcionalidades** (2 tarefas JPA + 2 tarefas web) e por seu(s) padrão(ões) de projeto.
+
+| Integrante | Funcionalidades | Padrão(ões) | Telas (frontend) |
+|---|---|---|---|
+| **Irvin** | F4 — Grade de Exibição · F7 — Catálogo de Filmes | Proxy | `GradePage`, `CatalogoPage`, `SalasPage` |
+| **Fabiana** | F5 — Bomboniere · F6 — Check-in | Observer | `BombonierePage`, `CardapioPage`, `CheckInPage`, `UsuariosPage` |
+| **Amanda** | F3 — Fidelidade · F8 — Fechamento de Caixa | Iterator · Template Method | `FidelidadePage`, `FechamentoCaixaPage`, `DashboardPage` |
+| **Julia** | F1 — Compra de Ingresso · F2 — Explorar Programação | Strategy · Decorator | `CompraPage`, `ProgramacaoPage`, `PortalHomePage`, `MeusIngressosPage` |
+
+> Os arquivos de cada funcionalidade ficam nos pacotes de mesmo nome em cada camada: domínio (`domain-backoffice` / `domain-portal`), persistência (`infrastructure`) e API (`presentation-backend`). Os arquivos dos padrões estão na tabela acima.
+
+---
+
+## APIs e Integrações Externas
+
+| Integração | Onde é usada | Para quê | Arquivo |
+|---|---|---|---|
+| **TMDB — The Movie Database API** (`api.themoviedb.org/3` · `image.tmdb.org`) | Frontend | Busca automática de pôsteres e backdrops dos filmes pelo título, com cache de 7 dias em `localStorage`. Token via `VITE_TMDB_TOKEN` (gitignored) | [`lib/tmdb.ts`](presentation-frontend/src/lib/tmdb.ts) · [`hooks/useMoviePoster.ts`](presentation-frontend/src/hooks/useMoviePoster.ts) |
+| **qrcode.react** | Frontend | Renderização do QR Code dos ingressos e do voucher de bomboniere na tela de compra | [`CompraPage.tsx`](presentation-frontend/src/pages/CompraPage.tsx) |
+| **Chart.js** | Frontend | Gráficos do dashboard de bomboniere/caixa | [`BombonieireChart.tsx`](presentation-frontend/src/pages/BombonieireChart.tsx) |
+| **Google Fonts** | Frontend | Tipografia (DM Sans / DM Mono) | telas do portal |
+
+> O QR Code é gerado no backend como identificador único do ingresso ([`QRCode.java`](domain-portal/src/main/java/br/com/cinema/frame/domain/portal/pedido/QRCode.java)) e apenas **renderizado** no frontend pela biblioteca `qrcode.react`.
+
+### API REST interna (Spring Boot)
+
+Toda a comunicação frontend ↔ backend ocorre via REST em `/api/*` (proxy do Vite encaminha para `localhost:8080`):
+
+| Recurso | Endpoints principais |
+|---|---|
+| Catálogo (F7) | `GET/POST/PUT/DELETE /api/filmes` · `PATCH /api/filmes/{id}/ativar`·`/desativar` |
+| Salas (F7) | `GET/POST/PUT/DELETE /api/salas` |
+| Grade (F4) | `GET/POST/PUT/DELETE /api/grades` · `POST/PUT/DELETE /api/grades/{id}/sessoes` |
+| Bomboniere (F5) | `GET/POST /api/bomboniere/produtos` · `/insumos` · `POST /api/bomboniere/venda` |
+| Check-in (F6) | `POST /api/checkin` · RBAC em `/api/funcionarios` |
+| Fidelidade (F3) | `GET /api/fidelidade/{clienteId}/saldo`·`/extrato`·`/beneficios` · `POST .../resgatar` |
+| Caixa (F8) | `POST /api/caixa/fechar` · `GET /api/caixa/relatorio` |
+| Compra (F1) | `POST /api/reserva` · `/api/pedido` · `/api/pedido/{id}/cupom`·`/ingresso`·`/finalizar` |
+| Programação (F2) | `GET /api/programacao/sessoes`·`/filmes` · `POST /api/notificacao/favoritar` |
 
 ---
 
@@ -35,13 +90,13 @@ frame-parent
 ├── domain-shared        ← Shared Kernel — primitivos compartilhados (ClienteId, enums)
 ├── domain-backoffice    ← Core Domain  — regras de negócio do backoffice
 ├── domain-portal        ← Supporting Domain — regras do portal do cliente
-├── application          ← Camada de aplicação (casos de uso) — módulo scaffold, sem implementação ainda
-├── infrastructure       ← Persistência com Spring Data JPA
-├── presentation-frontend← Camada de apresentação web
+├── application          ← Camada de aplicação (casos de uso)
+├── infrastructure       ← Persistência com Spring Data JPA + Caching Proxy
+├── presentation-frontend← Camada de apresentação web (React + Vite)
 └── presentation-backend ← API REST com Spring Boot
 ```
 
-> O módulo `domain-*` não possui nenhuma dependência de framework — apenas Java puro, garantindo que as regras de negócio sejam testáveis de forma isolada e portáveis.
+> Os módulos `domain-*` não possuem nenhuma dependência de framework — apenas Java puro, garantindo regras de negócio testáveis de forma isolada. Os padrões **Strategy, Decorator, Iterator, Template Method e o Protection Proxy** vivem no domínio; o **Caching Proxy** e os adaptadores JPA vivem na `infrastructure`.
 
 ---
 
@@ -90,155 +145,81 @@ Primitivos de domínio compartilhados entre os dois contextos: `ClienteId`, `Cla
 
 O projeto implementa **8 funcionalidades** consideradas fortes — cada uma envolve múltiplas regras de negócio, coordenação entre domínios e vai além de operações triviais de leitura ou CRUD simples.
 
----
+| F | Funcionalidade | Responsável | Padrão | Resumo |
+|---|---|---|---|---|
+| **F1** | Comprar Ingresso | Julia | Strategy | Jornada completa: sessão → assento → ingresso → produtos → cupom → pagamento → QR Code |
+| **F2** | Explorar Programação | Julia | Decorator | Listagem de sessões futuras com filtros, recomendação personalizada e notificação de favoritos |
+| **F3** | Fidelidade e Benefícios | Amanda | Iterator | Acúmulo de pontos, expiração automática, resgate de benefícios |
+| **F4** | Grade de Exibição | Irvin | Proxy | Sessões diárias recorrentes, conflito de horário entre salas/grades, regras de remoção |
+| **F5** | Bomboniere | Fabiana | Observer | Estoque por receita, baixa automática na venda, alerta de nível crítico |
+| **F6** | Check-in | Fabiana | Observer | Validação de QR Code, idempotência, janela de acesso, ocupação em tempo real |
+| **F7** | Catálogo de Filmes | Irvin | Proxy | CRUD com classificação, trailer, ativar/desativar, remoção protegida |
+| **F8** | Fechamento de Caixa | Amanda | Template Method | Consolidação de vendas, faturamento, taxa de ocupação, relatórios por data |
 
-### F1 — Comprar Ingresso
-**Responsável:** Julia
+<details>
+<summary><strong>Regras de negócio detalhadas por funcionalidade</strong></summary>
 
-**Fluxo:** Visualizar filmes → Selecionar filme → Escolher sessão → Selecionar assentos → Definir tipo de ingresso → Adicionar produtos → Aplicar cupons (opcional) → Realizar pagamento → Gerar ingresso (QR Code)
+### F1 — Comprar Ingresso (Julia)
+- Assentos só são selecionáveis se disponíveis — reserva expira em 10 min, impedindo dupla ocupação
+- Tipos de ingresso (meia/inteira) com regras de elegibilidade — sem comprovação, o pedido é bloqueado
+- Cupons validam validade e cumulatividade — combinações inválidas são rejeitadas
+- Pagamento precisa ser aprovado para gerar ingresso
+- Ingresso gerado é único e não reutilizável (idempotência no check-in)
 
-**Regras de negócio:**
-- Assentos só podem ser selecionados se estiverem disponíveis — reserva com expiração automática de 10 minutos impede dupla ocupação
-- Tipos de ingresso (meia/inteira) seguem regras de elegibilidade — meia-entrada exige comprovação; sem ela, o pedido é bloqueado
-- Cupons possuem validação de validade e regras de cumulatividade — combinações inválidas são rejeitadas antes do desconto ser aplicado
-- O pagamento precisa ser aprovado para gerar o ingresso — pagamento recusado encerra o fluxo sem emissão
-- O ingresso gerado é único e não pode ser reutilizado — idempotência garantida no check-in
+### F2 — Explorar Programação (Julia)
+- Apenas filmes ativos e com sessões futuras são exibidos
+- Filtros por gênero e classificação retornam apenas resultados válidos
+- Disponibilidade considera o tempo atual — nenhuma sessão passada é apresentada
+- Sugestões ordenadas por afinidade com o histórico de gêneros
+- Clientes que favoritaram um filme são notificados quando a primeira sessão é aberta
 
-**Por que não é trivial:** É a principal jornada do cliente e envolve múltiplos domínios ao mesmo tempo — sessões, assentos, pagamento, promoções e estoque. Exige coordenação de várias regras simultâneas e garante o principal valor de negócio: a venda.
+### F3 — Fidelidade e Benefícios (Amanda)
+- Pontos acumulados pelo valor gasto (1 ponto por real)
+- Validade de 12 meses — pontos expirados descartados automaticamente na consulta de saldo
+- Benefícios exigem mínimo de pontos — resgate bloqueado se saldo insuficiente
+- Benefícios podem ter restrição por dia da semana
+- Ao resgatar, pontos são debitados corretamente do saldo ativo
 
-**Features BDD relacionadas:** `reserva` · `pedido` · `promocao` · `checkin` · `classificacao_compra`
+### F4 — Grade de Exibição (Irvin)
+- Sessão não é criada se houver conflito de horário na mesma sala (inclusive entre grades distintas)
+- Criação respeita duração do filme + limpeza (15 min) + trailers (10 min)
+- Apenas filmes ativos podem ser adicionados à grade
+- Remoção de sessão já iniciada é bloqueada
+- Cancelar sessão futura identifica os ingressos que precisam de reembolso
 
----
+### F5 — Bomboniere (Fabiana)
+- Produto só é vendido quando ativo e com estoque > 0
+- Venda exige quantidade ≤ estoque disponível
+- Toda venda gera movimentação de saída, baixando estoque pela receita (ex.: 1 pipoca = −200 g milho + −1 embalagem)
+- Alerta de reposição disparado ao atingir o nível mínimo
 
-### F2 — Explorar Programação de Filmes
-**Responsável:** Julia
+### F6 — Check-in (Fabiana)
+- Acesso autorizado apenas com QR Code válido correspondente a ingresso existente
+- Ingresso deve pertencer à sessão correta
+- Sessão deve estar na janela de entrada (30 min ao redor do início)
+- Ingresso já utilizado bloqueia a entrada (anti-reuso)
+- Sucesso registra check-in e marca o ingresso como utilizado
 
-**Fluxo:** Acessar sessões disponíveis → Aplicar filtros (gênero / classificação indicativa) → Ordenar por popularidade → Selecionar sessão → Visualizar detalhes do filme e horário
+### F7 — Catálogo de Filmes (Irvin)
+- Informações obrigatórias (título, duração, classificação, gênero); título vazio é rejeitado
+- Apenas filmes ativos podem ir para a grade
+- Filme com sessões futuras não pode ser removido — deve ser desativado (preserva histórico)
+- Suporte a URL de trailer
 
-**Regras de negócio:**
-- Apenas filmes ativos e com sessões futuras são exibidos — sessões já iniciadas ou encerradas são automaticamente ocultadas
-- Filtros por gênero e classificação indicativa retornam apenas resultados válidos
-- A disponibilidade de sessões considera o tempo atual — nenhuma sessão passada é apresentada ao cliente
-- Informações exibidas são consistentes com o catálogo, incluindo trailer quando disponível
-- Sugestões de filmes são ordenadas por afinidade com o histórico de gêneros assistidos pelo cliente
-- Clientes que favoritaram um filme são notificados automaticamente quando a primeira sessão é aberta
+### F8 — Fechamento de Caixa (Amanda)
+- Vendas consolidadas por sessão; fechamento duplicado no mesmo dia é impedido
+- Faturamento por tipo de ingresso (inteira, meia, convite) e preço da sessão
+- Taxa de ocupação = ingressos vendidos / capacidade da sala
+- Relatório de dia sem fechamento é rejeitado com mensagem clara
+- Dashboard com faturamento projetado vs. realizado por sessão
 
-**Por que não é trivial:** Não se trata de uma consulta simples, mas de um processo que envolve regras de disponibilidade temporal, consistência com a grade de exibição, filtragem ativa de conteúdo inativo e critérios de ordenação relevantes para o negócio. Impacta diretamente a decisão do cliente, influenciando a conversão em vendas.
-
-**Features BDD relacionadas:** `programacao` · `recomendacao` · `notificacao`
-
----
-
-### F3 — Sistema de Fidelidade e Benefícios
-**Responsável:** Amanda
-
-**Fluxo:** Acumular pontos em compras → Consultar saldo (pontos expirados descartados automaticamente) → Verificar benefícios disponíveis → Resgatar benefício (pontos debitados)
-
-**Regras de negócio:**
-- Pontos são acumulados com base no valor gasto (1 ponto por real)
-- Pontos possuem validade de 12 meses — pontos expirados são descartados automaticamente na consulta de saldo
-- Benefícios exigem quantidade mínima de pontos — resgate bloqueado se saldo for insuficiente
-- Benefícios podem ter restrições por dia da semana — benefícios fora do dia permitido não são listados nem resgatáveis
-- Ao resgatar, os pontos são debitados corretamente do saldo ativo
-
-**Por que não é trivial:** Não se trata apenas de gerenciar dados do usuário, mas de um sistema de regras que controla acúmulo, expiração e uso de benefícios ao longo do tempo. Envolve estado, validações e impacto direto na retenção de clientes, sendo estratégico para o negócio.
-
-**Features BDD relacionadas:** `fidelidade`
-
----
-
-### F4 — Gerenciar Grade de Exibição
-**Responsável:** Irvin
-
-**Fluxo:** Selecionar filme → Selecionar sala → Definir horários → Configurar período → Validar restrições → Salvar/atualizar grade
-
-**Regras de negócio:**
-- Uma sessão não é criada se houver conflito de horário com outra sessão na mesma sala
-- A criação de sessões respeita a duração do filme + tempo mínimo de limpeza (15 min) + tempo de trailers (10 min)
-- Apenas filmes ativos podem ser adicionados à grade — filmes desativados são rejeitados na tentativa de agendamento
-- Remoção de sessões já iniciadas é bloqueada pelo sistema
-- Ao cancelar uma sessão futura, o sistema identifica automaticamente todos os ingressos vendidos que precisam de reembolso
-
-**Por que não é trivial:** Envolve gestão de recursos limitados (salas e horários), restrições temporais complexas e impacto direto na venda de ingressos. Exige validações consistentes, tratamento de conflitos e controle de integridade da operação, caracterizando alta complexidade no domínio.
-
-**Features BDD relacionadas:** `sessao` · `precificacao` · `dashboard`
-
----
-
-### F5 — Gerenciar Bomboniere
-**Responsável:** Fabiana
-
-**Fluxo:** Cadastrar insumo (nome, unidade, quantidade inicial, nível crítico) → Cadastrar produto (nome, preço, categoria) → Definir receita do produto (insumos e quantidades) → Realizar venda → Baixar estoque automaticamente por receita → Registrar movimentação de saída → Verificar nível crítico → Disparar alerta de reposição
-
-**Regras de negócio:**
-- Um produto só pode ser vendido quando estiver ativo e com estoque maior que zero
-- A venda exige que a quantidade solicitada seja menor ou igual ao estoque disponível no momento da transação
-- Toda venda confirmada gera uma movimentação de saída, reduzindo o estoque de forma consistente — baseada na receita do produto (ex.: 1 pipoca = −200 g de milho + −1 embalagem)
-- O sistema aciona um alerta de reposição ao atingir ou ficar abaixo do nível mínimo definido
-
-**Por que não é trivial:** Não se trata apenas de cadastro de produtos, mas de um controle integrado entre estoque e vendas, com regras de validação, atualização automática e consistência em tempo real. Envolve controle de estado, rastreabilidade de movimentações e impacto direto financeiro.
-
-**Features BDD relacionadas:** `bomboniere`
-
----
-
-### F6 — Controle de Acesso de Clientes com Validação
-**Responsável:** Fabiana
-
-**Fluxo:** Ler QR Code → Validar autenticidade → Verificar uso → Registrar entrada → Atualizar status
-
-**Regras de negócio:**
-- O acesso é autorizado somente se o QR Code for válido e corresponder a um ingresso existente no sistema
-- O ingresso deve estar associado à sessão correta — ingressos de outras sessões são rejeitados
-- A sessão deve estar dentro do período permitido de entrada (janela de 30 minutos ao redor do início)
-- O ingresso deve estar marcado como não utilizado — ingressos já usados bloqueiam a entrada por tentativa de reutilização
-- Se todas as condições forem atendidas, o sistema autoriza a entrada, registra o check-in e marca o ingresso como utilizado
-
-**Por que não é trivial:** Garante segurança e controle de acesso, evitando fraudes e inconsistências. Exige validação de integridade referencial, controle de estado, verificação temporal e idempotência — impedindo o duplo uso do mesmo ingresso.
-
-**Features BDD relacionadas:** `checkin` · `classificacao`
-
----
-
-### F7 — Gerenciar Catálogo de Filmes
-**Responsável:** Irvin
-
-**Fluxo:** Cadastrar filme (título, duração, classificação indicativa, gênero) → Adicionar URL de trailer (opcional) → Ativar/desativar filme → Atualizar dados → Remover filme (quando permitido)
-
-**Regras de negócio:**
-- Filmes devem possuir informações obrigatórias (título, duração, classificação, gênero) para serem válidos — cadastro com título vazio é rejeitado
-- Apenas filmes ativos podem ser utilizados na grade de exibição
-- Um filme não pode ser removido se possuir sessões futuras cadastradas — deve ser desativado em vez de removido, preservando o histórico
-- Filmes suportam URL de trailer para exibição ao cliente no portal
-- Um filme pode ser desativado em vez de removido, mantendo rastreabilidade histórica de sessões passadas
-
-**Por que não é trivial:** Apesar de envolver cadastro, essa funcionalidade possui regras que garantem consistência com outras partes do sistema — grade de exibição e venda de ingressos. Alterações no catálogo impactam diretamente o funcionamento do sistema, exigindo validações e restrições que vão além de um simples CRUD.
-
-**Features BDD relacionadas:** `catalogo`
-
----
-
-### F8 — Realizar Fechamento de Caixa e Relatórios
-**Responsável:** Amanda
-
-**Fluxo:** Consolidar vendas do dia por sessão → Calcular total arrecadado e total de ingressos → Calcular taxa de ocupação média → Registrar fechamento (impedindo duplicatas) → Consultar relatório por data
-
-**Regras de negócio:**
-- Vendas são consolidadas por sessão — o sistema impede fechamento duplicado para o mesmo dia
-- O faturamento é calculado com base nos ingressos vendidos por tipo (inteira, meia, convite) e no preço de cada sessão
-- A taxa de ocupação é calculada como ingressos vendidos sobre a capacidade total da sala
-- Relatórios de dias sem fechamento são rejeitados com mensagem clara
-- O dashboard exibe faturamento projetado vs. realizado por sessão, permitindo análise de performance
-
-**Por que não é trivial:** Essencial para análise e tomada de decisão, envolve agregação de dados financeiros heterogêneos, cálculo percentual preciso e geração de relatório contábil estruturado — cruzando informações de capacidade de sala, ingressos emitidos e valores arrecadados.
-
-**Features BDD relacionadas:** `caixa` · `dashboard` · `precificacao`
+</details>
 
 ---
 
 ## Testes BDD
 
-Todo o domínio é coberto por testes comportamentais escritos em **português** com Cucumber + JUnit 5. São **17 arquivos `.feature`** distribuídos entre os dois módulos de domínio, cobrindo **131 cenários** no total.
+Todo o domínio é coberto por testes comportamentais escritos em **português** com Cucumber + JUnit 5, distribuídos entre os dois módulos de domínio.
 
 ```bash
 # Executar todos os testes
@@ -247,44 +228,19 @@ mvn test
 
 ### Mapeamento: Funcionalidade → Features
 
-| Funcionalidade | Features BDD | Cenários |
-|---|---|---|
-| F1 — Comprar ingresso | `reserva` · `pedido` · `promocao` · `checkin` · `classificacao_compra` | 31 |
-| F2 — Explorar programação | `programacao` · `recomendacao` · `notificacao` | 16 |
-| F3 — Fidelidade e benefícios | `fidelidade` | 7 |
-| F4 — Grade de exibição | `sessao` · `precificacao` · `dashboard` | 27 |
-| F5 — Bomboniere | `bomboniere` | 12 |
-| F6 — Controle de acesso | `checkin` · `classificacao` | 17 |
-| F7 — Catálogo de filmes | `catalogo` | 7 |
-| F8 — Fechamento de caixa | `caixa` · `dashboard` · `precificacao` | 26 |
-| **Transversal** | `rbac` | 10 |
+| Funcionalidade | Features BDD |
+|---|---|
+| F1 — Comprar ingresso | `reserva` · `pedido` · `promocao` · `checkin` · `classificacao_compra` |
+| F2 — Explorar programação | `programacao` · `recomendacao` · `notificacao` |
+| F3 — Fidelidade e benefícios | `fidelidade` |
+| F4 — Grade de exibição | `sessao` · `precificacao` · `dashboard` |
+| F5 — Bomboniere | `bomboniere` |
+| F6 — Controle de acesso | `checkin` · `classificacao` |
+| F7 — Catálogo de filmes | `catalogo` |
+| F8 — Fechamento de caixa | `caixa` · `dashboard` · `precificacao` |
+| Transversal | `rbac` |
 
 > `checkin`, `classificacao`, `dashboard`, `precificacao` e `rbac` são compartilhados entre mais de uma funcionalidade por natureza transversal.
-
-### Estrutura completa de features
-
-```
-domain-backoffice/features/
-├── grade/            → F4sessao.feature            — sessões, conflito de horário, filme inativo
-├── catalogo/         → F7catalogo.feature          — cadastro, ativação, trailer, remoção protegida
-├── checkin/          → F1F6checkin.feature         — QR Code, idempotência, janela de acesso
-├── classificacao/    → F6classificacao.feature     — validação de idade indicativa
-│                     → F1classificacao_compra.feature — validação de idade na compra
-├── bomboniere/       → F5bomboniere.feature        — estoque, baixa automática, alertas
-├── caixa/            → F8caixa.feature             — fechamento, relatório, impedimento de duplicata
-├── precificacao/     → F4F8precificacao.feature    — preço por tipo de sala e dia da semana
-├── dashboard/        → F4F8dashboard.feature       — ocupação e faturamento por sessão
-└── rbac/             → rbac.feature                — transversal — permissões por role (Gerente / Operador)
-
-domain-portal/features/
-├── programacao/      → F2programacao.feature       — sessões futuras, filtros por gênero e classificação
-├── reserva/          → F1reserva.feature           — seat locking com expiração automática
-├── pedido/           → F1pedido.feature            — venda casada, QR Code, Voucher, pagamento
-├── promocao/         → F1promocao.feature          — cupons, cumulatividade, reembolso
-├── fidelidade/       → F3fidelidade.feature        — pontos, expiração, benefícios por dia
-├── recomendacao/     → F2recomendacao.feature      — sugestões por histórico de gêneros
-└── notificacao/      → F2notificacao.feature       — alertas automáticos de pré-venda
-```
 
 ---
 
@@ -295,11 +251,11 @@ O projeto segue **Arquitetura Limpa (Clean Architecture)** com módulos Maven se
 ```
 ┌─────────────────────────────────────────────────────┐
 │   presentation-backend (REST)                       │
-│   presentation-frontend (Web)                       │
+│   presentation-frontend (React + Vite)              │
 └────────────────────────┬────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────┐
-│               infrastructure                        │  ← JPA, repositórios
+│               infrastructure                        │  ← JPA, adaptadores, Caching Proxy
 └────────────────────────┬────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────┐
@@ -309,7 +265,7 @@ O projeto segue **Arquitetura Limpa (Clean Architecture)** com módulos Maven se
 └─────────────────────────────────────────────────────┘
 ```
 
-**Regra de dependência:** as camadas externas dependem das internas. O domínio não conhece framework algum.
+**Regra de dependência:** as camadas externas dependem das internas. O domínio não conhece framework algum. As entidades `@Entity` ficam exclusivamente na `infrastructure` (padrão Port/Adapter), mantendo o domínio puro.
 
 ---
 
@@ -318,37 +274,53 @@ O projeto segue **Arquitetura Limpa (Clean Architecture)** com módulos Maven se
 | Camada | Tecnologia |
 |---|---|
 | Linguagem | Java 17 |
-| Framework Web | Spring Boot |
-| Persistência | Spring Data JPA |
-| Testes BDD | Cucumber 7 + JUnit 5 |
+| Framework Web | Spring Boot 4.0.5 |
+| Persistência | Spring Data JPA / Hibernate |
+| Banco de dados | PostgreSQL 17 (Docker, porta 5433) |
+| Testes BDD | Cucumber 7.34 + JUnit 6 + Mockito 5 |
 | Build | Maven (multi-module) |
+| Frontend | React 19 + Vite 6 + TypeScript 5.6 |
+| HTTP / Rotas / QR | axios · react-router-dom 7 · qrcode.react 4 |
+| Integração externa | TMDB API (pôsteres) |
 | Modelagem | Context Mapper (CML) |
 
 ---
 
 ## Como Rodar
 
-**Pré-requisitos:** Java 17+ e Maven 3.8+
+**Pré-requisitos:** Java 17+, Maven 3.8+, Docker e Node.js 18+
 
 ```bash
-# Build completo
-mvn clean install
+# 1. Subir o banco PostgreSQL (na raiz do projeto)
+docker compose up -d
 
-# Subir a aplicação
+# 2. Build de todos os módulos (na raiz do projeto)
+mvn install -DskipTests
+
+# 3. Subir o backend (em um terminal)
 cd presentation-backend
 mvn spring-boot:run
+
+# 4. Subir o frontend (em outro terminal)
+cd presentation-frontend
+npm install
+npm run dev
 ```
+
+Acesse: **http://localhost:5173**
+
+> Cada integrante cria localmente (gitignored) o `presentation-backend/src/main/resources/application-local.properties` (apontando para `localhost:5433/framedb`) e o `presentation-frontend/.env` (com `VITE_TMDB_TOKEN`). Templates `*.example` estão versionados no repositório.
 
 ---
 
 ## Equipe
 
-| Nome | GitHub |
-|---|---|
-| Amanda Montarroios de Oliveira | Amo@cesar.school |
-| Fabiana Coelho de Souza Leão Silveira | Fcsls@cesar.school |
-| Irvin Amilcar de F. B. da Silva | Ervinhu.silva@gmail.com |
-| Julia Maria Santos Teixeira | Jmst@cesar.school |
+| Nome | Contato | Funcionalidades · Padrão |
+|---|---|---|
+| Amanda Montarroios de Oliveira | Amo@cesar.school | F3 + F8 · Iterator + Template Method |
+| Fabiana Coelho de Souza Leão Silveira | Fcsls@cesar.school | F5 + F6 · Observer |
+| Irvin Amilcar de F. B. da Silva | Ervinhu.silva@gmail.com | F4 + F7 · Proxy |
+| Julia Maria Santos Teixeira | Jmst@cesar.school | F1 + F2 · Strategy + Decorator |
 
 **Professor:** Saulo Meira Araujo (`@profsauloaraujo`) — Disciplina de Requisitos, Projeto de Software e Validação · CESAR School
 
